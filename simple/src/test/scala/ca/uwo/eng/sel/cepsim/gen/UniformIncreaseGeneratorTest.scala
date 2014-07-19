@@ -1,0 +1,42 @@
+package ca.uwo.eng.sel.cepsim.gen
+
+import scala.concurrent.duration._
+import org.junit.runner.RunWith
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
+class UniformIncreaseGeneratorTest extends FlatSpec
+	with Matchers {
+
+  "A UniformIncreaseGenerator" should "have two distinct regions" in {
+    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    
+    // first region is the triangle with vertices (0, 0), (10, 0), (10, 20)    
+    // --- first sample is the triangle (0, 0), (5, 0), (5, 10)
+    generator.generate() should be (25)
+    
+    // -- second sample is the trapezoid (5, 0), (5, 10), (10, 0), (10, 20)
+    generator.generate() should be (75)
+ 
+    
+    // second region of the function is constant    
+    // -- third sample is the rectangle (10, 0), (10, 20), (15, 0), (15, 20)
+    generator.generate() should be (100)
+    
+    // -- all the other samples should be 100
+    generator.generate() should be (100)    
+  }
+  
+  
+  it should "give the correct values even when a sample encompasses both regions" in {
+    val generator = new UniformIncreaseGenerator(10 seconds, 20, 6 seconds)
+    
+    generator.generate() should be (36)    
+    generator.generate() should be (104)
+    generator.generate() should be (120)
+  }
+  
+  
+}
