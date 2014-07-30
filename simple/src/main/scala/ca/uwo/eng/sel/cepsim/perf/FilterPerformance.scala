@@ -15,7 +15,7 @@ object FilterPerformance extends App {
     def get(key: String) = values(key)    
   }
   
-  class Filter extends Operator("f") {
+  class Filter extends Operator("f", 100) {
     val d = new Date()
     
     def apply(e: Event) =
