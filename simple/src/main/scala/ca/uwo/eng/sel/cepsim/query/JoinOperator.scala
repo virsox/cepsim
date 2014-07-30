@@ -1,13 +1,25 @@
 package ca.uwo.eng.sel.cepsim.query
 
-/**
- * Created by virso on 2014-07-22.
- */
-class JoinOperator(override val id: String, override val ipe: Double) extends Operator(id, ipe) {
+object JoinOperator {
+  def apply(id: String, ipe: Double, reduction: Double) =
+    new JoinOperator(id, ipe, reduction)
 
-  // todo implement a join operator
-  // a case class can't inherit for another - what should I do?
-  override def init(q: Query) = { }
-  override def run(instructions: Double): Unit = { }
+}
+
+class JoinOperator(override val id: String, override val ipe: Double, val reduction: Double)
+    extends Operator(id, ipe)
+    with InputVertex
+    with OutputVertex {
+
+  override def run(instructions: Double): Unit = {
+    val events = retrieveFromInput(instructions)
+
+    // calculate the cartesian product among all input events
+    val total = events.foldLeft(1)((accum, elem) => accum * elem._2)
+
+    // the reduction parameter represents how much the join condition reduces
+    // the number of joined elements
+    sendToAllOutputs(Math.floor(total * reduction).toInt)
+  }
 
 }
