@@ -1,6 +1,11 @@
 package ca.uwo.eng.sel.cepsim.query
 
 
+object EventConsumer {
+  def apply(id: String, ipe: Double) = new EventConsumer(id, ipe)
+}
+
+
 class EventConsumer(val id: String, val ipe: Double) extends Vertex
   with InputVertex {
 

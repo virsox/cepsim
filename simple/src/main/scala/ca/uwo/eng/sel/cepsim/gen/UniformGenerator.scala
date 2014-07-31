@@ -27,4 +27,7 @@ class UniformGenerator(val rate: Double, val samplingInterval: Duration) extends
       } else 0
     } else tuplesPerInterval.toInt
 
+
+  override def average: Double = rate
+
 }

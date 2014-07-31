@@ -77,8 +77,6 @@ class QueryTest extends FlatSpec
     q.edges(m1) should have size (1)
     q.edges(m1) should contain theSameElementsAs Set(Edge(m1, cons1, 1.0))
 
-
-
   }
 
 

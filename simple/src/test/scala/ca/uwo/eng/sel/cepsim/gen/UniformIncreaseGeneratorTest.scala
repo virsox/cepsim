@@ -37,6 +37,29 @@ class UniformIncreaseGeneratorTest extends FlatSpec
     generator.generate() should be (104)
     generator.generate() should be (120)
   }
-  
-  
+
+  it should "calculate the correct average if only the increasing region is used" in {
+    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    generator.generate()
+    generator.generate()
+    generator.average should be (10)
+  }
+
+  it should "calculate the correct average if both regions are used" in {
+    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+
+    generator.generate()
+    generator.generate()
+    generator.generate()
+    generator.generate()
+    generator.average shouldBe 15.0 +- 0.001
+  }
+
+  it should "have an average close to the maxRate if is used for a long time" in {
+    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    for (i <- 1 to 100000) generator.generate()
+
+    generator.average shouldBe 20.0 +- 0.1
+  }
+
 }

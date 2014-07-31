@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 class QueryCloudletIntegrationTest extends FlatSpec
   with Matchers {
 
-  "A QueryCloudlet" should "send events through the operator graph" in {
+  trait Fixture {
     val gen = new UniformGenerator(100, 1 second)
 
     val prod1 = new EventProducer("p1", 100, gen)
@@ -29,18 +29,31 @@ class QueryCloudletIntegrationTest extends FlatSpec
     var query = Query(Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 1.0), (f2, cons1, 0.1)))
 
     var cloudlet = new QueryCloudlet(1 second, new EvenOpScheduleStrategy())
+  }
+
+  "A QueryCloudlet" should "send events through the operator graph" in new Fixture {
+
 
     cloudlet init (Placement(query, 1))
-    cloudlet.run(100000)
+    cloudlet run (100000)
 
     prod1.outputQueues(f1) should be (0)
     f1.outputQueues(f2) should be (0)
     f2.outputQueues(cons1) should be (0)
     cons1.outputQueue should be (10)
+  }
 
+  it should "accumulate the number of produced events" in new Fixture {
+    cloudlet init (Placement(query, 1))
+    cloudlet run (100000)
+    cloudlet run (100000)
 
-    //query.addVertex()
+    prod1.outputQueues(f1) should be (0)
+    f1.outputQueues(f2) should be (0)
+    f2.outputQueues(cons1) should be (0)
+    cons1.outputQueue should be (20)
 
   }
+
 
 }

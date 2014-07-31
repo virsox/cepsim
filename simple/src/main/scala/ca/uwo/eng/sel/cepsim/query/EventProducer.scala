@@ -2,14 +2,18 @@ package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
 
-class EventProducer(val id: String, val ipe: Double, gen: Generator) extends Vertex
+object EventProducer {
+  def apply(id: String, ipe: Double, gen: Generator) = new EventProducer(id, ipe, gen)
+}
+
+class EventProducer(val id: String, val ipe: Double, val generator: Generator) extends Vertex
   with OutputVertex {
 
   var inputQueue = 0
 
   def run(instructions: Double): Unit = {
 
-    inputQueue += gen.generate()
+    inputQueue += generator.generate()
 
     val maxOutput = (instructions / ipe) toInt
     val processed = Math.min(inputQueue, maxOutput)

@@ -8,6 +8,14 @@ object Edge {
   def apply(from: OutputVertex, to: InputVertex, selectivity: Double = 1.0) =
     new Edge(from, to, selectivity)
 
+  implicit object EdgeVertexOrdering extends Ordering[Edge] {
+    override def compare(x: Edge, y: Edge): Int = {
+      val ret = x.from.compare(y.from)
+      if (ret == 0) x.to.compare(y.to)
+      else ret
+    }
+  }
+
 }
 
 class Edge(val from: OutputVertex, val to: InputVertex, val selectivity: Double = 1.0) {

@@ -9,4 +9,7 @@ trait Generator {
     * @return Number of events generated.
     */
   def generate(): Int
+
+  def average: Double
+
 }

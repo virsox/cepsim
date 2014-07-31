@@ -20,14 +20,13 @@ class UniformGeneratorTest extends FlatSpec
 	
 	it should "calculate the correct value if interval is large" in {
 	  val generator = new UniformGenerator(20, 5 seconds)
-	  generator.generate() should be (100)	  	  
+	  generator.generate() should be (100)
 	}
 	
 	it should "calculate the correct value if interval is small" in {
-	  val generator = new UniformGenerator(20, 500 milliseconds)
-	  generator.generate() should be (10)	  	  
-	}
-	
+    val generator = new UniformGenerator(20, 500 milliseconds)
+    generator.generate() should be(10)
+  }
 	
 	it should "calculate a correct sequence of values if interval is very small" in {
 	  val generator = new UniformGenerator(20, 10 milliseconds)
@@ -38,6 +37,18 @@ class UniformGeneratorTest extends FlatSpec
 	  generator.generate() should be (1)
 	  generator.generate() should be (0)
 	}
-	
+
+  it should "calculate the correct event generation average" in {
+    val generator = new UniformGenerator(20, 1 second)
+    for (i <- 1 to 10) generator.generate()
+    generator.average should be (20.0)
+  }
+
+  it should "calculate the correct event generation average independently from the sampling rate" in {
+    val generator = new UniformGenerator(20, 10 millisecond)
+    for (i <- 1 to 10) generator.generate()
+    generator.average should be (20.0)
+  }
+
 	
 }

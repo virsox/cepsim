@@ -31,9 +31,15 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
 
   /** Multiplier used during the rate growth period. */
   val multiplier = maxRateInMs / durationInMs
+
+  /** Current calculated average */
+  var currentAvg = 0.0
+
+  /** Number of invocations*/
+  var invocations = 0
+
   
-  
-  def generate(): Int = {
+  override def generate(): Int = {
     val nextPos = currentPos + intervalInMs
     var area = 0.0
     
@@ -59,8 +65,15 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
                     (nextPos, 0), (nextPos, maxRateInMs)) 
     }
     currentPos = nextPos
+
+    val sampleAvg = area / samplingInterval.toSeconds
+    currentAvg = ((invocations * currentAvg) + sampleAvg) / (invocations + 1)
+    invocations = invocations + 1
+
     area toInt
   }
+
+  override def average: Double = currentAvg
 
   /**
     * Calculates the area of a triangle rectangle. It assumes the following vertices parameters:
