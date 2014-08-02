@@ -8,6 +8,5 @@ import ca.uwo.eng.sel.cepsim.placement.Placement
   *
   */
 trait QueryScheduleStrategy {
-  // TODO is it host information enough?
-  def allocate(host: Host, placements: Set[Placement]): Map[Placement, Double]
+  def allocate(placements: Set[Placement]): Map[Placement, Double]
 }

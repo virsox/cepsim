@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim
 
+import ca.uwo.eng.sel.cepsim.metric.History
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
@@ -23,10 +24,11 @@ class QueryCloudletTest extends FlatSpec
     val f2 = mock[Operator]
     val cons = mock[EventConsumer]
     val q = mock[Query]
+    val vm = mock[Vm]
 
     // Placement inherits many methods from the scala API and it is very hard to mock
     // therefore, we are using a spy here
-    val p = new Placement(q, Set(prod, f1, f2, cons), 1)
+    val p = new Placement(q, Set(prod, f1, f2, cons), vm)
     val placement = spy(p)
     doReturn(Set(prod)).when(placement).findStartVertices
     doReturn(Iterator(prod, f1, f2, cons)).when(placement).iterator
@@ -38,21 +40,22 @@ class QueryCloudletTest extends FlatSpec
 
   }
 
-  "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
+//  "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
+//
+//    val cloudlet = new QueryCloudlet(500 milliseconds, opSchedule)
+//    cloudlet init(placement)
+//
+//    verify(prod).init(q)
+//    verify(f1).init(q)
+//    verify(f2).init(q)
+//    verify(cons).init(q)
+//  }
 
-    val cloudlet = new QueryCloudlet(500 milliseconds, opSchedule)
-    cloudlet init(placement)
-
-    verify(prod).init(q)
-    verify(f1).init(q)
-    verify(f2).init(q)
-    verify(cons).init(q)
-  }
-
-  it should "correctly run all operators" in new Fixture {
-    val cloudlet = new QueryCloudlet(500 milliseconds, opSchedule)
-    cloudlet.currentPlacement = placement
-    cloudlet.query = q
+  "A QueryCloudlet" should "correctly run all operators" in new Fixture {
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule, 0.0)
+//    cloudlet.currentPlacement = placement
+//    cloudlet.query = q
+//    cloudlet.history = h
 
     doReturn(Set(prod)).when(q).predecessors(f1)
     doReturn(Set(f1)).when(q).predecessors(f2)

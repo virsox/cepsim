@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.placement
 
+import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -13,7 +14,8 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
 	with MockitoSugar {
 
   "A SimpleOpPlacementStrategy" should "place all operators in the same VM" in {
-    val strategy = new SingleVmOpPlacementStrategy(1L)
+    val vm = mock[Vm]
+    val strategy = new SingleVmOpPlacementStrategy(vm)
     val prod1, prod2 = mock[EventProducer]
     val f1, f2 = mock[Operator]
     val cons1, cons2 = mock[EventConsumer]
@@ -34,10 +36,10 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
     
     
     placement1(0).vertices should be (Set(prod1, f1, cons1))
-    placement1(0).vmId should be (1L)
+    placement1(0).vm should be (vm)
     
     placement2(0).vertices should be (Set(prod2, f2, cons2))
-    placement2(0).vmId should be (1L)
+    placement2(0).vm should be (vm)
     
     
     

@@ -11,7 +11,7 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator) e
 
   var inputQueue = 0
 
-  def run(instructions: Double): Unit = {
+  def run(instructions: Double): Int = {
 
     inputQueue += generator.generate()
 
@@ -20,6 +20,8 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator) e
 
     inputQueue -= processed
     sendToAllOutputs(processed)
+
+    processed
   }
 
 

@@ -12,12 +12,13 @@ class Operator(val id: String, val ipe: Double) extends Vertex
   var accumulator: Double = 0
 
 
-  override def run(instructions: Double): Unit = {
+  override def run(instructions: Double): Int = {
 
     // number of processed events
     val events = totalFromMap(retrieveFromInput(instructions))
 
     sendToAllOutputs(events)
+    events
   }
 
 

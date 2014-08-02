@@ -6,7 +6,7 @@ trait Vertex {
   def ipe: Double
 
   def init(q: Query): Unit = { }
-  def run(instructions: Double): Unit
+  def run(instructions: Double): Int
 
   override def toString: String = s"[id: $id]"
 

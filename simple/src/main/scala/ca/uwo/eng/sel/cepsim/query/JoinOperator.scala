@@ -11,7 +11,7 @@ class JoinOperator(override val id: String, override val ipe: Double, val reduct
     with InputVertex
     with OutputVertex {
 
-  override def run(instructions: Double): Unit = {
+  override def run(instructions: Double): Int = {
     val events = retrieveFromInput(instructions)
 
     // calculate the cartesian product among all input events
@@ -20,6 +20,7 @@ class JoinOperator(override val id: String, override val ipe: Double, val reduct
     // the reduction parameter represents how much the join condition reduces
     // the number of joined elements
     sendToAllOutputs(Math.floor(total * reduction).toInt)
+    totalFromMap(events)
   }
 
 }

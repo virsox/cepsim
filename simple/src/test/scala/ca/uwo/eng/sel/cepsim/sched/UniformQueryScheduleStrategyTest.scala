@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.sched
 
-import ca.uwo.eng.sel.cepsim.Host
+import ca.uwo.eng.sel.cepsim.{Vm, Host}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, Operator, EventProducer}
 import org.junit.runner.RunWith
@@ -22,18 +22,18 @@ class UniformQueryScheduleStrategyTest extends FlatSpec
     val p1, p2 = mock[EventProducer]
     val f1, f2 = mock[Operator]
     val c1, c2 = mock[EventConsumer]
-    val host = mock[Host]
-    doReturn(1000.0).when(host).getVmMips(1L)
+    val vm = mock[Vm]
+    doReturn(1000.0).when(vm).mips
 
     val placement1 = mock[Placement]
     doReturn(Set(p1, f1, c1)).when(placement1).vertices
-    doReturn(1L).when(placement1).vmId
+    doReturn(vm).when(placement1).vm
 
     val placement2 = mock[Placement]
     doReturn(Set(p2, f2, c2)).when(placement2).vertices
-    doReturn(1L).when(placement2).vmId
+    doReturn(vm).when(placement2).vm
 
-    val ret = strategy.allocate(host, Set(placement1, placement2))
+    val ret = strategy.allocate(Set(placement1, placement2))
 
     ret should have size (2)
     ret(placement1) should be (500.0)

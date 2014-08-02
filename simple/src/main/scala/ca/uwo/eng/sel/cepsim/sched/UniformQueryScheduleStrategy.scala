@@ -10,10 +10,10 @@ import ca.uwo.eng.sel.cepsim.query.Vertex
 class UniformQueryScheduleStrategy extends QueryScheduleStrategy {
 
 
-  override def allocate(host: Host, placements: Set[Placement]): Map[Placement, Double] = {
-    placements groupBy(_.vmId) flatMap { (mapEntry) =>
+  override def allocate(placements: Set[Placement]): Map[Placement, Double] = {
+    placements groupBy(_.vm) flatMap { (mapEntry) =>
       mapEntry._2 map { (listEntry) =>
-        (listEntry -> host.getVmMips(mapEntry._1) / mapEntry._2.size)
+        (listEntry -> mapEntry._1.mips / mapEntry._2.size)
       }
     }
   }

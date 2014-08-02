@@ -1,15 +1,16 @@
 package ca.uwo.eng.sel.cepsim.placement
 
+import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query.{Query, Vertex}
 
 import scala.collection.mutable.Queue
 
 object Placement {
-  def apply(q: Query, vmId: Long): Placement =
-    new Placement(q, q.vertices, vmId)
+  def apply(q: Query, vm: Vm): Placement =
+    new Placement(q, q.vertices, vm)
 }
 
-class Placement(val query: Query, val vertices: Set[Vertex], val vmId: Long) extends Iterable[Vertex] {
+class Placement(val query: Query, val vertices: Set[Vertex], val vm: Vm) extends Iterable[Vertex] {
 
   def findStartVertices(): Set[Vertex] = {
     vertices.filter{(v) =>

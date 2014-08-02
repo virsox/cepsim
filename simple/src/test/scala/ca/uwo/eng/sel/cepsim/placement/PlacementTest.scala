@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.placement
 
+import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, Query, Operator, EventProducer}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
@@ -21,6 +22,7 @@ class PlacementTest extends FlatSpec
     val f2 = mock[Operator]
     val m1 = mock[Operator]
     val cons1 = mock[EventConsumer]
+    val vm = mock[Vm]
 
     doReturn("prod1").when(prod1).id
     doReturn("prod2").when(prod2).id
@@ -44,7 +46,7 @@ class PlacementTest extends FlatSpec
     doReturn(Set(cons1)).when(q).successors(f1)
     doReturn(Set.empty).when(q).successors(cons1)
 
-    val placement = Placement(q, 1)
+    val placement = Placement(q, vm)
     val it = placement.iterator
 
     it.next should be (prod1)
@@ -75,7 +77,7 @@ class PlacementTest extends FlatSpec
     doReturn(Set(cons1)).when(q).successors(m1)
     doReturn(Set.empty).when(q).successors(cons1)
 
-    val placement = Placement(q, 1)
+    val placement = Placement(q, vm)
     val it = placement.iterator
 
     it.next should be (prod1)
