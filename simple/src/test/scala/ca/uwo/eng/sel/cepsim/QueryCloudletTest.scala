@@ -25,6 +25,7 @@ class QueryCloudletTest extends FlatSpec
     val cons = mock[EventConsumer]
     val q = mock[Query]
     val vm = mock[Vm]
+    doReturn(1.0).when(vm).mips
 
     // Placement inherits many methods from the scala API and it is very hard to mock
     // therefore, we are using a spy here
@@ -32,11 +33,12 @@ class QueryCloudletTest extends FlatSpec
     val placement = spy(p)
     doReturn(Set(prod)).when(placement).findStartVertices
     doReturn(Iterator(prod, f1, f2, cons)).when(placement).iterator
+    doReturn(vm).when(placement).vm
 
     val opSchedule = mock[OpScheduleStrategy]
-    doReturn(Map(prod -> 100.0, f1 -> 400.0, f2 -> 400.0, cons -> 100.0)).
+    doReturn(Map(prod -> 100000.0, f1 -> 400000.0, f2 -> 400000.0, cons -> 100000.0)).
       when(opSchedule).
-      allocate(1000, placement)
+      allocate(1000000, placement)
 
   }
 
@@ -66,12 +68,12 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Map.empty withDefaultValue(0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
-    cloudlet run(1000)
+    cloudlet run(1)
 
-    verify(prod).run(100)
-    verify(f1).run(400)
-    verify(f2).run(400)
-    verify(cons).run(100)
+    verify(prod).run(100000)
+    verify(f1).run(400000)
+    verify(f2).run(400000)
+    verify(cons).run(100000)
   }
 
 }

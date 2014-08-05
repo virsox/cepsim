@@ -10,6 +10,10 @@ trait Generator {
     */
   def generate(): Int
 
+  /**
+    * The average number of events generated per simulation tick.
+    * @return average number of events generated per simulation tick.
+    */
   def average: Double
 
 }
