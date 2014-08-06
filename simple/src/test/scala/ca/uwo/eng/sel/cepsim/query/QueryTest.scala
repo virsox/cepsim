@@ -21,14 +21,14 @@ class QueryTest extends FlatSpec
     val f1 = Operator("f1", 1000)
 
     var q = new Query
-    q = q addVertices(prod1, f1, cons1)
+    q addVertices(prod1, f1, cons1)
 
   }
   
   
   "A query" should "correctly connect the vertices of the DAG" in new Fixture {
-    q = q addEdge (prod1, f1)
-    q = q addEdge (f1, cons1)
+    q addEdge (prod1, f1)
+    q addEdge (f1, cons1)
     
     q.vertices.size should be (3)
     q successors(prod1) should be (Set(f1))
@@ -43,9 +43,9 @@ class QueryTest extends FlatSpec
     val f2 = Operator("f2", 10000)
     val m1 = Operator("m1", 10000)
 
-    q = q addVertices(prod1, f1, cons1)
-    q = q addVertices(s1, f2, m1)
-    q = q addEdges((prod1, s1, 1.0), (s1, f1, 1.0), (s1, f2, 1.0), (f1, m1, 1.0), (f2, m1, 1.0), (m1, cons1, 1.0))
+    q addVertices(prod1, f1, cons1)
+    q addVertices(s1, f2, m1)
+    q addEdges((prod1, s1, 1.0), (s1, f1, 1.0), (s1, f2, 1.0), (f1, m1, 1.0), (f2, m1, 1.0), (m1, cons1, 1.0))
     
     q.vertices.size should be (6)
     q successors(s1) should be (Set(f1, f2))
@@ -57,9 +57,9 @@ class QueryTest extends FlatSpec
     val f2 = Operator("f2", 10000)
     val m1 = Operator("m1", 10000)
 
-    q = q addVertices(prod1, f1, cons1)
-    q = q addVertices(s1, f2, m1)
-    q = q addEdges((prod1, s1, 1.0), (s1, f1, 1.0), (s1, f2, 1.0), (f1, m1, 1.0), (f2, m1, 1.0), (m1, cons1, 1.0))
+    q addVertices(prod1, f1, cons1)
+    q addVertices(s1, f2, m1)
+    q addEdges((prod1, s1, 1.0), (s1, f1, 1.0), (s1, f2, 1.0), (f1, m1, 1.0), (f2, m1, 1.0), (m1, cons1, 1.0))
 
     q.edges(prod1) should have size (1)
     q.edges(prod1) should contain theSameElementsAs Set(Edge(prod1, s1, 1.0))

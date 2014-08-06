@@ -23,9 +23,6 @@ class EventProducerTest extends FlatSpec
     val query = mock[Query]
     val n1 = mock[Operator]
     prod addOutputQueue (n1)
-
-
-    prod.init(query)
   }
 
   "An EventProducer" should "generate events and put in the output queue" in new Fixture {

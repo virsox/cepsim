@@ -5,31 +5,21 @@ import scala.collection.mutable.Queue
 
 object Query {
   def apply(vs: Set[Vertex], es: Set[(OutputVertex, InputVertex, Double)]) = {
-    val q = new Query(vs.toSet, Map.empty)
+    val q = new Query()
+    q addVertices(vs.toSeq:_*)
     q addEdges(es toSeq:_*)
+    q
   }
 }
 
 
-class Query(v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
+class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
 
-  // only for Unit testing
   private [query] def this() = this(Set.empty, Map.empty)
   
-  val vertices: Set[Vertex] = v
-  val producers: Set[EventProducer] = {
-    var tmpProducers: Set[EventProducer] = Set.empty
-    vertices.foreach{case e: EventProducer => tmpProducers += e; case _ => ;}
-    tmpProducers
-  }
-  val consumers: Set[EventConsumer] = {
-    var tmpConsumers: Set[EventConsumer] = Set.empty
-    vertices.foreach{case e: EventConsumer => tmpConsumers += e; case _ => ;}
-    tmpConsumers
-  }
-
-  private val outgoingEdges: Map[Vertex, Set[Edge]] = e withDefaultValue(Set.empty)
-  private val incomingEdges: Map[Vertex, Set[Edge]] = {
+  var vertices: Set[Vertex] = v
+  private var outgoingEdges: Map[Vertex, Set[Edge]] = e withDefaultValue(Set.empty)
+  private var incomingEdges: Map[Vertex, Set[Edge]] = {
     val tmpMap = scala.collection.mutable.Map[Vertex, Set[Edge]]() withDefaultValue(Set.empty)
     outgoingEdges.values.foreach{(set) =>
       set.foreach{(edge) =>
@@ -40,9 +30,31 @@ class Query(v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
     tmpMap.toMap.withDefaultValue(Set.empty)
   }
 
-  
-  def addVertex(v0: Vertex) = new Query(vertices + v0, outgoingEdges)
-  def addVertices(vs: Vertex*) = new Query(vertices ++ (vs), outgoingEdges)
+  def producers: Set[EventProducer] = {
+    var tmpProducers: Set[EventProducer] = Set.empty
+    vertices.foreach{case e: EventProducer => tmpProducers += e; case _ => ;}
+    tmpProducers
+  }
+  def consumers: Set[EventConsumer] = {
+    var tmpConsumers: Set[EventConsumer] = Set.empty
+    vertices.foreach{case e: EventConsumer => tmpConsumers += e; case _ => ;}
+    tmpConsumers
+  }
+
+  def addVertex(v0: Vertex) = addVertices(v0)
+  def addVertices(vs: Vertex*) = {
+    vertices = vertices ++ vs
+    vs foreach (_.addQuery(this))
+
+//    val newQuery = new Query(vertices ++ (vs), outgoingEdges)
+//    val oldQuery = this
+//
+//    newQuery.vertices.foreach{(v) =>
+//      v.removeQuery(oldQuery)
+//      v.addQuery(newQuery)
+//    }
+//    newQuery
+  }
 
   def predecessors(v: Vertex): Set[Vertex] = incomingEdges(v).map(_.from)
   def successors(v: Vertex): Set[Vertex] = outgoingEdges(v).map(_.to)
@@ -54,19 +66,18 @@ class Query(v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
 
 
   //def addEdge(v1: OutputVertex, v2: InputVertex): Query = addEdge(v1, v2, 1.0)
-  def addEdge(v1: OutputVertex, v2: InputVertex, selectivity: Double = 1.0): Query = addEdges((v1, v2, selectivity))
+  def addEdge(v1: OutputVertex, v2: InputVertex, selectivity: Double = 1.0): Unit = addEdges((v1, v2, selectivity))
 
-  def addEdges(es: (OutputVertex, InputVertex, Double)*): Query =
+  def addEdges(es: (OutputVertex, InputVertex, Double)*): Unit =
     addEdges(es.map((e) => Edge(e._1, e._2, e._3)).toSet)
 
-  def addEdges(es: Set[Edge]): Query = {
-    var newOutgoingEdges = outgoingEdges
+  def addEdges(es: Set[Edge]): Unit = {
     es foreach { e =>
       e.from addOutputQueue (e.to, e.selectivity)
       e.to   addInputQueue  (e.from)
-      newOutgoingEdges = newOutgoingEdges updated(e.from, newOutgoingEdges(e.from) + e)
+      outgoingEdges = outgoingEdges updated(e.from, outgoingEdges(e.from) + e)
+      incomingEdges = incomingEdges updated(e.to, incomingEdges(e.to) + e)
     }
-    new Query(vertices, newOutgoingEdges)
   }
 
 

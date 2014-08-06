@@ -21,19 +21,6 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   // query execution shouldn' be kept here
 
 
-//  var query: Query = null
-//  var currentPlacement: Placement = null
-//  var history: History = null
-//
-//
-//  def init(placement: Placement) = {
-//    currentPlacement = placement
-//    query = currentPlacement.query
-//
-//    currentPlacement.foreach {(v) =>
-//      v.init(query)
-//    }
-//  }
 
   /** *
     *
@@ -47,15 +34,17 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     val instructionsPerMs = (placement.vm.mips * 1000)
     def totalMs(number: Double) = number / instructionsPerMs
 
-    val instrPerVertex = opSchedStrategy.allocate(availableInstructions, placement)
-    val query = placement.query
+    val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
     val history = History()
     var time = startTime
 
-    placement.foreach{(v) =>
+    verticesList.foreach{(elem) =>
 
+      val v: Vertex = elem._1
       if (v.isInstanceOf[InputVertex]) {
-        val predecessors = query.predecessors(v)
+
+        // predecessors from all queries
+        val predecessors = v.queries.flatMap(_.predecessors(v))
         predecessors.foreach{(pred) =>
           var events = 0
           pred match {
@@ -68,9 +57,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           v.asInstanceOf[InputVertex].enqueueIntoInput(pred, events)
         }
       }
-      val events = v.run(instrPerVertex(v))
+      val events = v.run(elem._2)
       history.log(id, time, v, events)
-      time += totalMs(instrPerVertex(v))
+      time += totalMs(elem._2)
     }
     history
   }

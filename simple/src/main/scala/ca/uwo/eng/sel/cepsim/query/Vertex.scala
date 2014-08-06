@@ -2,11 +2,19 @@ package ca.uwo.eng.sel.cepsim.query
 
 trait Vertex {
 
+  var queries: Set[Query] = Set.empty
+
+
+
   def id: String
   def ipe: Double
 
-  def init(q: Query): Unit = { }
+
+  private[query] def addQuery(q: Query) = queries += q
+  private[query] def removeQuery(q: Query) = queries -= q
+
   def run(instructions: Double): Int
+
 
   override def toString: String = s"[id: $id]"
 

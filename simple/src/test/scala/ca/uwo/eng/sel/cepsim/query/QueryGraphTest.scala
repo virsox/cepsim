@@ -30,7 +30,7 @@ class QueryGraphTest extends FlatSpec
     doReturn("f2").when(f2).id
     doReturn("m2").when(m2).id
     doReturn("c1").when(c1).id
-    q = q.addVertices(p1, p2, m1, s1, f1, f2, m2, c1)
+    q.addVertices(p1, p2, m1, s1, f1, f2, m2, c1)
 
     val e1 = Edge(p1, m1, 1.0)
     val e2 = Edge(p2, m1, 1.0)
@@ -40,7 +40,7 @@ class QueryGraphTest extends FlatSpec
     val e6 = Edge(f1, m2, 0.5)
     val e7 = Edge(f2, m2, 0.6)
     val e8 = Edge(m2, c1, 1.0)
-    q = q.addEdges(Set(e1, e2, e3, e4, e5, e6, e7, e8))
+    q.addEdges(Set(e1, e2, e3, e4, e5, e6, e7, e8))
 
     val paths: List[VertexPath] = q.pathsToProducers(c1)
 

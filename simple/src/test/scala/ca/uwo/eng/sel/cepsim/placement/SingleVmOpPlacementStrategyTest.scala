@@ -22,26 +22,27 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
         
     val query1 = mock[Query]
     doReturn(Set(prod1, f1, cons1)).when(query1).vertices
-    
+    doReturn(Set(query1)).when(prod1).queries
+    doReturn(Set(query1)).when(f1).queries
+    doReturn(Set(query1)).when(cons1).queries
+
     val query2 = mock[Query]
     doReturn(Set(prod2, f2, cons2)).when(query2).vertices
-    
+    doReturn(Set(query2)).when(prod2).queries
+    doReturn(Set(query2)).when(f2).queries
+    doReturn(Set(query2)).when(cons2).queries
+
     val placements = strategy.execute(query1, query2)
-    val placement1 = placements(query1)
-    val placement2 = placements(query2)
+    placements should have size (1)
+
+    val placement = placements.iterator.next
+
+    placement.vertices should be (Set(prod1, prod2, f1, f2, cons1, cons2))
+    placement.vertices(query1) should be (Set(prod1, f1, cons1))
+    placement.vertices(query2) should be (Set(prod2, f2, cons2))
+    placement.queries should be (Set(query1, query2))
     
-    placements should have size (2)
-    placement1 should have size (1)
-    placement2 should have size (1)
-    
-    
-    placement1(0).vertices should be (Set(prod1, f1, cons1))
-    placement1(0).vm should be (vm)
-    
-    placement2(0).vertices should be (Set(prod2, f2, cons2))
-    placement2(0).vm should be (vm)
-    
-    
+
     
   }
   

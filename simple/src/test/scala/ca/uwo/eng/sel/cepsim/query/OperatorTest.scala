@@ -26,7 +26,6 @@ class OperatorTest extends FlatSpec
     def setup(op: Operator, outputSelectivity: Double, predecessors: Operator*) = {
       predecessors.foreach(op.addInputQueue(_))
       op.addOutputQueue(n1, outputSelectivity)
-      op.init(query)
     }
 
     def enqueue(op: Operator, sizes: Int*) = {

@@ -10,7 +10,7 @@ import ca.uwo.eng.sel.cepsim.query.Query
   */
 class SingleVmOpPlacementStrategy(vm: Vm) extends OpPlacementStrategy {
 
-  override def execute(queries: Query*): Map[Query, List[Placement]] = {
-    queries map { q => (q, List(Placement(q, vm))) } toMap
+  override def execute(queries: Query*): Set[Placement] = {
+    Set(Placement(queries flatMap { _.vertices } toSet, vm))
   }
 }

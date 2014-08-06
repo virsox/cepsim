@@ -26,8 +26,7 @@ class EventConsumerTest extends FlatSpec
   }
 
   "An EventConsumer" should "send all events to the output" in new Fixture {
-    doReturn(Set(op1)).when(query).predecessors(cons1)
-    cons1 init(query)
+    cons1 addInputQueue op1
 
     cons1 enqueueIntoInput(op1, 100)
     cons1 run(100)
@@ -37,8 +36,8 @@ class EventConsumerTest extends FlatSpec
   }
 
   it should "consume events from all predecessors" in new Fixture {
-    doReturn(Set(op1, op2)).when(query).predecessors(cons1)
-    cons1 init(query)
+    cons1 addInputQueue op1
+    cons1 addInputQueue op2
 
     cons1 enqueueIntoInput(op1, 100)
     cons1 enqueueIntoInput(op2, 50)
