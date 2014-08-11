@@ -1,13 +1,16 @@
 package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
+import org.junit.runner.RunWith
 import org.mockito.Mockito._
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created by virso on 2014-08-01.
  */
+@RunWith(classOf[JUnitRunner])
 class HistoryTest extends FlatSpec
   with Matchers
   with MockitoSugar {

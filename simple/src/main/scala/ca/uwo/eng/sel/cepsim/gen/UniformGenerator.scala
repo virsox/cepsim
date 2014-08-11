@@ -2,6 +2,12 @@ package ca.uwo.eng.sel.cepsim.gen
 
 import scala.concurrent.duration._
 
+/** UniformGenerator companion object. */
+object UniformGenerator {
+  def apply(rate: Double, samplingInterval: Duration) =
+    new UniformGenerator(rate, samplingInterval)
+}
+
 /**
   * Uniform event generator. At each tick, generates the same number of events calculated as a function
   * of event generation rate and the sampling interval.

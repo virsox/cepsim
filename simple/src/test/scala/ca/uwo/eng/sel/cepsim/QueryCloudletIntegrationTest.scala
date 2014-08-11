@@ -26,10 +26,10 @@ class QueryCloudletIntegrationTest extends FlatSpec
   trait Fixture {
     val gen = new UniformGenerator(100000, 1 second)
 
-    val prod1 = new EventProducer("p1", 1000, gen)
+    val prod1 = EventProducer("p1", 1000, gen)
     val f1 = Operator("f1", 4000)
     val f2 = Operator("f2", 4000)
-    val cons1 = new EventConsumer("c1", 1000)
+    val cons1 = EventConsumer("c1", 1000)
 
     var query1 = Query(Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 1.0), (f2, cons1, 0.1)))
 

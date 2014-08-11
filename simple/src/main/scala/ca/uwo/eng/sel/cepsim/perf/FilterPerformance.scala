@@ -37,11 +37,20 @@ object FilterPerformance extends App {
       
       q.enqueue(e)
       f.apply(e)
-      q.dequeue
+      q.dequeue()
     }
     
     val b = System.nanoTime
     println("time: "+ (b - a) / 1e6 + "ms")
+
+    // 1 microsecond per event = 1e-6 seconds
+
+    // 1 second = 2.3 GHz ~ 2,300,000,000 insructions / sec
+
+    // 1    - 2.3e9
+    // 1e-6 - x
+
+    // x = 2.3e3 = 2300 instructions
     
   }
 }

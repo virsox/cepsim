@@ -3,13 +3,16 @@ package ca.uwo.eng.sel.cepsim.metric
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.metric.History.Entry
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, Operator, EventProducer, Query}
+import org.junit.runner.RunWith
 import org.mockito.Mockito._
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created by virso on 2014-08-02.
  */
+@RunWith(classOf[JUnitRunner])
 class LatencyMetricTest extends FlatSpec
   with Matchers
   with MockitoSugar {
@@ -41,25 +44,42 @@ class LatencyMetricTest extends FlatSpec
 
     val h = mock[History]
     doReturn(List(Entry("cloudlet1", 0.0,  p1, 50))).when(h).from(p1)
-    doReturn(Entry("cloudlet1", 10.0, c1,  5)).when(h).from("cloudlet1", c1)
+    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from("cloudlet1", c1)
 
     val latency = LatencyMetric.calculate(q, h, "cloudlet1", c1)
     latency should be (10)
   }
 
+  it should "calculate the same value in consecutive iterations" in new Fixture {
+    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
+
+    doReturn(50.0).when(gen).average
+    doReturn(10).when(c1).outputQueue
+
+    val h = mock[History]
+    doReturn(List(Entry("cloudlet1", 0.0,  p1, 50), Entry("cloudlet2", 11.0,  p1, 50))).when(h).from(p1)
+    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from("cloudlet1", c1)
+    doReturn(Some(Entry("cloudlet1", 21.0, c1,  5))).when(h).from("cloudlet2", c1)
+
+    var latency = LatencyMetric.calculate(q, h, "cloudlet1", c1)
+    latency should be (10)
+
+    latency = LatencyMetric.calculate(q, h, "cloudlet2", c1)
+    latency should be (10)
+  }
+
 
   it should "calculate the correct value when the producer history needs to be traversed" in new Fixture {
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.2)))
+    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
 
     doReturn(10.0).when(gen).average
     doReturn(5).when(c1).outputQueue
 
     val h = mock[History]
     val h1 = Entry("cloudlet1", 0.0,  p1, 10)
-    doReturn(List(h1, Entry("cloudlet2", 8.0,  p1, 10),
-                  Entry("cloudlet3", 12.0,  p1, 10))).when(h).from(p1)
-    doReturn(Entry("cloudlet1", 4.0, f1, 10)).when(h).successor(h1)
-    doReturn(Entry("cloudlet3", 15.0, c1,  25)).when(h).from("cloudlet3", c1)
+    doReturn(List(h1, Entry("cloudlet2", 8.0,  p1, 10), Entry("cloudlet3", 12.0,  p1, 10))).when(h).from(p1)
+    doReturn(Some(Entry("cloudlet1", 4.0, f1, 10))).when(h).successor(h1)
+    doReturn(Some(Entry("cloudlet3", 15.0, c1,  25))).when(h).from("cloudlet3", c1)
 
     val latency = LatencyMetric.calculate(q, h, "cloudlet3", c1)
     latency should be (13)
@@ -83,9 +103,9 @@ class LatencyMetricTest extends FlatSpec
 
     doReturn(List(h1, h2, h3)).when(h).from(p1)
     doReturn(List(h4, h5, h6)).when(h).from(p2)
-    doReturn(Entry("cloudlet1", 3.0, f1, 10)).when(h).successor(h4)
+    doReturn(Some(Entry("cloudlet1", 3.0, f1, 10))).when(h).successor(h4)
 
-    doReturn(Entry("cloudlet3", 28.0, c1, 12)).when(h).from("cloudlet3", c1)
+    doReturn(Some(Entry("cloudlet3", 28.0, c1, 12))).when(h).from("cloudlet3", c1)
 
     val latency = LatencyMetric.calculate(q, h, "cloudlet3", c1)
     latency should be (26)

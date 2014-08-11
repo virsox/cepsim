@@ -7,6 +7,8 @@ import scala.collection.mutable.Queue
 
 /** Companion Placement object */
 object Placement {
+  def withQueries(queries: Set[Query], vm: Vm): Placement = new Placement(queries.flatMap(_.vertices), vm)
+
   def apply(q: Query, vm: Vm): Placement = new Placement(q.vertices, vm)
   def apply(vertices: Set[Vertex], vm: Vm): Placement = new Placement(vertices, vm)
 }

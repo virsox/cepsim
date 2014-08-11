@@ -14,7 +14,7 @@ object LatencyMetric extends Metric {
     * @param consumer Consumer of which the latency is calculated.
     * @return Latency (in ms).
     */
-  def calculate(query: Query, history: History, cloudlet: String, consumer: EventConsumer) = {
+  def calculate(query: Query, history: History, cloudlet: String, consumer: EventConsumer): Double = {
 
     /**
       * Estimate the time in the simulation timeline when the producer started producing the
@@ -24,6 +24,9 @@ object LatencyMetric extends Metric {
       * @return Minimum time (before the cloudlet execution) when the events started to be produced.
       */
     def minimumTime(producer: EventProducer, events: Double): Double = {
+
+      if (events == 0)
+        return Double.NegativeInfinity
 
       // from most recent entries to the older ones, starting from the informed cloudlet
       val previousEntries = history.from(producer).reverse.dropWhile(_.cloudlet != cloudlet)
@@ -36,7 +39,7 @@ object LatencyMetric extends Metric {
       })
 
       val oldest = neededEntries.last
-      var minimumTime = 0.0
+      var minimumTime = oldest.time
 
       // the last entry wasn't entirely needed
       if (totalEvents < 0) {
@@ -58,8 +61,8 @@ object LatencyMetric extends Metric {
     val entry = history.from(cloudlet, consumer)
     entry match {
       case Some(consumerEntry) => {
-        val eventsPerProducer = ThroughputMetric.eventsPerProducer(query, consumer)
-        val minimumPerProducer = eventsPerProducer.map((entry) => (entry._1, minimumTime(entry._1, entry._2)))
+        val eventsPerProduceResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity)
+        val minimumPerProducer = eventsPerProduceResult.map((entry) => (entry._1, minimumTime(entry._1, entry._2)))
 
         consumerEntry.time - minimumPerProducer.values.min
       }

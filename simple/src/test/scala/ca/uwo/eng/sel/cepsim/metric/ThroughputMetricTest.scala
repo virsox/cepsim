@@ -48,10 +48,19 @@ class ThroughputMetricTest extends FlatSpec
   "The ThroughputMetric" should "give the correct value in a simple query" in new Fixture {
 
     val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
-    doReturn(10).when(c1).outputQueue
+    doReturn(100).when(c1).outputQueue
 
     val metric = ThroughputMetric.calculate(q, 5 seconds)
-    metric should be (2)
+    metric should be (20)
+  }
+
+
+  it should "give the same value if the sampling interval is smaller" in new Fixture {
+    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
+    doReturn(10).when(c1).outputQueue
+
+    val metric = ThroughputMetric.calculate(q, 500 milliseconds)
+    metric should be (20)
   }
 
 
