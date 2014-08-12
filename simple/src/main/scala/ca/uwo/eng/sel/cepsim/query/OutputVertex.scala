@@ -11,6 +11,8 @@ trait OutputVertex extends Vertex { //this: Vertex =>
   var selectivities: Map[Vertex, Double] = Map.empty
   var accumulators: Map[Vertex, Double] = Map.empty
 
+  var limits: Map[Vertex, Int] = Map.empty
+
   def initOutputQueues(successors: Set[Vertex]) = {
     successors.foreach(addOutputQueue(_))
   }
@@ -19,6 +21,11 @@ trait OutputVertex extends Vertex { //this: Vertex =>
     outputQueues = outputQueues + (v -> 0)
     selectivities = selectivities + (v -> selectivity)
     accumulators = accumulators + (v -> 0)
+    limits = limits + (v -> Int.MaxValue)
+  }
+
+  def setLimit(v: Vertex, limit: Int) = {
+    limits = limits updated (v, limit)
   }
 
   def dequeueFromOutput(pairs: (Vertex, Int)*) =
