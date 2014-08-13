@@ -8,7 +8,6 @@ import scala.collection.immutable.TreeMap
 trait InputVertex extends Vertex  { this: Vertex =>
 
   var inputQueues: Map[Vertex, Int] = TreeMap[Vertex, Int]()(Vertex.VertexIdOrdering)
-  //var inputSelectivities: Map[Vertex, Double] = Map.empty
 
 
   def initInputQueues(predecessors: Set[Vertex]) = {
@@ -19,13 +18,13 @@ trait InputVertex extends Vertex  { this: Vertex =>
     inputQueues = inputQueues + (v -> 0)
   }
 
-  def retrieveFromInput(instructions: Double): Map[Vertex, Int] = {
+  def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Int= Int.MaxValue): Map[Vertex, Int] = {
 
     // total number of input events
-    val totalInputEvents = totalFromMap(inputQueues)
+    val totalInputEvents = sumOfValues(inputQueues)
 
     // number of events that can be processed
-    val events = Math.min(totalInputEvents, Math.floor(instructions / ipe) toInt)
+    val events = totalInputEvents.min(Math.floor(instructions / ipe) toInt).min(maximumNumberOfEvents)
 
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
@@ -34,7 +33,7 @@ trait InputVertex extends Vertex  { this: Vertex =>
     )
 
     // events not processed due to rounding
-    var correctionFactor = events - toProcess.foldLeft(0)((sum, elem) => sum + elem._2)
+    var correctionFactor = events - sumOfValues(toProcess)
 
     // distribute the correction in round robin fashion among all input queues
     val iterator = inputQueues.keys.iterator

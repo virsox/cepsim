@@ -12,7 +12,7 @@ class EventConsumer(val id: String, val ipe: Double) extends Vertex
   var outputQueue = 0
 
   override def run(instructions: Double): Int = {
-    val processed = totalFromMap(retrieveFromInput(instructions))
+    val processed = sumOfValues(retrieveFromInput(instructions))
     outputQueue += processed
     processed
   }

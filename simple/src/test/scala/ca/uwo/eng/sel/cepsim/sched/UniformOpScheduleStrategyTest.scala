@@ -28,7 +28,6 @@ class UniformOpScheduleStrategyTest extends FlatSpec
     doReturn(Set(p1, p2, f1, f2, c1, c2)).when(placement).vertices
     doReturn(Iterator(p1, p2, f1, f2, c1, c2)).when(placement).iterator
 
-
     val strategy = UniformOpScheduleStrategy()
     val ret = strategy.allocate(1200, placement)
 

@@ -54,8 +54,44 @@ class JoinOperatorTest extends FlatSpec
 
     join.inputQueues should contain theSameElementsAs Set((p1, 0), (p2, 0) ,(p3, 0))
     join outputQueues c1 should be (10)
+  }
 
+  it should "correctly estimate the number of events that should be consumed" in new Fixture {
+    val join = JoinOperator("j1", 1, 0.1)
 
+    join addInputQueue(p1)
+    join addInputQueue(p2)
+    join addOutputQueue(c1)
+
+    join setLimit(c1, 10)
+    join enqueueIntoInput(p1, 500)
+    join enqueueIntoInput(p2, 20)
+
+    val ret = join estimation
+
+    ret(p1) should be (50)
+    ret(p2) should be (2)
+  }
+
+  it should "respect the bounds of all successor buffers" in new Fixture {
+    val join = JoinOperator("j1", 1, 0.01)
+    val c2 = EventConsumer("c2", 1)
+
+    join addInputQueue(p1)
+    join addInputQueue(p2)
+
+    join addOutputQueue(c1)
+    join addOutputQueue(c2)
+
+    join setLimit(c1, 50)
+    join setLimit(c2, 60)
+    join enqueueIntoInput(p1, 100)
+    join enqueueIntoInput(p2, 100)
+    join run (200)
+
+    join.inputQueues should contain theSameElementsAs(Set((p1, 30), (p2, 30)))
+    join.outputQueues(c1) should be (49)
+    join.outputQueues(c2) should be (49)
   }
 
 }

@@ -15,7 +15,7 @@ class Operator(val id: String, val ipe: Double) extends Vertex
   override def run(instructions: Double): Int = {
 
     // number of processed events
-    val events = totalFromMap(retrieveFromInput(instructions))
+    val events = sumOfValues(retrieveFromInput(instructions, maximumNumberOfEvents))
 
     sendToAllOutputs(events)
     events

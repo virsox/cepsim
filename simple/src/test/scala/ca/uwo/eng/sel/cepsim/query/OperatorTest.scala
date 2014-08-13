@@ -214,5 +214,61 @@ class OperatorTest extends FlatSpec
     op.outputQueues(n1) should be (1)
     op.outputQueues(n2) should be (5)
   }
+  // ---------------------------------------------------------------------------------------
+
+  "Any Operator" should "respect the bounds of the successor buffer" in new Fixture {
+    val op = Operator("s1", 10)
+
+    op.addInputQueue(p1)
+    op.addOutputQueue(n1)
+
+    op.setLimit(n1, 5)
+
+    enqueue(op, 10)
+    op.run(100)
+
+    assertInput(op, 5)
+    op.outputQueues(n1) should be(5)
+  }
+
+  it should "respect the bounds of all successors" in new Fixture {
+    val op = Operator("s1", 10)
+    val n2 = Operator("n2", 1)
+
+    op.addInputQueue(p1)
+    op.addOutputQueue(n1)
+    op.addOutputQueue(n2)
+
+    op.setLimit(n1, 5)
+    op.setLimit(n2, 3)
+
+    enqueue(op, 10)
+    op.run(100)
+
+    assertInput(op, 7)
+    op.outputQueues(n1) should be (3)
+    op.outputQueues(n2) should be (3)
+  }
+
+
+  it should "respect the bounds of all successors when they have selectivity" in new Fixture {
+    val op = Operator("s1", 10)
+    val n2 = Operator("n2", 1)
+
+    op.addInputQueue(p1)
+    op.addOutputQueue(n1, 0.5)
+    op.addOutputQueue(n2, 0.1)
+
+    op.setLimit(n1, 5) // op can process 10 events
+    op.setLimit(n2, 3) // op can process 30 events
+
+    enqueue(op, 100)
+    op.run(1000)
+
+    assertInput(op, 90)
+    op.outputQueues(n1) should be (5)
+    op.outputQueues(n2) should be (1)
+  }
+
 
 }

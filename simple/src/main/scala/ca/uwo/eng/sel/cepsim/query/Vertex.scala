@@ -20,8 +20,7 @@ trait Vertex {
 
   def compare(that: Vertex) = id.compare(that.id)
 
-  def totalFromMap(map: Map[Vertex, Int]): Int = map.foldLeft(0)((sum, elem) => sum + elem._2)
-
+  def sumOfValues(map: Map[Vertex, Int]): Int = map.foldLeft(0)((sum, elem) => sum + elem._2)
 
 
 }

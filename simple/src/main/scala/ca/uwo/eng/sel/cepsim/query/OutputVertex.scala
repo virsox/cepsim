@@ -28,6 +28,12 @@ trait OutputVertex extends Vertex { //this: Vertex =>
     limits = limits updated (v, limit)
   }
 
+  def maximumNumberOfEvents: Int = {
+    Math.floor(limits.map((elem) => (elem._1, elem._2 / selectivities(elem._1))).
+                      foldLeft(Double.MaxValue)((acc, elem) => acc.min(elem._2))).toInt
+  }
+
+
   def dequeueFromOutput(pairs: (Vertex, Int)*) =
     pairs.foreach {(pair) =>
       outputQueues = outputQueues updated(pair._1, outputQueues(pair._1) - pair._2)
