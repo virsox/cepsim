@@ -17,5 +17,5 @@ trait OpScheduleStrategy {
     * @return A list of pairs, in which the first element is a vertices and the second the number of
     *         instructions allocated to that vertex.
     */
-  def allocate(instructions: Double, placement: Placement): List[(Vertex, Double)]
+  def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)]
 }

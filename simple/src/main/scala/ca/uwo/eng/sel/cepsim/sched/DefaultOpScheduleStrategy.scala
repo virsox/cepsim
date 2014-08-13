@@ -12,7 +12,7 @@ import ca.uwo.eng.sel.cepsim.query.Vertex
   */
 class DefaultOpScheduleStrategy extends OpScheduleStrategy {
 
-  override def allocate(instructions: Double, placement: Placement): List[(Vertex, Double)] =  {
+  override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] =  {
 
     // allocate the same amount of instructions for each query
     val perQuery = instructions / placement.queries.size
@@ -30,7 +30,7 @@ class DefaultOpScheduleStrategy extends OpScheduleStrategy {
     }
 
     // build the return list
-    placement.iterator.map((v) => (v, instrPerOperator(v))).toList
+    placement.iterator.map((v) => (v, instrPerOperator(v)))
   }
 
 }

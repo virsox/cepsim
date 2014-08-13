@@ -37,7 +37,7 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Set(prod)).when(placement).producers
 
     val opSchedule = mock[OpScheduleStrategy]
-    doReturn(List((prod, 100000.0), (f1, 400000.0), (f2, 400000.0), (cons, 100000.0))).
+    doReturn(Iterator((prod, 100000.0), (f1, 400000.0), (f2, 400000.0), (cons, 100000.0))).
       when(opSchedule).
       allocate(1000000, placement)
 

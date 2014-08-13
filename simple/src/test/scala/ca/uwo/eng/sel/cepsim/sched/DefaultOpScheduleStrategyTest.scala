@@ -47,10 +47,10 @@ class DefaultOpScheduleStrategyTest  extends FlatSpec
 
     val ret = strategy.allocate(1000, placement)
 
-    ret should have size (3)
-    ret(0) should be ((p1, 100.0))
-    ret(1) should be ((f1, 800.0))
-    ret(2) should be ((c1, 100.0))
+    ret.next    should be ((p1, 100.0))
+    ret.next    should be ((f1, 800.0))
+    ret.next    should be ((c1, 100.0))
+    ret.hasNext should be (false)
   }
 
   it should "distribute instructions equally among queries" in new Fixture {
@@ -64,13 +64,14 @@ class DefaultOpScheduleStrategyTest  extends FlatSpec
     val strategy = new DefaultOpScheduleStrategy()
     val ret = strategy.allocate(1000, placement)
 
-    ret should have size (6)
-    ret(0) should be ((p1, 50.0))
-    ret(1) should be ((p2, 50.0))
-    ret(2) should be ((f1, 400.0))
-    ret(3) should be ((f2, 400.0))
-    ret(4) should be ((c1, 50.0))
-    ret(5) should be ((c2, 50.0))
+
+    ret.next    should be ((p1, 50.0))
+    ret.next    should be ((p2, 50.0))
+    ret.next    should be ((f1, 400.0))
+    ret.next    should be ((f2, 400.0))
+    ret.next    should be ((c1, 50.0))
+    ret.next    should be ((c2, 50.0))
+    ret.hasNext should be (false)
   }
 
   it should "sum contributions from all queries when an operator is shared" in new Fixture {
@@ -84,13 +85,13 @@ class DefaultOpScheduleStrategyTest  extends FlatSpec
     val strategy = new DefaultOpScheduleStrategy()
     val ret = strategy.allocate(1000, placement)
 
-    ret should have size (5)
-    ret(0) should be ((p1, 50.0))
-    ret(1) should be ((p2, 50.0))
-    ret(2) should be ((f1, 800.0))
-    ret(3) should be ((c1, 50.0))
-    ret(4) should be ((c2, 50.0))
 
+    ret.next    should be ((p1, 50.0))
+    ret.next    should be ((p2, 50.0))
+    ret.next    should be ((f1, 800.0))
+    ret.next    should be ((c1, 50.0))
+    ret.next    should be ((c2, 50.0))
+    ret.hasNext should be (false)
   }
 
 }
