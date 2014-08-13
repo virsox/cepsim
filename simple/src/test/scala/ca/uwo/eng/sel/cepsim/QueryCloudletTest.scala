@@ -34,6 +34,7 @@ class QueryCloudletTest extends FlatSpec
 
     val placement = mock[Placement]
     doReturn(vm).when(placement).vm
+    doReturn(Set(prod)).when(placement).producers
 
     val opSchedule = mock[OpScheduleStrategy]
     doReturn(List((prod, 100000.0), (f1, 400000.0), (f2, 400000.0), (cons, 100000.0))).
@@ -58,6 +59,7 @@ class QueryCloudletTest extends FlatSpec
     // the cloudlet should run all operators
     cloudlet run(1)
 
+    verify(prod).generate()
     verify(prod).run(100000)
     verify(f1).run(400000)
     verify(f2).run(400000)

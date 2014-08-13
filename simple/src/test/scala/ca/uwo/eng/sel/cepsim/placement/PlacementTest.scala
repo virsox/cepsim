@@ -59,7 +59,8 @@ class PlacementTest extends FlatSpec
     p.vertices     should be (Set(prod1, f1, cons1, prod2, cons2))
     p.vertices(q1) should be (Set(prod1, f1, cons1))
     p.vertices(q2) should be (Set(prod2, f1, cons2))
-    p.queries should be (Set(q1, q2))
+    p.producers    should be (Set(prod1, prod2))
+    p.queries      should be (Set(q1, q2))
   }
 
 

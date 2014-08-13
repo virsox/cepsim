@@ -30,16 +30,11 @@ class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
     tmpMap.toMap.withDefaultValue(Set.empty)
   }
 
-  def producers: Set[EventProducer] = {
-    var tmpProducers: Set[EventProducer] = Set.empty
-    vertices.foreach{case e: EventProducer => tmpProducers += e; case _ => ;}
-    tmpProducers
-  }
-  def consumers: Set[EventConsumer] = {
-    var tmpConsumers: Set[EventConsumer] = Set.empty
-    vertices.foreach{case e: EventConsumer => tmpConsumers += e; case _ => ;}
-    tmpConsumers
-  }
+  def producers: Set[EventProducer] =
+    vertices collect { case e: EventProducer => e }
+
+  def consumers: Set[EventConsumer] =
+    vertices collect { case e: EventConsumer => e }
 
   def addVertex(v0: Vertex) = addVertices(v0)
   def addVertices(vs: Vertex*) = {

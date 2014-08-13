@@ -2,6 +2,12 @@ package ca.uwo.eng.sel.cepsim.gen
 
 import scala.concurrent.duration.Duration
 
+/** UniformIncreaseGenerator companion object. */
+object UniformIncreaseGenerator {
+  def apply(increaseDuration: Duration, maxRate: Double, samplingInterval: Duration) =
+    new UniformIncreaseGenerator(increaseDuration, maxRate, samplingInterval)
+}
+
 /**
  * Event generator in which the generation rates increase uniformly during a period, until it reaches
  * a maximum rate. From this period until the end of the simulation, the generation rate is kept at
@@ -12,7 +18,7 @@ import scala.concurrent.duration.Duration
  * @param samplingInterval  The simulation tick.
  */
 class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Double,
-    val samplingInterval: Duration) extends Generator {
+  samplingInterval: Duration) extends AbstractGenerator(samplingInterval) {
 
   /** Alias. */
   type Point = (Double, Double)
@@ -32,14 +38,8 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
   /** Multiplier used during the rate growth period. */
   val multiplier = maxRateInMs / durationInMs
 
-  /** Current calculated average */
-  var currentAvg = 0.0
-
-  /** Number of invocations*/
-  var invocations = 0
-
   
-  override def generate(): Int = {
+  override def doGenerate(): Int = {
     val nextPos = currentPos + intervalInMs
     var area = 0.0
     
@@ -48,10 +48,10 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
 
       // the sampling interval starts at the increasing part, and ends at the constant part
       if (nextPos > durationInMs) {
-        area = (trapezoidArea((currentPos, 0), (currentPos, multiplier * currentPos),
+        area =  trapezoidArea((currentPos, 0), (currentPos, multiplier * currentPos),
                               (durationInMs, 0), (durationInMs, maxRateInMs)) +
                 rectangleArea((durationInMs, 0), (durationInMs, maxRateInMs),
-                              (nextPos, 0), (nextPos, maxRateInMs)))                
+                              (nextPos, 0), (nextPos, maxRateInMs))
         
       } else {
         area = trapezoidArea((currentPos, 0), (currentPos, multiplier * currentPos),
@@ -66,14 +66,8 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
     }
     currentPos = nextPos
 
-    val sampleAvg = area / samplingInterval.toSeconds
-    currentAvg = ((invocations * currentAvg) + sampleAvg) / (invocations + 1)
-    invocations = invocations + 1
-
-    area toInt
+    area.toInt
   }
-
-  override def average: Double = currentAvg
 
   /**
     * Calculates the area of a triangle rectangle. It assumes the following vertices parameters:

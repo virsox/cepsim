@@ -34,6 +34,11 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     val instructionsPerMs = (placement.vm.mips * 1000)
     def totalMs(number: Double) = number / instructionsPerMs
 
+    // generate the events before calling the scheduling strategy
+    // in theory this enables more complex strategies that consider the number of
+    // events to be consumed
+    placement.producers foreach(_.generate())
+
     val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
     val history = History()
     var time = startTime

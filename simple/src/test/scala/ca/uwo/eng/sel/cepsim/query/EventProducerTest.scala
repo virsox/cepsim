@@ -25,8 +25,16 @@ class EventProducerTest extends FlatSpec
     prod addOutputQueue (n1)
   }
 
-  "An EventProducer" should "generate events and put in the output queue" in new Fixture {
-    prod.run(1000)
+  "An EventProducer" should "generate events and put in the input queue" in new Fixture {
+    prod.generate()
+
+    verify(generator).generate()
+    prod.inputQueue should be (100)
+  }
+
+  it should "process events and put them in the output queue" in new Fixture {
+    prod.generate()
+    prod.run(100)
 
     verify(generator).generate()
     prod.inputQueue should be (0)
@@ -34,6 +42,7 @@ class EventProducerTest extends FlatSpec
   }
 
   it should "generate events and put half of them in the output queue" in new Fixture {
+    prod.generate()
     prod.run(50)
 
     verify(generator).generate()
