@@ -17,7 +17,7 @@ class EventConsumerTest extends FlatSpec
   trait Fixture {
     import org.mockito.Matchers._
 
-    val cons1 = new EventConsumer("c1", 1)
+    val cons1 = EventConsumer("c1", 1)
 
     val op1 = mock[Operator]
     val op2 = mock[Operator]

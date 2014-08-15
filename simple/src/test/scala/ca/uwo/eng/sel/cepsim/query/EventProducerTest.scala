@@ -2,6 +2,7 @@ package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import org.junit.runner.RunWith
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
@@ -17,9 +18,11 @@ class EventProducerTest extends FlatSpec
 
   trait Fixture {
     val generator = mock[Generator]
-    doReturn(100).when(generator).generate()
+    val value: Int = 10000
+    doReturn(100).when(generator).generate(anyInt())
 
-    val prod = new EventProducer("p1", 1, generator)
+
+    val prod = EventProducer("p1", 1, generator)
     val query = mock[Query]
     val n1 = mock[Operator]
     prod addOutputQueue (n1)
@@ -28,7 +31,7 @@ class EventProducerTest extends FlatSpec
   "An EventProducer" should "generate events and put in the input queue" in new Fixture {
     prod.generate()
 
-    verify(generator).generate()
+    verify(generator).generate(anyInt())
     prod.inputQueue should be (100)
   }
 
@@ -36,7 +39,7 @@ class EventProducerTest extends FlatSpec
     prod.generate()
     prod.run(100)
 
-    verify(generator).generate()
+    verify(generator).generate(anyInt())
     prod.inputQueue should be (0)
     prod.outputQueues(n1) should be (100)
   }
@@ -45,7 +48,7 @@ class EventProducerTest extends FlatSpec
     prod.generate()
     prod.run(50)
 
-    verify(generator).generate()
+    verify(generator).generate(anyInt())
     prod.inputQueue should be (50)
     prod.outputQueues(n1) should be (50)
   }

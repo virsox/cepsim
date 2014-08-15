@@ -1,13 +1,13 @@
 package ca.uwo.eng.sel.cepsim.query
 
 object JoinOperator {
-  def apply(id: String, ipe: Double, reduction: Double) =
-    new JoinOperator(id, ipe, reduction)
+  def apply(id: String, ipe: Double, reduction: Double, queueMaxSize: Int = 0) =
+    new JoinOperator(id, ipe, reduction, queueMaxSize)
 
 }
 
-class JoinOperator(override val id: String, override val ipe: Double, val reduction: Double)
-    extends Operator(id, ipe)
+class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize: Int)
+    extends Operator(id, ipe, queueMaxSize)
     with InputVertex
     with OutputVertex {
 

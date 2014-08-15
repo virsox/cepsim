@@ -1,13 +1,13 @@
-package ca.uwo.eng.sel.cepsim
+package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.metric.History
 import ca.uwo.eng.sel.cepsim.metric.History.Entry
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.query.{Query, EventConsumer, Operator, EventProducer}
+import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
+import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
 import org.junit.runner.RunWith
-import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -19,12 +19,11 @@ import scala.concurrent.duration._
  * Created by virso on 2014-07-23.
  */
 @RunWith(classOf[JUnitRunner])
-class QueryCloudletIntegrationTest extends FlatSpec
-  with Matchers
-  with MockitoSugar {
+class QueryCloudletTest extends FlatSpec
+  with Matchers {
 
   trait Fixture {
-    val gen = new UniformGenerator(100000, 1 second)
+    val gen = UniformGenerator(100000, 1 second)
 
     val prod1 = EventProducer("p1", 1000, gen)
     val f1 = Operator("f1", 4000)
@@ -40,7 +39,7 @@ class QueryCloudletIntegrationTest extends FlatSpec
   "A QueryCloudlet" should "send events through the operator graph" in new Fixture {
 
 
-    import History._
+    import ca.uwo.eng.sel.cepsim.metric.History._
 
     // cloudlet going to use 10 millions instructions (10 ms)
     var cloudlet = QueryCloudlet("c1", Placement(query1, vm), new DefaultOpScheduleStrategy(), 0.0)
@@ -69,10 +68,10 @@ class QueryCloudletIntegrationTest extends FlatSpec
   }
 
   it should "run all queries in the placement" in new Fixture {
-    val prod2 = new EventProducer("p2", 1000, gen)
+    val prod2 = EventProducer("p2", 1000, gen)
     val f3 = Operator("f3", 4000)
     val f4 = Operator("f4", 4000)
-    val cons2 = new EventConsumer("c2", 1000)
+    val cons2 = EventConsumer("c2", 1000)
     var query2 = Query(Set(prod2, f3, f4, cons2), Set((prod2, f3, 1.0), (f3, f4, 1.0), (f4, cons2, 0.1)))
 
     val placement = Placement(query1.vertices ++ query2.vertices, vm)

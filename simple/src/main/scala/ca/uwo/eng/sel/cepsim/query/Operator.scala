@@ -2,10 +2,11 @@ package ca.uwo.eng.sel.cepsim.query
 
 
 object Operator {
-  def apply(id: String, ipe: Double) = new Operator(id, ipe)//, selectivity: Double = 1.0) =
+  def apply(id: String, ipe: Double, queueMaxSize: Int = 0) =
+    new Operator(id, ipe, queueMaxSize)//, selectivity: Double = 1.0) =
 }
 
-class Operator(val id: String, val ipe: Double) extends Vertex
+class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends Vertex
   with InputVertex
   with OutputVertex {
 

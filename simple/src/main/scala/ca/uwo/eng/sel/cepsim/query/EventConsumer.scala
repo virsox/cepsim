@@ -2,11 +2,11 @@ package ca.uwo.eng.sel.cepsim.query
 
 
 object EventConsumer {
-  def apply(id: String, ipe: Double) = new EventConsumer(id, ipe)
+  def apply(id: String, ipe: Double, queueMaxSize: Int = 0) = new EventConsumer(id, ipe, queueMaxSize)
 }
 
 
-class EventConsumer(val id: String, val ipe: Double) extends Vertex
+class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) extends Vertex
   with InputVertex {
 
   var outputQueue = 0

@@ -3,22 +3,24 @@ package ca.uwo.eng.sel.cepsim.query
 import ca.uwo.eng.sel.cepsim.gen.Generator
 
 object EventProducer {
-  def apply(id: String, ipe: Double, gen: Generator) = new EventProducer(id, ipe, gen)
+  def apply(id: String, ipe: Double, gen: Generator, limitProducer: Boolean = false) =
+    new EventProducer(id, ipe, gen, limitProducer)
 }
 
-class EventProducer(val id: String, val ipe: Double, val generator: Generator) extends Vertex
-  with OutputVertex {
+class EventProducer(val id: String, val ipe: Double, val generator: Generator, limitProducer: Boolean)
+  extends Vertex with OutputVertex {
 
   var inputQueue = 0
 
   def generate() {
-    inputQueue += generator.generate()
+    if (limitProducer) inputQueue += generator.generate(maximumNumberOfEvents)
+    else inputQueue += generator.generate()
   }
 
   def run(instructions: Double): Int = {
 
     val maxOutput = (instructions / ipe) toInt
-    val processed = Math.min(inputQueue, maxOutput)
+    val processed = inputQueue.min(maxOutput).min(maximumNumberOfEvents)
 
     inputQueue -= processed
     sendToAllOutputs(processed)

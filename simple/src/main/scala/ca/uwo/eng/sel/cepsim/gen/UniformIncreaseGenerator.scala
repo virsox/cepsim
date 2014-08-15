@@ -5,7 +5,7 @@ import scala.concurrent.duration.Duration
 /** UniformIncreaseGenerator companion object. */
 object UniformIncreaseGenerator {
   def apply(increaseDuration: Duration, maxRate: Double, samplingInterval: Duration) =
-    new UniformIncreaseGenerator(increaseDuration, maxRate, samplingInterval)
+    new UniformIncreaseGenerator(increaseDuration, maxRate, samplingInterval.toMillis)
 }
 
 /**
@@ -15,10 +15,11 @@ object UniformIncreaseGenerator {
  *
  * @param increaseDuration Period of time when the generation rate increases.
  * @param maxRate Maximum generation rate (in events per second).
- * @param samplingInterval  The simulation tick.
+ * @param samplingInterval Simulation interval in milliseconds
  */
 class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Double,
-  samplingInterval: Duration) extends AbstractGenerator(samplingInterval) {
+                               override val samplingInterval: Long)
+  extends Generator {
 
   /** Alias. */
   type Point = (Double, Double)
@@ -32,15 +33,11 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
   /** The increaseDuration converted to milliseconds */
   val durationInMs = increaseDuration.toMillis
 
-  /** The simulation tick converted to milliseconds. */
-  val intervalInMs = samplingInterval.toMillis
-
   /** Multiplier used during the rate growth period. */
   val multiplier = maxRateInMs / durationInMs
 
-  
   override def doGenerate(): Int = {
-    val nextPos = currentPos + intervalInMs
+    val nextPos = currentPos + samplingInterval
     var area = 0.0
     
     // Position still is at the increasing part of the graph

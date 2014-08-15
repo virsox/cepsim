@@ -9,6 +9,9 @@ trait InputVertex extends Vertex  { this: Vertex =>
 
   var inputQueues: Map[Vertex, Int] = TreeMap[Vertex, Int]()(Vertex.VertexIdOrdering)
 
+  val queueMaxSize: Int
+  def isBounded() = queueMaxSize > 0
+
 
   def initInputQueues(predecessors: Set[Vertex]) = {
     predecessors.foreach(addInputQueue(_))

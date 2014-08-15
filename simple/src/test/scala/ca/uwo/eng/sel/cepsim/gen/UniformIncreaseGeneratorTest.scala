@@ -11,7 +11,7 @@ class UniformIncreaseGeneratorTest extends FlatSpec
 	with Matchers {
 
   "A UniformIncreaseGenerator" should "have two distinct regions" in {
-    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    val generator = UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
     
     // first region is the triangle with vertices (0, 0), (10, 0), (10, 20)    
     // --- first sample is the triangle (0, 0), (5, 0), (5, 10)
@@ -31,7 +31,7 @@ class UniformIncreaseGeneratorTest extends FlatSpec
   
   
   it should "give the correct values even when a sample encompasses both regions" in {
-    val generator = new UniformIncreaseGenerator(10 seconds, 20, 6 seconds)
+    val generator = UniformIncreaseGenerator(10 seconds, 20, 6 seconds)
     
     generator.generate() should be (36)    
     generator.generate() should be (104)
@@ -39,14 +39,14 @@ class UniformIncreaseGeneratorTest extends FlatSpec
   }
 
   it should "calculate the correct average if only the increasing region is used" in {
-    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    val generator = UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
     generator.generate()
     generator.generate()
     generator.average should be (10)
   }
 
   it should "calculate the correct average if both regions are used" in {
-    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    val generator = UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
 
     generator.generate()
     generator.generate()
@@ -56,7 +56,7 @@ class UniformIncreaseGeneratorTest extends FlatSpec
   }
 
   it should "have an average close to the maxRate if is used for a long time" in {
-    val generator = new UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
+    val generator = UniformIncreaseGenerator(10 seconds, 20, 5 seconds)
     for (i <- 1 to 100000) generator.generate()
 
     generator.average shouldBe 20.0 +- 0.1

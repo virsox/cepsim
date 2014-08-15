@@ -51,8 +51,8 @@ class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
 //    newQuery
   }
 
-  def predecessors(v: Vertex): Set[Vertex] = incomingEdges(v).map(_.from)
-  def successors(v: Vertex): Set[Vertex] = outgoingEdges(v).map(_.to)
+  def predecessors(v: Vertex): Set[OutputVertex] = incomingEdges(v).map(_.from.asInstanceOf[OutputVertex])
+  def successors(v: Vertex): Set[InputVertex] = outgoingEdges(v).map(_.to.asInstanceOf[InputVertex])
   def edges(v: Vertex): Set[Edge] = outgoingEdges(v)
   def edge(from: Vertex, to: Vertex): Edge = outgoingEdges(from).find(_.to == to) match {
     case Some(e) => e

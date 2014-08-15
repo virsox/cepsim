@@ -46,25 +46,36 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     verticesList.foreach{(elem) =>
 
       val v: Vertex = elem._1
+      var processedEvents = 0
       if (v.isInstanceOf[InputVertex]) {
 
+        val iv = v.asInstanceOf[InputVertex]
+
         // predecessors from all queries
-        val predecessors = v.queries.flatMap(_.predecessors(v))
+        val predecessors = iv.queries.flatMap(_.predecessors(v))
         predecessors.foreach{(pred) =>
-          var events = 0
-          pred match {
-            case out: OutputVertex => {
-              events = out.outputQueues(v)
-              out.dequeueFromOutput((v, events))
-            }
-            case _ =>
-          }
-          v.asInstanceOf[InputVertex].enqueueIntoInput(pred, events)
+          val events = pred.outputQueues(iv)
+          pred.dequeueFromOutput((iv, events))
+          iv.enqueueIntoInput(pred, events)
         }
+
+        processedEvents = iv.run(elem._2)
+
+        if (iv.isBounded()) {
+          predecessors.foreach {(pred) =>
+            pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
+          }
+        }
+
+
+      } else {
+        processedEvents = v.run(elem._2)
       }
-      val events = v.run(elem._2)
-      history.log(id, time, v, events)
+
+      history.log(id, time, v, processedEvents)
       time += totalMs(elem._2)
+
+
     }
     history
   }

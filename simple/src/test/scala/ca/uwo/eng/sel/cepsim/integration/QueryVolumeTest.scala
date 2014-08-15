@@ -1,14 +1,14 @@
-package ca.uwo.eng.sel.cepsim
-
-import ca.uwo.eng.sel.cepsim.metric.{LatencyMetric, ThroughputMetric}
-import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
-
-import scala.concurrent.duration._
+package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.query.{Query, EventConsumer, Operator, EventProducer}
+import ca.uwo.eng.sel.cepsim.metric.{LatencyMetric, ThroughputMetric}
+import ca.uwo.eng.sel.cepsim.placement.Placement
+import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
+import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
 import org.scalatest.FlatSpec
+
+import scala.concurrent.duration._
 
 /**
  * Created by virso on 2014-08-10.
