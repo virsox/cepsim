@@ -21,18 +21,20 @@ trait InputVertex extends Vertex  { this: Vertex =>
     inputQueues = inputQueues + (v -> 0)
   }
 
+  def totalInputEvents = sumOfValues(inputQueues)
+
   def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Int= Int.MaxValue): Map[Vertex, Int] = {
 
     // total number of input events
-    val totalInputEvents = sumOfValues(inputQueues)
+    val total = totalInputEvents
 
     // number of events that can be processed
-    val events = totalInputEvents.min(Math.floor(instructions / ipe) toInt).min(maximumNumberOfEvents)
+    val events = total.min(Math.floor(instructions / ipe) toInt).min(maximumNumberOfEvents)
 
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
     var toProcess = inputQueues.map(elem =>
-      (elem._1 -> Math.floor( (elem._2.toDouble / totalInputEvents) * events ).toInt)
+      (elem._1 -> Math.floor( (elem._2.toDouble / total) * events ).toInt)
     )
 
     // events not processed due to rounding

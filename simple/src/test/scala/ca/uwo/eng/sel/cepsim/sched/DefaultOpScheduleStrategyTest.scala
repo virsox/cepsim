@@ -12,7 +12,7 @@ import org.scalatest.junit.JUnitRunner
  * Created by virso on 2014-07-23.
  */
 @RunWith(classOf[JUnitRunner])
-class DefaultOpScheduleStrategyTest  extends FlatSpec
+class DefaultOpScheduleStrategyTest extends FlatSpec
   with Matchers
   with MockitoSugar {
 
