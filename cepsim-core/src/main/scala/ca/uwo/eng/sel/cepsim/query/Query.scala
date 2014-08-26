@@ -1,22 +1,39 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import scala.collection.mutable.Queue
+import java.util.{Map => JavaMap}
+import java.util.{Set => JavaSet}
+import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConversions.mapAsScalaMap
 
 
 object Query {
-  def apply(vs: Set[Vertex], es: Set[(OutputVertex, InputVertex, Double)]) = {
-    val q = new Query()
+  
+  def apply(vs: JavaSet[Vertex], es: JavaSet[(OutputVertex, InputVertex, Double)], duration: Long): Query =
+    apply(asScalaSet(vs).toSet, asScalaSet(es).toSet, duration)
+  
+  
+  def apply(vs: Set[Vertex], es: Set[(OutputVertex, InputVertex, Double)], duration: Long = Long.MaxValue): Query = {
+    val q = new Query(Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], duration)
     q addVertices(vs.toSeq:_*)
-    q addEdges(es toSeq:_*)
+    q addEdges(es.toSeq:_*)
     q
   }
 }
 
 
-class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]]) {
-
-  private [query] def this() = this(Set.empty, Map.empty)
+// TODO can i make this constructor private?
+class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]], val duration: Long) {
+//
+  private [query] def this() = this(Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], Long.MaxValue)
   
+  def this(v: JavaSet[Vertex], e: JavaMap[Vertex, JavaSet[Edge]], duration: Long) = 
+      this(asScalaSet(v).toSet,
+           mapAsScalaMap(e).toMap.map((elem) => (elem._1, asScalaSet(elem._2).toSet[Edge])),
+           duration)
+  
+
+
   var vertices: Set[Vertex] = v
   private var outgoingEdges: Map[Vertex, Set[Edge]] = e withDefaultValue(Set.empty)
   private var incomingEdges: Map[Vertex, Set[Edge]] = {

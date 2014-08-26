@@ -6,11 +6,11 @@ import ca.uwo.eng.sel.cepsim.query.Query
 /***
   * Implementation of operator placement strategy that allocates all vertices to the
   * same virtual machine.
-  * @param vm VM to which the vertices should be allocated.
+  * @param vmId Id of the VM to which the vertices should be allocated.
   */
-class SingleVmOpPlacementStrategy(vm: Vm) extends OpPlacementStrategy {
+class SingleVmOpPlacementStrategy(vmId: Int) extends OpPlacementStrategy {
 
   override def execute(queries: Query*): Set[Placement] = {
-    Set(Placement(queries flatMap { _.vertices } toSet, vm))
+    Set(Placement(queries.flatMap{ _.vertices }.toSet, vmId))
   }
 }

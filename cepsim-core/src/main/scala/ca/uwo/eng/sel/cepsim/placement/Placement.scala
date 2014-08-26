@@ -5,20 +5,23 @@ import ca.uwo.eng.sel.cepsim.query.{EventProducer, Query, Vertex}
 
 import scala.collection.mutable.Queue
 
+import java.util.{Set => JavaSet}
+import scala.collection.JavaConversions.asScalaSet
+
 /** Companion Placement object */
 object Placement {
-  def withQueries(queries: Set[Query], vm: Vm): Placement = new Placement(queries.flatMap(_.vertices), vm)
-
-  def apply(q: Query, vm: Vm): Placement = new Placement(q.vertices, vm)
-  def apply(vertices: Set[Vertex], vm: Vm): Placement = new Placement(vertices, vm)
+  def withQueries(queries: JavaSet[Query], vmId: Int): Placement = Placement.withQueries(asScalaSet(queries).toSet, vmId)
+  def withQueries(queries: Set[Query], vmId: Int): Placement = new Placement(queries.flatMap(_.vertices), vmId)
+  def apply(q: Query, vmId: Int): Placement = new Placement(q.vertices, vmId)
+  def apply(vertices: Set[Vertex], vmId: Int): Placement = new Placement(vertices, vmId)
 }
 
 /** *
   * Represents a placement of query vertices into a virtual machine.
   * @param vertices Set of vertices from this placement.
-  * @param vm Virtual machine to which the vertices are assigned.
+  * @param vmId Id of the Virtual machine to which the vertices are assigned.
   */
-class Placement(val vertices: Set[Vertex], val vm: Vm) extends Iterable[Vertex] {
+class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Vertex] {
 
   /** Map of queries to all vertices in this placement */
   var queryVerticesMap: Map[Query, Set[Vertex]] = Map.empty withDefaultValue Set.empty
@@ -33,7 +36,7 @@ class Placement(val vertices: Set[Vertex], val vm: Vm) extends Iterable[Vertex] 
     * @param v Vertex to be added.
     * @return New placement with the vertex added.
     */
-  def addVertex(v: Vertex): Placement = new Placement(vertices + v, vm)
+  def addVertex(v: Vertex): Placement = new Placement(vertices + v, vmId)
 
   /**
     * Get all queries that have at least one vertex in this placement.
@@ -48,6 +51,15 @@ class Placement(val vertices: Set[Vertex], val vm: Vm) extends Iterable[Vertex] 
     */
   def vertices(q: Query): Set[Vertex] = queryVerticesMap(q)
 
+  /**
+    * Get the execution duration of this placement (in seconds). It is calculated
+    * as the maximum duration of all queries that belong to this placement.
+    * @return Execution duration of this placement
+    */
+  def duration: Long = queries.foldLeft(0L){(max, query) =>
+    (query.duration.max(max))
+  }
+  
   /**
     * Get all event producers in this placement.
     * @return all event producers in this placement.

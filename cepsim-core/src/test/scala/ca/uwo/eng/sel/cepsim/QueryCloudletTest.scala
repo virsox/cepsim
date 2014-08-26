@@ -33,7 +33,7 @@ class QueryCloudletTest extends FlatSpec
     doReturn(1.0).when(vm).mips
 
     val placement = mock[Placement]
-    doReturn(vm).when(placement).vm
+    doReturn(1).when(placement).vmId
     doReturn(Set(prod)).when(placement).producers
 
     val opSchedule = mock[OpScheduleStrategy]
@@ -45,7 +45,7 @@ class QueryCloudletTest extends FlatSpec
 
 
   "A QueryCloudlet" should "correctly run all operators" in new Fixture {
-    val cloudlet = new QueryCloudlet("c1", placement, opSchedule, 0.0)
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule) //, 0.0)
 
 
     doReturn(Set(prod)).when(q).predecessors(f1)
@@ -57,7 +57,7 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Map.empty withDefaultValue(0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
-    cloudlet run(1)
+    cloudlet run(1000000, 0.0, 1)
 
     verify(prod).generate()
     verify(prod).run(100000)

@@ -20,7 +20,7 @@ class BoundedQueryCloudletTest extends FlatSpec
   with Matchers {
 
   trait Fixture {
-    val gen = UniformGenerator(100000, 10 milliseconds)
+    val gen = UniformGenerator(100000, 10.milliseconds)
 
     val prod1 = EventProducer("p1", 1000, gen, true)
     val f1 = Operator("f1", 2500, 1000)
@@ -29,19 +29,19 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     var query1 = Query(Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 0.5), (f2, cons1, 0.1)))
 
-    val vm = Vm("vm1", 1000) // 1 billion instructions per second
+    //val vm = Vm("vm1", 1000) // 1 billion instructions per second
 
   }
 
   "A QueryCloudlet" should "respect the buffer bounds" in new Fixture {
-    val placement = Placement(query1, vm)
+    val placement = Placement(query1, 1)
     val schedStrategy = UniformOpScheduleStrategy()
-    var cloudlet = QueryCloudlet("c1", placement, schedStrategy, 0.0)
+    var cloudlet = QueryCloudlet("c1", placement, schedStrategy) //, 0.0)
 
     // 10 millions instructions ~ 10 milliseconds
     // 1000 events will be generated per simulation tick
     // each operator will use 2.5 millions instructions
-    val h = cloudlet run (10)
+    val h = cloudlet.run(10000000, 0.0, 1000)
 
 
     prod1.outputQueues(f1) should be(0)
@@ -60,8 +60,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     // SECOND ITERATION
     // --------------------------------------------------------------------------
 
-    var cloudlet2 = QueryCloudlet("c2", placement, schedStrategy, 10.0)
-    cloudlet2.run(10)
+    //var cloudlet2 = QueryCloudlet("c2", placement, schedStrategy, 10.0)
+    cloudlet.run(10000000, 10.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -75,8 +75,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     // --------------------------------------------------------------------------
     // THIRD ITERATION
     // --------------------------------------------------------------------------
-    var cloudlet3 = QueryCloudlet("c3", placement, schedStrategy, 20.0)
-    cloudlet3.run(10)
+    //var cloudlet3 = QueryCloudlet("c3", placement, schedStrategy, 20.0)
+    cloudlet.run(10000000, 20.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -90,8 +90,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     // --------------------------------------------------------------------------
     // FOURTH ITERATION
     // --------------------------------------------------------------------------
-    var cloudlet4 = QueryCloudlet("c4", placement, schedStrategy, 30.0)
-    cloudlet4.run(10)
+    //var cloudlet4 = QueryCloudlet("c4", placement, schedStrategy, 30.0)
+    cloudlet.run(10000000, 30.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -105,8 +105,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     // --------------------------------------------------------------------------
     // FIFTH ITERATION
     // --------------------------------------------------------------------------
-    var cloudlet5 = QueryCloudlet("c5", placement, schedStrategy, 30.0)
-    cloudlet5.run(10)
+    //var cloudlet5 = QueryCloudlet("c5", placement, schedStrategy, 30.0)
+    cloudlet.run(10000000, 40.0, 1000)
 
     prod1.outputQueues(f1) should be(0) // f2 buffer can only store more 872 events
     prod1.inputQueue       should be(0)

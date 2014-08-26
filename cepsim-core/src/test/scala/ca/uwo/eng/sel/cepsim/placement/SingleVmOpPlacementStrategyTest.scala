@@ -14,8 +14,8 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
 	with MockitoSugar {
 
   "A SimpleOpPlacementStrategy" should "place all operators in the same VM" in {
-    val vm = mock[Vm]
-    val strategy = new SingleVmOpPlacementStrategy(vm)
+    //val vm = mock[Vm]
+    val strategy = new SingleVmOpPlacementStrategy(1)
     val prod1, prod2 = mock[EventProducer]
     val f1, f2 = mock[Operator]
     val cons1, cons2 = mock[EventConsumer]

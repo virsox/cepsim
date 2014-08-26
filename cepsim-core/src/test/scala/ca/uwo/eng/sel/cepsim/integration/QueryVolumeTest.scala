@@ -17,7 +17,7 @@ class QueryVolumeTest extends FlatSpec {
 
   "A cloudlet" should "run many queries simultaneously" in {
     val vm = Vm("vm1", 1000) // 1 billion instructions per second
-    val gen = UniformGenerator(25000, 10 milliseconds)
+    val gen = UniformGenerator(25000, 10.milliseconds)
 
 
     val MAX_QUERIES = 20
@@ -37,13 +37,13 @@ class QueryVolumeTest extends FlatSpec {
 
     for (i <- 1 to MAX_ITERATIONS) {
       val cloudletName = s"c${i}"
-      val cloudlet = QueryCloudlet(cloudletName, Placement.withQueries(queries.values.toSet, vm),
-        new DefaultOpScheduleStrategy(), (i - 1) * INTERVAL)
+      val cloudlet = QueryCloudlet(cloudletName, Placement.withQueries(queries.values.toSet, 1),
+        new DefaultOpScheduleStrategy())//, (i - 1) * INTERVAL)
 
-      val h1 = cloudlet run (INTERVAL) // 10 million instructions ~ 10 milliseconds
+      val h1 = cloudlet run (INTERVAL * 1000000, (i - 1) * INTERVAL, 10) // 10 million instructions ~ 10 milliseconds
 
       val cons = queries(1).consumers.iterator.next
-      val t = ThroughputMetric.calculate(queries(1), (i * INTERVAL) milliseconds)
+      val t = ThroughputMetric.calculate(queries(1), (i * INTERVAL).milliseconds)
       val l = LatencyMetric.calculate(queries(1), h1, s"c${i}", cons)
       println(f"Iteration [${i}%d]: Size = ${cons.outputQueue}%d, T = ${t}%.2f, L = ${l}%.4f")
     }

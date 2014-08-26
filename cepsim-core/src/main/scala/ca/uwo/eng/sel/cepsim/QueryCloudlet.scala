@@ -9,11 +9,11 @@ import scala.concurrent.duration.Duration
 
 
 object QueryCloudlet {
-  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, startTime: Double) =
-    new QueryCloudlet(id, placement, opSchedStrategy, startTime)
+  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy) = //, startTime: Double) =
+    new QueryCloudlet(id, placement, opSchedStrategy) //, startTime)
 }
 
-class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy, val startTime: Double) {
+class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy) { //, val startTime: Double) {
 
   // a cloudlet should be  stateless
   // for each interval, a cloudlet will represent the execution of all queries allocated
@@ -22,61 +22,61 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
 
 
-  /** *
+  /**
     *
-    * @param instructions Number of instructions (in millions)
+    * @param instructions Number of instructions that can be used in this simulation tick.
+    * @param startTime The current simulation time.
+    * @param capacity The total processor capacity (in MIPS) that is allocated to this cloudlet.
     * @return
     */
-  def run(instructions: Double): History = {
-
-    val availableInstructions = instructions * 1000000
-
-    val instructionsPerMs = (placement.vm.mips * 1000)
-    def totalMs(number: Double) = number / instructionsPerMs
-
-    // generate the events before calling the scheduling strategy
-    // in theory this enables more complex strategies that consider the number of
-    // events to be consumed
-    placement.producers foreach(_.generate())
-
-    val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
+  def run(instructions: Double, startTime: Double, capacity: Double): History = {
     val history = History()
-    var time = startTime
+    if (instructions > 0) {
+      
+      val availableInstructions = instructions 
+      val instructionsPerMs = (capacity * 1000)
+      def totalMs(number: Double) = number / instructionsPerMs
 
-    verticesList.foreach{(elem) =>
+      // generate the events before calling the scheduling strategy
+      // in theory this enables more complex strategies that consider the number of
+      // events to be consumed
+      placement.producers foreach(_.generate())
 
-      val v: Vertex = elem._1
-      var processedEvents = 0
-      if (v.isInstanceOf[InputVertex]) {
+      val verticesList = opSchedStrategy.allocate(availableInstructions, placement)    
+      var time = startTime
 
-        val iv = v.asInstanceOf[InputVertex]
+      verticesList.foreach{(elem) =>
 
-        // predecessors from all queries
-        val predecessors = iv.queries.flatMap(_.predecessors(v))
-        predecessors.foreach{(pred) =>
-          val events = pred.outputQueues(iv)
-          pred.dequeueFromOutput((iv, events))
-          iv.enqueueIntoInput(pred, events)
-        }
+        val v: Vertex = elem._1
+        var processedEvents = 0
+        if (v.isInstanceOf[InputVertex]) {
 
-        processedEvents = iv.run(elem._2)
+          val iv = v.asInstanceOf[InputVertex]
 
-        if (iv.isBounded()) {
-          predecessors.foreach {(pred) =>
-            pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
+          // predecessors from all queries
+          val predecessors = iv.queries.flatMap(_.predecessors(v))
+          predecessors.foreach{(pred) =>
+            val events = pred.outputQueues(iv)
+            pred.dequeueFromOutput((iv, events))
+            iv.enqueueIntoInput(pred, events)
           }
+          processedEvents = iv.run(elem._2)
+
+          if (iv.isBounded()) {
+            predecessors.foreach {(pred) =>
+              pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
+            }
+          }
+
+        } else {
+          processedEvents = v.run(elem._2)
         }
 
-
-      } else {
-        processedEvents = v.run(elem._2)
-      }
-
-      history.log(id, time, v, processedEvents)
-      time += totalMs(elem._2)
-
-
-    }
+        history.log(id, time, v, processedEvents)
+        time += totalMs(elem._2)
+      }      
+    } 
+    
     history
   }
 

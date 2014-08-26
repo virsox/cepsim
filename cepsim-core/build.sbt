@@ -2,7 +2,7 @@ name := "cep-simulator-simple"
 
 version := "1.0.0"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 
