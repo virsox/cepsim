@@ -9,12 +9,12 @@ import scala.collection.JavaConversions.mapAsScalaMap
 
 object Query {
   
-  def apply(vs: JavaSet[Vertex], es: JavaSet[(OutputVertex, InputVertex, Double)], duration: Long): Query =
-    apply(asScalaSet(vs).toSet, asScalaSet(es).toSet, duration)
+  def apply(id: String, vs: JavaSet[Vertex], es: JavaSet[(OutputVertex, InputVertex, Double)], duration: Long): Query =
+    apply(id, asScalaSet(vs).toSet, asScalaSet(es).toSet, duration)
   
   
-  def apply(vs: Set[Vertex], es: Set[(OutputVertex, InputVertex, Double)], duration: Long = Long.MaxValue): Query = {
-    val q = new Query(Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], duration)
+  def apply(id: String, vs: Set[Vertex], es: Set[(OutputVertex, InputVertex, Double)], duration: Long = Long.MaxValue): Query = {
+    val q = new Query(id, Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], duration)
     q addVertices(vs.toSeq:_*)
     q addEdges(es.toSeq:_*)
     q
@@ -23,12 +23,12 @@ object Query {
 
 
 // TODO can i make this constructor private?
-class Query (v: Set[Vertex], e: Map[Vertex, Set[Edge]], val duration: Long) {
+class Query protected (val id: String, v: Set[Vertex], e: Map[Vertex, Set[Edge]], val duration: Long) {
 //
-  private [query] def this() = this(Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], Long.MaxValue)
+  private [query] def this(id: String) = this(id, Set.empty[Vertex], Map.empty[Vertex, Set[Edge]], Long.MaxValue)
   
-  def this(v: JavaSet[Vertex], e: JavaMap[Vertex, JavaSet[Edge]], duration: Long) = 
-      this(asScalaSet(v).toSet,
+  def this(id: String, v: JavaSet[Vertex], e: JavaMap[Vertex, JavaSet[Edge]], duration: Long) = 
+      this(id, asScalaSet(v).toSet,
            mapAsScalaMap(e).toMap.map((elem) => (elem._1, asScalaSet(elem._2).toSet[Edge])),
            duration)
   

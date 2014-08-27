@@ -27,7 +27,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     val f2 = Operator("f2", 8000, 1000)
     val cons1 = EventConsumer("c1", 1000, 1000)
 
-    var query1 = Query(Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 0.5), (f2, cons1, 0.1)))
+    var query1 = Query("q1", Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 0.5), (f2, cons1, 0.1)))
 
     //val vm = Vm("vm1", 1000) // 1 billion instructions per second
 

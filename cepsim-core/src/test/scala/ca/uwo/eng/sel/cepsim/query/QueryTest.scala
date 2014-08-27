@@ -20,7 +20,7 @@ class QueryTest extends FlatSpec
     val cons1 = EventConsumer("c1", 10)
     val f1 = Operator("f1", 1000)
 
-    var q = new Query
+    var q = new Query("q1")
     q addVertices(prod1, f1, cons1)
 
   }

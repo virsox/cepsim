@@ -30,7 +30,7 @@ class QueryCloudletTest extends FlatSpec
     val f2 = Operator("f2", 4000)
     val cons1 = EventConsumer("c1", 1000)
 
-    val query1 = Query(Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 1.0), (f2, cons1, 0.1)))
+    val query1 = Query("q1", Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 1.0), (f2, cons1, 0.1)))
 
     val vm = Vm("vm1", 1000) // 1 billion instructions per second
 
@@ -72,7 +72,7 @@ class QueryCloudletTest extends FlatSpec
     val f3 = Operator("f3", 4000)
     val f4 = Operator("f4", 4000)
     val cons2 = EventConsumer("c2", 1000)
-    val query2 = Query(Set(prod2, f3, f4, cons2), Set((prod2, f3, 1.0), (f3, f4, 1.0), (f4, cons2, 0.1)))
+    val query2 = Query("q2", Set(prod2, f3, f4, cons2), Set((prod2, f3, 1.0), (f3, f4, 1.0), (f4, cons2, 0.1)))
 
     val placement = Placement(query1.vertices ++ query2.vertices, 1)
     val cloudlet = QueryCloudlet("c1", placement, new DefaultOpScheduleStrategy()) //, 0.0)

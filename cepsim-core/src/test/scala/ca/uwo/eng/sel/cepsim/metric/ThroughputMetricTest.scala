@@ -47,7 +47,7 @@ class ThroughputMetricTest extends FlatSpec
 
   "The ThroughputMetric" should "give the correct value in a simple query" in new Fixture {
 
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
     doReturn(100).when(c1).outputQueue
 
     val metric = ThroughputMetric.calculate(q, 5 seconds)
@@ -56,7 +56,7 @@ class ThroughputMetricTest extends FlatSpec
 
 
   it should "give the same value if the sampling interval is smaller" in new Fixture {
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
     doReturn(10).when(c1).outputQueue
 
     val metric = ThroughputMetric.calculate(q, 500 milliseconds)
@@ -66,7 +66,7 @@ class ThroughputMetricTest extends FlatSpec
 
   it should "consider selectivity" in new Fixture {
 
-    val q = Query(Set(p1, f1, c1),
+    val q = Query("q1", Set(p1, f1, c1),
       Set((p1, f1, 1.0), (f1, f2, 0.1), (f2, c1, 0.1)))
     doReturn(500).when(c1).outputQueue
 
@@ -75,7 +75,7 @@ class ThroughputMetricTest extends FlatSpec
   }
 
   it should "correctly calculate the metric in a query with a split operator" in new Fixture {
-    val q = Query(Set(p1, s1, f1, f2, pr1, pr2, c1),
+    val q = Query("q1", Set(p1, s1, f1, f2, pr1, pr2, c1),
       Set((p1 , s1, 1.0), (s1 , f1, 0.4), (s1, pr2, 0.6), (f1, pr1, 0.1),
           (pr1, f2, 1.0), (pr2, f2, 1.0), (f2, c1 , 0.1)))
 
@@ -86,7 +86,7 @@ class ThroughputMetricTest extends FlatSpec
 
 
   it should "correctly calculate the metric in a query with two producers" in new Fixture {
-    val q = Query(Set(p1, p2, f1, pr1, pr2, f2, c1),
+    val q = Query("q1", Set(p1, p2, f1, pr1, pr2, f2, c1),
       Set((p1, f1, 1.0), (p2, pr1, 1.0), (f1, pr2, 0.5), (pr1, f2, 1.0), (pr2, f2, 1.0), (f2, c1, 0.1)))
 
     doReturn(10).when(c1).outputQueue
@@ -95,7 +95,7 @@ class ThroughputMetricTest extends FlatSpec
   }
 
   it should "correctly calculate the metric in a query with two producers and a split" in new Fixture {
-    val q = Query(Set(p1, p2, s1, pr1, pr2, pr3, f2, c1),
+    val q = Query("q1", Set(p1, p2, s1, pr1, pr2, pr3, f2, c1),
       Set((p1, s1,  1.0), (s1, pr1, 0.6), (s1, pr2, 0.4), (pr1, f2, 1.0), (pr2, f2, 1.0),
           (p2, pr3, 1.0), (pr3, f2, 1.0), (f2, c1, 0.1)))
 

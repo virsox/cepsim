@@ -15,7 +15,7 @@ class QueryGraphTest extends FlatSpec
   with MockitoSugar {
 
   "A query" should "enumerate all paths from the consumer to producers" in {
-    var q = new Query()
+    var q = new Query("q1")
 
     val p1 = mock[EventProducer]
     val p2 = mock[EventProducer]

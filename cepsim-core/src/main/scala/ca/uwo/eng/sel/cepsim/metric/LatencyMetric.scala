@@ -6,30 +6,31 @@ import ca.uwo.eng.sel.cepsim.query.{EventProducer, EventConsumer, Query}
 object LatencyMetric extends Metric {
 
   /**
-    * Calculate the latency of the events consumed by a specific consumer on a cloudlet.
+    * Calculate the latency of the events consumed by a specific consumer.
     *
     * @param query Query to which the consumer belongs.
-    * @param history History of the query execution.
-    * @param cloudlet Cloudlet of which the latency is calculated.
+    * @param history History that contains the query execution.
     * @param consumer Consumer of which the latency is calculated.
+    * @param time Simulation time when the latency is calculated. 
     * @return Latency (in ms).
     */
-  def calculate(query: Query, history: History, cloudlet: String, consumer: EventConsumer): Double = {
+  def calculate(query: Query, history: History, consumer: EventConsumer, time: Double): Double = {
 
     /**
       * Estimate the time in the simulation timeline when the producer started producing the
       * informed number of events.
       * @param producer Producer that is being tracked.
       * @param events Total number of events produced.
+      * @param consumerTime The consumer entry time.
       * @return Minimum time (before the cloudlet execution) when the events started to be produced.
       */
-    def minimumTime(producer: EventProducer, events: Double): Double = {
+    def minimumTime(producer: EventProducer, events: Double, consumerTime: Double): Double = {
 
       if (events == 0)
         return Double.NegativeInfinity
 
       // from most recent entries to the older ones, starting from the informed cloudlet
-      val previousEntries = history.from(producer).reverse.dropWhile(_.cloudlet != cloudlet)
+      val previousEntries = history.from(producer).reverse.dropWhile(_.time > consumerTime)
 
       // discard the oldest entries that are not needed to generate the output
       var totalEvents = events
@@ -58,11 +59,14 @@ object LatencyMetric extends Metric {
       minimumTime
     }
 
-    val entry = history.from(cloudlet, consumer)
+    val entry = history.from(consumer, time)
+    
     entry match {
       case Some(consumerEntry) => {
         val eventsPerProduceResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity)
-        val minimumPerProducer = eventsPerProduceResult.map((entry) => (entry._1, minimumTime(entry._1, entry._2)))
+        val minimumPerProducer = eventsPerProduceResult.map((entry) =>
+          (entry._1, minimumTime(entry._1, entry._2, consumerEntry.time))
+        )
 
         consumerEntry.time - minimumPerProducer.values.min
       }

@@ -37,56 +37,57 @@ class LatencyMetricTest extends FlatSpec
 
 
   "The LatencyMetric" should "calculate the correct value in a simple query" in new Fixture {
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
 
     doReturn(50.0).when(gen).average
     doReturn(5).when(c1).outputQueue
 
     val h = mock[History]
     doReturn(List(Entry("cloudlet1", 0.0,  p1, 50))).when(h).from(p1)
-    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from("cloudlet1", c1)
+    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from(c1, 10)
 
-    val latency = LatencyMetric.calculate(q, h, "cloudlet1", c1)
+    val latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
   }
 
   it should "calculate the same value in consecutive iterations" in new Fixture {
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
 
     doReturn(50.0).when(gen).average
     doReturn(10).when(c1).outputQueue
 
     val h = mock[History]
-    doReturn(List(Entry("cloudlet1", 0.0,  p1, 50), Entry("cloudlet2", 11.0,  p1, 50))).when(h).from(p1)
-    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from("cloudlet1", c1)
-    doReturn(Some(Entry("cloudlet1", 21.0, c1,  5))).when(h).from("cloudlet2", c1)
+    doReturn(List(Entry("cloudlet1", 0.0,  p1, 50), Entry("cloudlet1", 11.0,  p1, 50))).when(h).from(p1)
+    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from(c1, 10)
+    doReturn(Some(Entry("cloudlet1", 21.0, c1,  5))).when(h).from(c1, 21)
 
-    var latency = LatencyMetric.calculate(q, h, "cloudlet1", c1)
+    var latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
 
-    latency = LatencyMetric.calculate(q, h, "cloudlet2", c1)
+    latency = LatencyMetric.calculate(q, h, c1, 21)
     latency should be (10)
   }
 
 
   it should "calculate the correct value when the producer history needs to be traversed" in new Fixture {
-    val q = Query(Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
 
     doReturn(10.0).when(gen).average
     doReturn(5).when(c1).outputQueue
 
     val h = mock[History]
     val h1 = Entry("cloudlet1", 0.0,  p1, 10)
-    doReturn(List(h1, Entry("cloudlet2", 8.0,  p1, 10), Entry("cloudlet3", 12.0,  p1, 10))).when(h).from(p1)
+    doReturn(List(h1, Entry("cloudlet1", 8.0,  p1, 10), Entry("cloudlet1", 12.0,  p1, 10))).when(h).from(p1)
     doReturn(Some(Entry("cloudlet1", 4.0, f1, 10))).when(h).successor(h1)
-    doReturn(Some(Entry("cloudlet3", 15.0, c1,  25))).when(h).from("cloudlet3", c1)
+    doReturn(Some(Entry("cloudlet1", 15.0, c1,  25))).when(h).from(c1, 14.0)
 
-    val latency = LatencyMetric.calculate(q, h, "cloudlet3", c1)
+    val latency = LatencyMetric.calculate(q, h, c1, 14.0)
     latency should be (13)
   }
 
+  
   it should "calculate the correct value when there are more than one producer" in new Fixture {
-    val q = Query(Set(p1, p2, f1, f2, c1), Set((p1, f1, 1.0), (p2, f2, 1.0), (f1, c1, 0.5), (f2, c1, 0.1)))
+    val q = Query("q1", Set(p1, p2, f1, f2, c1), Set((p1, f1, 1.0), (p2, f2, 1.0), (f1, c1, 0.5), (f2, c1, 0.1)))
 
     doReturn(10.0).when(gen).average
     doReturn(12).when(c1).outputQueue
@@ -94,20 +95,19 @@ class LatencyMetricTest extends FlatSpec
     val h = mock[History]
 
     val h1 = Entry("cloudlet1",  0.0,  p1, 10)
-    val h2 = Entry("cloudlet2", 10.0,  p1, 10)
-    val h3 = Entry("cloudlet3", 20.0,  p1, 10)
+    val h2 = Entry("cloudlet1", 10.0,  p1, 10)
+    val h3 = Entry("cloudlet1", 20.0,  p1, 10)
 
-    val h4 = Entry("cloudlet1",  0.0,  p1, 15)
-    val h5 = Entry("cloudlet2", 10.0,  p1, 10)
-    val h6 = Entry("cloudlet3", 20.0,  p1, 5)
+    val h4 = Entry("cloudlet1",  0.0,  p2, 15)
+    val h5 = Entry("cloudlet1", 10.0,  p2, 10)
+    val h6 = Entry("cloudlet1", 20.0,  p2, 5)
 
     doReturn(List(h1, h2, h3)).when(h).from(p1)
     doReturn(List(h4, h5, h6)).when(h).from(p2)
     doReturn(Some(Entry("cloudlet1", 3.0, f1, 10))).when(h).successor(h4)
+    doReturn(Some(Entry("cloudlet1", 28.0, c1, 12))).when(h).from(c1, 28)
 
-    doReturn(Some(Entry("cloudlet3", 28.0, c1, 12))).when(h).from("cloudlet3", c1)
-
-    val latency = LatencyMetric.calculate(q, h, "cloudlet3", c1)
+    val latency = LatencyMetric.calculate(q, h, c1, 28)
     latency should be (26)
 
   }

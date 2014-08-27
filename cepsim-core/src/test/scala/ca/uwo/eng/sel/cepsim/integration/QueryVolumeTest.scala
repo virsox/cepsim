@@ -28,7 +28,7 @@ class QueryVolumeTest extends FlatSpec {
       val f2 = Operator(s"f${(i * 2)}", 16000)
       val cons = EventConsumer(s"c${i}", 4000)
 
-      val query = Query(Set(prod, f, f2, cons), Set((prod, f, 1.0), (f, f2, 1.0), (f2, cons, 0.1)))
+      val query = Query(s"q${i}", Set(prod, f, f2, cons), Set((prod, f, 1.0), (f, f2, 1.0), (f2, cons, 0.1)))
       queries = queries + (i -> query)
     }
 
@@ -44,7 +44,7 @@ class QueryVolumeTest extends FlatSpec {
 
       val cons = queries(1).consumers.iterator.next
       val t = ThroughputMetric.calculate(queries(1), (i * INTERVAL).milliseconds)
-      val l = LatencyMetric.calculate(queries(1), h1, s"c${i}", cons)
+      val l = LatencyMetric.calculate(queries(1), h1, cons, (i - 1) * INTERVAL)
       println(f"Iteration [${i}%d]: Size = ${cons.outputQueue}%d, T = ${t}%.2f, L = ${l}%.4f")
     }
 

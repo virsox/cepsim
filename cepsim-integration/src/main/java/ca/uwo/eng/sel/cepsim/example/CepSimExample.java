@@ -32,6 +32,7 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
+import ca.uwo.eng.sel.cepsim.metric.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.EventConsumer;
 import ca.uwo.eng.sel.cepsim.query.EventProducer;
@@ -128,7 +129,9 @@ public class CepSimExample {
 			
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-				System.out.println(cepCl);
+				
+				History history = cepCl.getExecutionHistory();
+				//cepCl.getPl
 			}
 			
 			Log.printLine("CloudSimExample1 finished!");
@@ -164,7 +167,7 @@ public class CepSimExample {
 			edges.add(e1);
 			edges.add(e2);
 			
-			Query q = Query.apply(vertices, edges, 10L);		
+			Query q = Query.apply("q" + i, vertices, edges, 10L);		
 			Set<Query> queries = new HashSet<Query>();
 			queries.add(q);
 			
