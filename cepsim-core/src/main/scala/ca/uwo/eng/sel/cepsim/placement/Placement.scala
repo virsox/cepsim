@@ -45,6 +45,13 @@ class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Verte
   def queries: Set[Query] = queryVerticesMap.keySet
 
   /**
+    * Get the query with the informed id.
+    * @param id Id of the query.
+    * @return Optional of a query with the informed id.
+    */
+  def query(id: String): Option[Query] = queries.find(_.id == id)
+
+  /**
     * Get all vertices in this placement from a specific query.
     * @param q query to which the vertices belong.
     * @return all vertices in this placement from a specific query.

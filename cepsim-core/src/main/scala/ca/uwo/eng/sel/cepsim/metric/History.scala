@@ -40,6 +40,14 @@ class History(es: List[Entry]) {
     */
   def entries(): List[Entry] = history.toList
 
+  /**
+    * Obtain the last entry from a specific vertex.
+    * @return Optional last entry of a vertex.  
+    */
+  def lastFrom(v: Vertex): Option[Entry] = from(v) match {
+  	case Nil => None
+	case list => Option(list.last) 
+  }
   
   /**
    * Obtain the first entry from a specific vertex which occurs at (or after) the specified time.
@@ -48,15 +56,6 @@ class History(es: List[Entry]) {
    * @return (Optional) Entry that satisfy the specified filters.
    */
   def from(v: Vertex, time: Double): Option[Entry] = from(v).find(_.time >= time)
-  
-//  /**
-//   * Obtain the entries from a specific cloudlet and vertex.
-//   * @param cloudlet Name of the cloudlet.
-//   * @param v Vertex.
-//   * @return All the entries of the specified cloudlet and vertex.
-//   */
-//  def from(cloudlet: String, v: Vertex): List[Entry] =
-//    history.filter((e) => (e.cloudlet == cloudlet) && (e.v == v)).toList
 
   /**
     * Obtain entries of a specific vertex.

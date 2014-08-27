@@ -5,6 +5,35 @@ import ca.uwo.eng.sel.cepsim.query.{EventProducer, EventConsumer, Query}
 /** Calculates the latency metric */
 object LatencyMetric extends Metric {
 
+  
+  /**
+    * Calculates the average latency among all consumers from the query.
+    * @param query Query from which the latency is being calculated.
+    * @param history history Execution history of this query.
+    */
+  def calculate(query: Query, history: History): Double = {
+    val sum = query.consumers.foldLeft(0.0)((acc, consumer) => {
+      acc + calculate(query, history, consumer)
+    })
+    sum / query.consumers.size
+  }
+  
+    /**
+    * Calculates the average latency of a single consumer from a query.
+    * @param query Query to which the consumer belongs.
+    * @param history history Execution history of the query.
+    * @param consumer Latency from which the latency is being calculated.
+    */
+  def calculate(query: Query, history: History, consumer: EventConsumer): Double = {
+    
+    val entries = history.from(consumer).filter(_.quantity > 0)
+    val sum = entries.foldLeft(0.0)((acc, entry) =>
+      acc + calculate(query, history, consumer, entry.time)
+    )
+    
+    sum / entries.size
+  }
+  
   /**
     * Calculate the latency of the events consumed by a specific consumer.
     *

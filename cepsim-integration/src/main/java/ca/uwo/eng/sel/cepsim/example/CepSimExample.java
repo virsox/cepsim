@@ -129,9 +129,9 @@ public class CepSimExample {
 			
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-				
-				History history = cepCl.getExecutionHistory();
-				//cepCl.getPl
+
+                System.out.println("Throughput: " + cepCl.getThroughput("q" + cepCl.getCloudletId()));
+                System.out.println("Latency   : " + cepCl.getLatency("q" + cepCl.getCloudletId()));
 			}
 			
 			Log.printLine("CloudSimExample1 finished!");
@@ -149,7 +149,7 @@ public class CepSimExample {
 		
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-		for (int i = 1; i <= 8; i++) {
+		for (int i = 1; i <= 30; i++) {
 			Generator gen = new UniformGenerator(1000, 100);
 			EventProducer p = new EventProducer("p" + i, 10000, gen, true);
 			Operator f = new Operator("f" + i, 100000, 1000);
@@ -172,7 +172,7 @@ public class CepSimExample {
 			queries.add(q);
 			
 			Placement placement = Placement.withQueries(queries, 1);
-			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());		
+			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());
 						
 			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false);
 			cloudlet.setUserId(brokerId);

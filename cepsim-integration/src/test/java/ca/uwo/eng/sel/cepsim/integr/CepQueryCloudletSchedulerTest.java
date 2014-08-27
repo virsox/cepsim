@@ -51,7 +51,7 @@ public class CepQueryCloudletSchedulerTest {
 		scheduler.updateVmProcessing(0.1, mipsShare);
 		
 		// 500 MI per second / 100 ms it's one tenth of this
-		verify(cloudlet).updateQuery(50_000_000, 0, 500);
+		verify(cloudlet).updateQuery(50_000_000, 0.1, 0, 500);
 		
 		
 	}

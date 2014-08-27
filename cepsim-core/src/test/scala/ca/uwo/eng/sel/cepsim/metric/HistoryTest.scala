@@ -54,11 +54,18 @@ class HistoryTest extends FlatSpec
     history.from(c1, 50.0) should be (None)
   }
   
+  it should "find the last entry" in new Fixture {
+    history.log("c1", 31.0, c1, 100)
+    history.log("c1", 35.0, f1, 100)
+    
+    history.lastFrom(c1) should be (Some(History.Entry("c1", 31.0, c1, 100)))
+    history.lastFrom(p1) should be (Some(History.Entry("c1", 0.0,  p1, 500)))
+  }
+  
   it should "find the right successor" in new Fixture {    
 	val successor = history.successor(History.Entry("c1", 10.0, f1, 100))	  
 	successor should be (Some(History.Entry("c1", 30.0, c1, 100)))    
-  }
-  
+  }  
   
   it should "find the right successor when there are many cloudlets in the history" in new Fixture {
     history.log("c1", 31.0, p1, 500)

@@ -38,9 +38,7 @@ class LatencyMetricTest extends FlatSpec
 
   "The LatencyMetric" should "calculate the correct value in a simple query" in new Fixture {
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
-
     doReturn(50.0).when(gen).average
-    doReturn(5).when(c1).outputQueue
 
     val h = mock[History]
     doReturn(List(Entry("cloudlet1", 0.0,  p1, 50))).when(h).from(p1)
@@ -52,9 +50,7 @@ class LatencyMetricTest extends FlatSpec
 
   it should "calculate the same value in consecutive iterations" in new Fixture {
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
-
     doReturn(50.0).when(gen).average
-    doReturn(10).when(c1).outputQueue
 
     val h = mock[History]
     doReturn(List(Entry("cloudlet1", 0.0,  p1, 50), Entry("cloudlet1", 11.0,  p1, 50))).when(h).from(p1)
@@ -71,9 +67,7 @@ class LatencyMetricTest extends FlatSpec
 
   it should "calculate the correct value when the producer history needs to be traversed" in new Fixture {
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
-
     doReturn(10.0).when(gen).average
-    doReturn(5).when(c1).outputQueue
 
     val h = mock[History]
     val h1 = Entry("cloudlet1", 0.0,  p1, 10)
@@ -88,9 +82,7 @@ class LatencyMetricTest extends FlatSpec
   
   it should "calculate the correct value when there are more than one producer" in new Fixture {
     val q = Query("q1", Set(p1, p2, f1, f2, c1), Set((p1, f1, 1.0), (p2, f2, 1.0), (f1, c1, 0.5), (f2, c1, 0.1)))
-
     doReturn(10.0).when(gen).average
-    doReturn(12).when(c1).outputQueue
 
     val h = mock[History]
 
@@ -109,7 +101,69 @@ class LatencyMetricTest extends FlatSpec
 
     val latency = LatencyMetric.calculate(q, h, c1, 28)
     latency should be (26)
-
   }
 
+  it should "calculate the correct consumer average in a query" in new Fixture {
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
+    doReturn(50.0).when(gen).average
+
+    val h = mock[History]
+    
+    val e1 = Entry("cloudlet1",  0.0, p1, 50)
+    val e2 = Entry("cloudlet1", 10.0, c1,  5)
+    val e3 = Entry("cloudlet1", 11.0, p1, 50)
+    val e4 = Entry("cloudlet1", 20.0, c1,  0)
+    val e5 = Entry("cloudlet1", 21.0, p1, 50)
+    val e6 = Entry("cloudlet1", 30.0, c1, 10)
+      
+    doReturn(List(e1, e3, e5)).when(h).from(p1)
+    doReturn(List(e2, e4, e6)).when(h).from(c1)
+        
+    doReturn(Some(e2)).when(h).from(c1, 10)
+    doReturn(Some(e6)).when(h).from(c1, 30)
+    
+    val latency = LatencyMetric.calculate(q, h, c1)
+    latency should be (14.5)    
+  }
+  
+  
+  it should "calculate the correct total average in a query with one consumer" in new Fixture {
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
+    doReturn(50.0).when(gen).average
+
+    val h = mock[History]
+    val e1 = Entry("cloudlet1", 0.0,  p1, 50)
+    val e2 = Entry("cloudlet1", 10.0, c1,  5)
+    
+    doReturn(List(e1)).when(h).from(p1)
+    doReturn(List(e2)).when(h).from(c1)
+    doReturn(Some(e2)).when(h).from(c1, 10)
+
+    val latency = LatencyMetric.calculate(q, h)
+    latency should be (10)    
+  }
+  
+
+   it should "calculate the correct total average in a query more than one consumer" in new Fixture {
+     val c2 = mock[EventConsumer]
+     val q = Query("q1", Set(p1, f1, c1, c2),
+                   Set((p1, f1, 1.0), (f1, c1, 0.1), (f1, c2, 0.1)))
+        
+    doReturn(50.0).when(gen).average
+
+    val h = mock[History]
+    val e1 = Entry("cloudlet1", 0.0,  p1, 50)
+    val e2 = Entry("cloudlet1", 10.0, c1,  5)
+    val e3 = Entry("cloudlet1", 20.0, c2,  5)
+    
+    doReturn(List(e1)).when(h).from(p1)
+    doReturn(List(e2)).when(h).from(c1)
+    doReturn(List(e3)).when(h).from(c2)
+    
+    doReturn(Some(e2)).when(h).from(c1, 10)
+    doReturn(Some(e3)).when(h).from(c2, 20)
+
+    val latency = LatencyMetric.calculate(q, h)
+    latency should be (15.0 +- 0.001)
+  }
 }
