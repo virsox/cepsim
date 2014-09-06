@@ -45,6 +45,9 @@ import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 
 
 public class CepSimExample {
+
+    private static final Double SIM_INTERVAL = 0.01;
+
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
 	/** The vmlist. */
@@ -65,7 +68,7 @@ public class CepSimExample {
  			boolean trace_flag = false; // trace events
 
 
-			CloudSim.init(num_user, calendar, trace_flag);
+			CloudSim.init(num_user, calendar, trace_flag, SIM_INTERVAL);
 
 			// Second step: Create Datacenters
 			// Datacenters are the resource providers in CloudSim. We need at
@@ -149,8 +152,8 @@ public class CepSimExample {
 		
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-		for (int i = 1; i <= 30; i++) {
-			Generator gen = new UniformGenerator(1000, 100);
+		for (int i = 1; i <= 5; i++) {
+			Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
 			EventProducer p = new EventProducer("p" + i, 10000, gen, true);
 			Operator f = new Operator("f" + i, 100000, 1000);
 			EventConsumer c = new EventConsumer("c" + i, 10000, 1000);
@@ -195,11 +198,11 @@ public class CepSimExample {
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store
 		// our machine
-		List<Host> hostList = new ArrayList<Host>();
+		List<Host> hostList = new ArrayList<>();
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
-		List<Pe> peList = new ArrayList<Pe>();
+		List<Pe> peList = new ArrayList<>();
 
 		int mips = 1000;
 
@@ -237,7 +240,7 @@ public class CepSimExample {
 		double costPerStorage = 0.001; // the cost of using storage in this
 										// resource
 		double costPerBw = 0.0; // the cost of using bw in this resource
-		LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN
+		LinkedList<Storage> storageList = new LinkedList<>(); // we are not adding SAN
 													// devices by now
 
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
@@ -247,7 +250,7 @@ public class CepSimExample {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		Datacenter datacenter = null;
 		try {
-			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0.1);
+			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, SIM_INTERVAL);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
