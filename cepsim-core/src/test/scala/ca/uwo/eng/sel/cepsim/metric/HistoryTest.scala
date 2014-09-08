@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.metric
 
+import ca.uwo.eng.sel.cepsim.metric.History.{Processed, Sent}
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -24,58 +25,67 @@ class HistoryTest extends FlatSpec
     doReturn("c1").when(c1).id    
 
     val history = History()
-    history.log("c1", 0.0,  p1, 500)
-    history.log("c1", 10.0, f1, 100)
-    history.log("c1", 30.0, c1, 100)
+    history.logProcessed("c1", 0.0,  p1, 500)
+    history.logProcessed("c1", 10.0, f1, 100)
+    history.logProcessed("c1", 30.0, c1, 100)
 
   }
   
   "A History" should "log all events sent to it" in new Fixture {
 
-
-    history.log("c2", 50.0, p1, 500)
+    history.logSent("c2", 50.0, p1, f1, 500)
+    history.logProcessed("c2", 55.0, f1, 500)
 
     history.from(p1) should have size (2)
-    history.from(p1) should be (List(History.Entry("c1", 0.0, p1, 500), History.Entry("c2", 50.0, p1, 500)))
+    history.from(p1) should be (List(Processed("c1", 0.0, p1, 500), Sent("c2", 50.0, p1, f1, 500)))
 
-    history.from(f1) should have size (1)
-    history.from(f1) should be (List(History.Entry("c1", 10.0, f1, 100)))
+    history.from(f1) should have size (2)
+    history.from(f1) should be (List(Processed("c1", 10.0, f1, 100), Processed("c2", 55.0, f1, 500)))
 
     history.from(c1) should have size (1)
-    history.from(c1) should be (List(History.Entry("c1", 30.0, c1, 100)))
+    history.from(c1) should be (List(Processed("c1", 30.0, c1, 100)))
+  }
+
+
+  it should "find processing entries only" in new Fixture {
+    history.logSent("c2", 50.0, p1, f1, 500)
+    history.logSent("c3", 60.0, p1, f1, 500)
+
+    history.processedEntriesFrom(p1) should have size (1)
+    history.processedEntriesFrom(p1) should be (List(Processed("c1", 0.0, p1, 500)))
   }
 
   it should "find the correct entry when using filters" in new Fixture {
-    history.log("c1", 31.0, f1, 100)
-    history.log("c1", 40.0, c1, 10)
+    history.logProcessed("c1", 31.0, f1, 100)
+    history.logProcessed("c1", 40.0, c1, 10)
     
-    history.from(c1, 15.0) should be (Some(History.Entry("c1", 30.0, c1, 100)))   
-    history.from(c1, 40.0) should be (Some(History.Entry("c1", 40.0, c1, 10 )))
+    history.from(c1, 15.0) should be (Some(Processed("c1", 30.0, c1, 100)))
+    history.from(c1, 40.0) should be (Some(Processed("c1", 40.0, c1, 10 )))
     history.from(c1, 50.0) should be (None)
   }
   
   it should "find the last entry" in new Fixture {
-    history.log("c1", 31.0, c1, 100)
-    history.log("c1", 35.0, f1, 100)
+    history.logProcessed("c1", 31.0, c1, 100)
+    history.logProcessed("c1", 35.0, f1, 100)
     
-    history.lastFrom(c1) should be (Some(History.Entry("c1", 31.0, c1, 100)))
-    history.lastFrom(p1) should be (Some(History.Entry("c1", 0.0,  p1, 500)))
+    history.lastFrom(c1) should be (Some(Processed("c1", 31.0, c1, 100)))
+    history.lastFrom(p1) should be (Some(Processed("c1", 0.0,  p1, 500)))
   }
   
   it should "find the right successor" in new Fixture {    
-	val successor = history.successor(History.Entry("c1", 10.0, f1, 100))	  
-	successor should be (Some(History.Entry("c1", 30.0, c1, 100)))    
+  	val successor = history.successor(Processed("c1", 10.0, f1, 100))
+	  successor should be (Some(Processed("c1", 30.0, c1, 100)))
   }  
   
   it should "find the right successor when there are many cloudlets in the history" in new Fixture {
-    history.log("c1", 31.0, p1, 500)
-    history.log("c2", 32.0, p1, 100)
-    history.log("c1", 35.0, f1, 100)
+    history.logProcessed("c1", 31.0, p1, 500)
+    history.logProcessed("c2", 32.0, p1, 100)
+    history.logProcessed("c1", 35.0, f1, 100)
     
-	val successor = history.successor(History.Entry("c1", 31.0, p1, 500))	  
-	successor should be (Some(History.Entry("c1", 35.0, f1, 100)))        
-    
-    history.successor(History.Entry("c1", 35.0, f1, 100)) should be (None)
+	  val successor = history.successor(Processed("c1", 31.0, p1, 500))
+
+	  successor should be (Some(Processed("c1", 35.0, f1, 100)))
+    history.successor(Processed("c1", 35.0, f1, 100)) should be (None)
   }
     
   
@@ -86,21 +96,21 @@ class HistoryTest extends FlatSpec
     val c2 = mock[EventConsumer]
     
     val history2 = History()
-    history2.log("c2", 5.0,  p2, 50)
-    history2.log("c2", 10.0, f2, 10)
-    history2.log("c2", 20.0, c2, 10)
+    history2.logSent("c2", 5.0,  p2, f2, 50)
+    history2.logProcessed("c2", 10.0, f2, 10)
+    history2.logProcessed("c2", 20.0, c2, 10)
     
     val result = history.merge(history2)
     
     // check history elements
     result.entries should have size (6)
     result.entries should contain theSameElementsInOrderAs List(
-      History.Entry("c1", 0.0,  p1, 500),
-      History.Entry("c2", 5.0,  p2, 50),
-      History.Entry("c1", 10.0, f1, 100),
-      History.Entry("c2", 10.0, f2, 10),
-      History.Entry("c2", 20.0, c2, 10),
-      History.Entry("c1", 30.0, c1, 100)
+      Processed("c1", 0.0,  p1, 500),
+      Sent     ("c2", 5.0,  p2, f2, 50),
+      Processed("c1", 10.0, f1, 100),
+      Processed("c2", 10.0, f2, 10),
+      Processed("c2", 20.0, c2, 10),
+      Processed("c1", 30.0, c1, 100)
     )
     
     val opposite = history2.merge(history)   

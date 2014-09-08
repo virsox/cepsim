@@ -72,7 +72,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           processedEvents = v.run(elem._2)
         }
 
-        history.log(id, time, v, processedEvents)
+        history.logProcessed(id, time, v, processedEvents)
         time += totalMs(elem._2)
       }      
     } 

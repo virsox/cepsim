@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.integration
 
-import ca.uwo.eng.sel.cepsim.metric.History.Entry
+import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.sched.{UniformOpScheduleStrategy, DefaultOpScheduleStrategy}
 import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
@@ -53,8 +53,8 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     // check if history is being correctly logged
     h.entries should have size (4)
-    h.entries should be (List(Entry("c1", 0.0, prod1, 1000), Entry("c1", 2.5, f1, 1000),
-      Entry("c1", 5.0, f2, 312), Entry("c1", 7.5, cons1, 31)))
+    h.entries should be (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
+      Processed("c1", 5.0, f2, 312), Processed("c1", 7.5, cons1, 31)))
 
     // --------------------------------------------------------------------------
     // SECOND ITERATION

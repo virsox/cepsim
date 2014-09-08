@@ -2,7 +2,7 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.metric.History
-import ca.uwo.eng.sel.cepsim.metric.History.Entry
+import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
@@ -52,8 +52,8 @@ class QueryCloudletTest extends FlatSpec
 
     // check if history is being correctly logged
     h.entries should have size (4)
-    h.entries should be (List(Entry("c1", 0.0, prod1, 1000), Entry("c1", 1.0, f1, 1000),
-      Entry("c1", 5.0, f2, 1000), Entry("c1", 9.0, cons1, 100)))
+    h.entries should be (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 1.0, f1, 1000),
+      Processed("c1", 5.0, f2, 1000), Processed("c1", 9.0, cons1, 100)))
   }
 
   it should "accumulate the number of produced events" in new Fixture {
@@ -90,14 +90,14 @@ class QueryCloudletTest extends FlatSpec
 
     h.entries should have size (8)
     h.entries should contain theSameElementsInOrderAs (List(
-      Entry("c1", 0.0, prod1, 500),
-      Entry("c1", 0.5, prod2, 500),
-      Entry("c1", 1.0, f1, 500),
-      Entry("c1", 3.0, f3, 500),
-      Entry("c1", 5.0, f2, 500),
-      Entry("c1", 7.0, f4, 500),
-      Entry("c1", 9.0, cons1, 50),
-      Entry("c1", 9.5, cons2, 50)
+      Processed("c1", 0.0, prod1, 500),
+      Processed("c1", 0.5, prod2, 500),
+      Processed("c1", 1.0, f1, 500),
+      Processed("c1", 3.0, f3, 500),
+      Processed("c1", 5.0, f2, 500),
+      Processed("c1", 7.0, f4, 500),
+      Processed("c1", 9.0, cons1, 50),
+      Processed("c1", 9.5, cons2, 50)
     ))
   }
 

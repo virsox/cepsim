@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
-import ca.uwo.eng.sel.cepsim.metric.History.Entry
+import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, Operator, EventProducer, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -41,8 +41,8 @@ class LatencyMetricTest extends FlatSpec
     doReturn(50.0).when(gen).average
 
     val h = mock[History]
-    doReturn(List(Entry("cloudlet1", 0.0,  p1, 50))).when(h).from(p1)
-    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from(c1, 10)
+    doReturn(List(Processed("cloudlet1", 0.0,  p1, 50))).when(h).processedEntriesFrom(p1)
+    doReturn(Some(Processed("cloudlet1", 10.0, c1,  5))).when(h).processedEntriesFrom(c1, 10)
 
     val latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
@@ -53,9 +53,9 @@ class LatencyMetricTest extends FlatSpec
     doReturn(50.0).when(gen).average
 
     val h = mock[History]
-    doReturn(List(Entry("cloudlet1", 0.0,  p1, 50), Entry("cloudlet1", 11.0,  p1, 50))).when(h).from(p1)
-    doReturn(Some(Entry("cloudlet1", 10.0, c1,  5))).when(h).from(c1, 10)
-    doReturn(Some(Entry("cloudlet1", 21.0, c1,  5))).when(h).from(c1, 21)
+    doReturn(List(Processed("cloudlet1", 0.0,  p1, 50), Processed("cloudlet1", 11.0,  p1, 50))).when(h).processedEntriesFrom(p1)
+    doReturn(Some(Processed("cloudlet1", 10.0, c1,  5))).when(h).processedEntriesFrom(c1, 10)
+    doReturn(Some(Processed("cloudlet1", 21.0, c1,  5))).when(h).processedEntriesFrom(c1, 21)
 
     var latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
@@ -70,10 +70,10 @@ class LatencyMetricTest extends FlatSpec
     doReturn(10.0).when(gen).average
 
     val h = mock[History]
-    val h1 = Entry("cloudlet1", 0.0,  p1, 10)
-    doReturn(List(h1, Entry("cloudlet1", 8.0,  p1, 10), Entry("cloudlet1", 12.0,  p1, 10))).when(h).from(p1)
-    doReturn(Some(Entry("cloudlet1", 4.0, f1, 10))).when(h).successor(h1)
-    doReturn(Some(Entry("cloudlet1", 15.0, c1,  25))).when(h).from(c1, 14.0)
+    val h1 = Processed("cloudlet1", 0.0,  p1, 10)
+    doReturn(List(h1, Processed("cloudlet1", 8.0,  p1, 10), Processed("cloudlet1", 12.0,  p1, 10))).when(h).processedEntriesFrom(p1)
+    doReturn(Some(Processed("cloudlet1", 4.0, f1, 10))).when(h).successor(h1)
+    doReturn(Some(Processed("cloudlet1", 15.0, c1,  25))).when(h).processedEntriesFrom(c1, 14.0)
 
     val latency = LatencyMetric.calculate(q, h, c1, 14.0)
     latency should be (13)
@@ -86,18 +86,18 @@ class LatencyMetricTest extends FlatSpec
 
     val h = mock[History]
 
-    val h1 = Entry("cloudlet1",  0.0,  p1, 10)
-    val h2 = Entry("cloudlet1", 10.0,  p1, 10)
-    val h3 = Entry("cloudlet1", 20.0,  p1, 10)
+    val h1 = Processed("cloudlet1",  0.0,  p1, 10)
+    val h2 = Processed("cloudlet1", 10.0,  p1, 10)
+    val h3 = Processed("cloudlet1", 20.0,  p1, 10)
 
-    val h4 = Entry("cloudlet1",  0.0,  p2, 15)
-    val h5 = Entry("cloudlet1", 10.0,  p2, 10)
-    val h6 = Entry("cloudlet1", 20.0,  p2, 5)
+    val h4 = Processed("cloudlet1",  0.0,  p2, 15)
+    val h5 = Processed("cloudlet1", 10.0,  p2, 10)
+    val h6 = Processed("cloudlet1", 20.0,  p2, 5)
 
-    doReturn(List(h1, h2, h3)).when(h).from(p1)
-    doReturn(List(h4, h5, h6)).when(h).from(p2)
-    doReturn(Some(Entry("cloudlet1", 3.0, f1, 10))).when(h).successor(h4)
-    doReturn(Some(Entry("cloudlet1", 28.0, c1, 12))).when(h).from(c1, 28)
+    doReturn(List(h1, h2, h3)).when(h).processedEntriesFrom(p1)
+    doReturn(List(h4, h5, h6)).when(h).processedEntriesFrom(p2)
+    doReturn(Some(Processed("cloudlet1", 3.0, f1, 10))).when(h).successor(h4)
+    doReturn(Some(Processed("cloudlet1", 28.0, c1, 12))).when(h).processedEntriesFrom(c1, 28)
 
     val latency = LatencyMetric.calculate(q, h, c1, 28)
     latency should be (26)
@@ -109,18 +109,18 @@ class LatencyMetricTest extends FlatSpec
 
     val h = mock[History]
     
-    val e1 = Entry("cloudlet1",  0.0, p1, 50)
-    val e2 = Entry("cloudlet1", 10.0, c1,  5)
-    val e3 = Entry("cloudlet1", 11.0, p1, 50)
-    val e4 = Entry("cloudlet1", 20.0, c1,  0)
-    val e5 = Entry("cloudlet1", 21.0, p1, 50)
-    val e6 = Entry("cloudlet1", 30.0, c1, 10)
+    val e1 = Processed("cloudlet1",  0.0, p1, 50)
+    val e2 = Processed("cloudlet1", 10.0, c1,  5)
+    val e3 = Processed("cloudlet1", 11.0, p1, 50)
+    val e4 = Processed("cloudlet1", 20.0, c1,  0)
+    val e5 = Processed("cloudlet1", 21.0, p1, 50)
+    val e6 = Processed("cloudlet1", 30.0, c1, 10)
       
-    doReturn(List(e1, e3, e5)).when(h).from(p1)
-    doReturn(List(e2, e4, e6)).when(h).from(c1)
+    doReturn(List(e1, e3, e5)).when(h).processedEntriesFrom(p1)
+    doReturn(List(e2, e4, e6)).when(h).processedEntriesFrom(c1)
         
-    doReturn(Some(e2)).when(h).from(c1, 10)
-    doReturn(Some(e6)).when(h).from(c1, 30)
+    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
+    doReturn(Some(e6)).when(h).processedEntriesFrom(c1, 30)
     
     val latency = LatencyMetric.calculate(q, h, c1)
     latency should be (14.5)    
@@ -132,12 +132,12 @@ class LatencyMetricTest extends FlatSpec
     doReturn(50.0).when(gen).average
 
     val h = mock[History]
-    val e1 = Entry("cloudlet1", 0.0,  p1, 50)
-    val e2 = Entry("cloudlet1", 10.0, c1,  5)
+    val e1 = Processed("cloudlet1", 0.0,  p1, 50)
+    val e2 = Processed("cloudlet1", 10.0, c1,  5)
     
-    doReturn(List(e1)).when(h).from(p1)
-    doReturn(List(e2)).when(h).from(c1)
-    doReturn(Some(e2)).when(h).from(c1, 10)
+    doReturn(List(e1)).when(h).processedEntriesFrom(p1)
+    doReturn(List(e2)).when(h).processedEntriesFrom(c1)
+    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
 
     val latency = LatencyMetric.calculate(q, h)
     latency should be (10)    
@@ -152,16 +152,16 @@ class LatencyMetricTest extends FlatSpec
     doReturn(50.0).when(gen).average
 
     val h = mock[History]
-    val e1 = Entry("cloudlet1", 0.0,  p1, 50)
-    val e2 = Entry("cloudlet1", 10.0, c1,  5)
-    val e3 = Entry("cloudlet1", 20.0, c2,  5)
+    val e1 = Processed("cloudlet1", 0.0,  p1, 50)
+    val e2 = Processed("cloudlet1", 10.0, c1,  5)
+    val e3 = Processed("cloudlet1", 20.0, c2,  5)
     
-    doReturn(List(e1)).when(h).from(p1)
-    doReturn(List(e2)).when(h).from(c1)
-    doReturn(List(e3)).when(h).from(c2)
+    doReturn(List(e1)).when(h).processedEntriesFrom(p1)
+    doReturn(List(e2)).when(h).processedEntriesFrom(c1)
+    doReturn(List(e3)).when(h).processedEntriesFrom(c2)
     
-    doReturn(Some(e2)).when(h).from(c1, 10)
-    doReturn(Some(e3)).when(h).from(c2, 20)
+    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
+    doReturn(Some(e3)).when(h).processedEntriesFrom(c2, 20)
 
     val latency = LatencyMetric.calculate(q, h)
     latency should be (15.0 +- 0.001)

@@ -26,7 +26,7 @@ object LatencyMetric extends Metric {
     */
   def calculate(query: Query, history: History, consumer: EventConsumer): Double = {
     
-    val entries = history.from(consumer).filter(_.quantity > 0)
+    val entries = history.processedEntriesFrom(consumer).filter(_.quantity > 0)
     val sum = entries.foldLeft(0.0)((acc, entry) =>
       acc + calculate(query, history, consumer, entry.time)
     )
@@ -59,7 +59,7 @@ object LatencyMetric extends Metric {
         return Double.NegativeInfinity
 
       // from most recent entries to the older ones, starting from the informed cloudlet
-      val previousEntries = history.from(producer).reverse.dropWhile(_.time > consumerTime)
+      val previousEntries = history.processedEntriesFrom(producer).reverse.dropWhile(_.time > consumerTime)
 
       // discard the oldest entries that are not needed to generate the output
       var totalEvents = events
@@ -88,7 +88,7 @@ object LatencyMetric extends Metric {
       minimumTime
     }
 
-    val entry = history.from(consumer, time)
+    val entry = history.processedEntriesFrom(consumer, time)
     
     entry match {
       case Some(consumerEntry) => {
