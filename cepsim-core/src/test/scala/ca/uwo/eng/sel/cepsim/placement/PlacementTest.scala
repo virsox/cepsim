@@ -38,6 +38,7 @@ class PlacementTest extends FlatSpec
     doReturn("f2").when(f1).id
     doReturn("m1").when(m1).id
     doReturn("cons1").when(cons1).id
+    doReturn("cons2").when(cons2).id
   }
 
   "A Placement" should "manage all added vertices" in new Fixture {
@@ -67,7 +68,6 @@ class PlacementTest extends FlatSpec
 
   
   it should "return an iterator that iterates through the vertices" in new Fixture {
-
     doReturn(Set(q1)).when(prod1).queries
     doReturn(Set(q1)).when(f1).queries
     doReturn(Set(q1)).when(cons1).queries
@@ -92,7 +92,37 @@ class PlacementTest extends FlatSpec
 
   }
 
+  it should "return an iterator that doesn't include vertices that aren't in the placement" in new Fixture {
+    doReturn(Set(q1)).when(prod1).queries
+    doReturn(Set(q1)).when(f1).queries
+    doReturn(Set(q1)).when(f2).queries
+    doReturn(Set(q1)).when(cons1).queries
+    doReturn(Set(q1)).when(cons2).queries
 
+    doReturn(Set(prod1, f1, f2, cons1, cons2)).when(q1).vertices
+
+    doReturn(Set.empty).when(q1).predecessors(prod1)
+    doReturn(Set(prod1)).when(q1).predecessors(f1)
+    doReturn(Set(f1)).when(q1).predecessors(cons1)
+    doReturn(Set(f1)).when(q1).predecessors(f2)
+    doReturn(Set(f2)).when(q1).predecessors(cons2)
+
+    doReturn(Set(f1)).when(q1).successors(prod1)
+    doReturn(Set(f2, cons1)).when(q1).successors(f1)
+    doReturn(Set(cons2)).when(q1).successors(f2)
+    doReturn(Set.empty).when(q1).successors(cons1)
+    doReturn(Set.empty).when(q1).successors(cons2)
+
+
+    val placement = Placement(Set(prod1, f1, cons1), 1)
+    val it = placement.iterator
+
+    it.next should be (prod1)
+    it.next should be (f1)
+    it.next should be (cons1)
+    it.hasNext should be (false)
+
+  }
 
   it should "return an iterator that iterates in BFS" in new Fixture {
 

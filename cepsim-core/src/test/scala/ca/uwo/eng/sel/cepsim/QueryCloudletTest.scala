@@ -1,16 +1,15 @@
 package ca.uwo.eng.sel.cepsim
 
-import ca.uwo.eng.sel.cepsim.metric.History
+import ca.uwo.eng.sel.cepsim.metric.History.{Processed, Sent}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
 import org.junit.runner.RunWith
+import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
-
-import scala.concurrent.duration._
+import org.scalatest.{FlatSpec, Matchers}
 
 
 @RunWith(classOf[JUnitRunner])
@@ -29,12 +28,21 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Set(q)).when(f2).queries
     doReturn(Set(q)).when(cons).queries
 
+    doReturn(Set(prod)).when(q).predecessors(f1)
+    doReturn(Set(f1)).when(q).predecessors(f2)
+    doReturn(Set(f2)).when(q).predecessors(cons)
+
+    doReturn(Set(f1)).when(q).successors(prod)
+    doReturn(Set(f2)).when(q).successors(f1)
+    doReturn(Set(cons)).when(q).successors(f2)
+
     val vm = mock[Vm]
     doReturn(1.0).when(vm).mips
 
     val placement = mock[Placement]
     doReturn(1).when(placement).vmId
     doReturn(Set(prod)).when(placement).producers
+    doReturn(Set(prod, f1, f2, cons)).when(placement).vertices
 
     val opSchedule = mock[OpScheduleStrategy]
     doReturn(Iterator((prod, 100000.0), (f1, 400000.0), (f2, 400000.0), (cons, 100000.0))).
@@ -46,11 +54,6 @@ class QueryCloudletTest extends FlatSpec
 
   "A QueryCloudlet" should "correctly run all operators" in new Fixture {
     val cloudlet = new QueryCloudlet("c1", placement, opSchedule) //, 0.0)
-
-
-    doReturn(Set(prod)).when(q).predecessors(f1)
-    doReturn(Set(f1)).when(q).predecessors(f2)
-    doReturn(Set(f2)).when(q).predecessors(cons)
 
     doReturn(Map.empty withDefaultValue(0)).when(prod).outputQueues
     doReturn(Map.empty withDefaultValue(0)).when(f1).outputQueues
@@ -64,6 +67,46 @@ class QueryCloudletTest extends FlatSpec
     verify(f1).run(400000)
     verify(f2).run(400000)
     verify(cons).run(100000)
+  }
+
+
+  it should "not run operators that are in a different Placement" in new Fixture {
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule) //, 0.0)
+
+    // create new operators
+    val f3 = mock[Operator]
+    val cons2 = mock[EventConsumer]
+
+    doReturn(Set(q)).when(f3).queries
+    doReturn(Set(q)).when(cons2).queries
+
+    doReturn(Set(f2)).when(q).predecessors(f3)
+    doReturn(Set(f2)).when(q).predecessors(cons)
+    doReturn(Set(f3)).when(q).predecessors(cons2)
+
+    doReturn(Set(f3, cons)).when(q).successors(f2)
+    doReturn(Set(cons2)).when(q).successors(f3)
+
+    doReturn(Map.empty withDefaultValue(0)).when(prod).outputQueues
+    doReturn(Map.empty withDefaultValue(0)).when(f1).outputQueues
+    doReturn(Map(cons -> 100, f3 -> 100)).when(f2).outputQueues
+
+    // the cloudlet should run all operators
+    val history = cloudlet run(1000000, 0.0, 1)
+
+    verify(prod).generate()
+    verify(prod).run(100000)
+    verify(f1  ).run(400000)
+    verify(f2  ).run(400000)
+    verify(cons).run(100000)
+
+    // these operators shouldn't run
+    verify(f3, never()).run(anyLong())
+    verify(cons2, never()).run(anyLong())
+
+    val entries = history.from(f2)
+    entries should have size (2)
+    entries should contain theSameElementsInOrderAs (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
   }
 
 }

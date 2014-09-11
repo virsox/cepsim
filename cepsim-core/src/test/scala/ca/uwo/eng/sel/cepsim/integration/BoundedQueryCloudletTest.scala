@@ -1,14 +1,14 @@
 package ca.uwo.eng.sel.cepsim.integration
 
+import ca.uwo.eng.sel.cepsim.QueryCloudlet
+import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.sched.{UniformOpScheduleStrategy, DefaultOpScheduleStrategy}
-import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
-import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.query.{Query, EventConsumer, Operator, EventProducer}
+import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
+import ca.uwo.eng.sel.cepsim.sched.UniformOpScheduleStrategy
 import org.junit.runner.RunWith
-import org.scalatest.{Matchers, FlatSpec}
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.duration._
 

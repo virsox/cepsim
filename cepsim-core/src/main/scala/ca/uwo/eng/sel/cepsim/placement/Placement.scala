@@ -105,7 +105,7 @@ class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Verte
         // processing neighbours
         v.queries.foreach {(q) =>
           q.successors(v).foreach { (n) =>
-            if ((!queue.contains(n)) && (vertices.contains(v))) queue.enqueue(n)
+            if ((!queue.contains(n)) && (vertices.contains(n))) queue.enqueue(n)
           }
         }
         v

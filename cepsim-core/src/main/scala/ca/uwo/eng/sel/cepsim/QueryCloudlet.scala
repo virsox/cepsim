@@ -72,7 +72,27 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           processedEvents = v.run(elem._2)
         }
 
+
         history.logProcessed(id, time, v, processedEvents)
+
+        // check if there are events to be sent to remove vertices
+        if (v.isInstanceOf[OutputVertex]) {
+
+          val ov = v.asInstanceOf[OutputVertex]
+          val successors: Set[Vertex] = ov.queries.flatMap(_.successors(ov))
+          val notInPlacement = successors -- placement.vertices
+
+
+          notInPlacement.foreach{(dest) =>
+            // log and remove from the output queue
+            // the actual sending is not implemented here
+            history.logSent(id, time, v, dest, ov.outputQueues(dest))
+            ov.dequeueFromOutput((dest, ov.outputQueues(dest)))
+          }
+        }
+
+
+
         time += totalMs(elem._2)
       }      
     } 
