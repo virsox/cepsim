@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.integr;
 import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
 import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.query.Query;
+import ca.uwo.eng.sel.cepsim.query.Vertex;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 
@@ -100,7 +101,11 @@ public class CepQueryCloudlet extends Cloudlet {
 
         history = history.merge(this.cloudlet.run(instructionsToExecute, previousTime, capacity));
 	}
-	
+
+    public Set<Vertex> getVertices() {
+        return null;
+    }
+
 	private Query getQuery(String queryId) {
         Option<Query> option = this.cloudlet.placement().query(queryId);
         if (option.isDefined()) return option.get();
