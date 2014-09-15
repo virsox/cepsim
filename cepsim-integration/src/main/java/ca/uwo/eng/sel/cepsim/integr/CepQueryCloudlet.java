@@ -10,6 +10,7 @@ import org.cloudbus.cloudsim.UtilizationModelFull;
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.metric.History;
 import scala.Option;
+import scala.collection.JavaConversions;
 
 import java.util.Set;
 
@@ -103,7 +104,7 @@ public class CepQueryCloudlet extends Cloudlet {
 	}
 
     public Set<Vertex> getVertices() {
-        return null;
+        return JavaConversions.asJavaSet(this.cloudlet.placement().vertices());
     }
 
 	private Query getQuery(String queryId) {
