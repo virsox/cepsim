@@ -1,7 +1,11 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
+import ca.uwo.eng.sel.cepsim.query.Vertex;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.CloudletScheduler;
 import org.cloudbus.cloudsim.Datacenter;
@@ -17,6 +21,9 @@ import org.cloudbus.cloudsim.core.SimEvent;
 
 public class CepSimDatacenter extends Datacenter {
 
+
+    private Map<Vertex, CepQueryCloudlet> vertexToCloudlet = new HashMap<>();
+
 	public CepSimDatacenter(String name,
 			DatacenterCharacteristics characteristics,
 			VmAllocationPolicy vmAllocationPolicy,
@@ -25,8 +32,32 @@ public class CepSimDatacenter extends Datacenter {
 		super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
 	}
 
-	
-	@Override
+
+    @Override
+    protected void processOtherEvent(SimEvent ev) {
+        switch (ev.getTag()) {
+            case CepSimTags.CEP_EVENT_SENT:
+                this.processCepEventSent(ev);
+                break;
+            default:
+                super.processOtherEvent(ev);
+                break;
+        }
+    }
+
+    private void processCepEventSent(SimEvent ev) {
+        CepNetworkEvent netEvent = (CepNetworkEvent) ev.getData();
+
+        CepQueryCloudlet cloudlet = vertexToCloudlet.get(netEvent.getDest());
+        if (cloudlet == null) {
+            throw new IllegalStateException("Vertex not found in any cloudlet");
+        }
+
+        cloudlet.enqueue(netEvent);
+    }
+
+
+    @Override
 	protected void processCloudletSubmit(SimEvent ev, boolean ack) {
 		updateCloudletProcessing();
 
@@ -84,8 +115,15 @@ public class CepSimDatacenter extends Datacenter {
 				send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 			}
 			
-			// [WAH] - Added
+			//  [WAH] --------  Added -------------------------------------------------------
 			send(getId(), this.getSchedulingInterval(), CloudSimTags.VM_DATACENTER_EVENT);
+            if (cl instanceof CepQueryCloudlet) {
+                CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
+                for (Vertex v : cepCl.getVertices()) {
+                    this.vertexToCloudlet.put(v, cepCl);
+                }
+            }
+            // -------------------------------------------------------------------------------
 			
 			if (ack) {
 				int[] data = new int[3];

@@ -49,8 +49,8 @@ class QueryCloudletTest extends FlatSpec
     cons1.outputQueue should be(100)
 
     // check if history is being correctly logged
-    h.entries should have size (4)
-    h.entries should be (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 1.0, f1, 1000),
+    h should have size (4)
+    h should contain theSameElementsInOrderAs (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 1.0, f1, 1000),
       Processed("c1", 5.0, f2, 1000), Processed("c1", 9.0, cons1, 100)))
   }
 
@@ -86,8 +86,8 @@ class QueryCloudletTest extends FlatSpec
     f4.outputQueues(cons2) should be(0)
     cons2.outputQueue should be(50)
 
-    h.entries should have size (8)
-    h.entries should contain theSameElementsInOrderAs (List(
+    h should have size (8)
+    h should contain theSameElementsInOrderAs (List(
       Processed("c1", 0.0, prod1, 500),
       Processed("c1", 0.5, prod2, 500),
       Processed("c1", 1.0, f1, 500),

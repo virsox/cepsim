@@ -1,57 +1,41 @@
 package ca.uwo.eng.sel.cepsim.example;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.Datacenter;
-import org.cloudbus.cloudsim.DatacenterBroker;
-import org.cloudbus.cloudsim.DatacenterCharacteristics;
-import org.cloudbus.cloudsim.Host;
-import org.cloudbus.cloudsim.Log;
-import org.cloudbus.cloudsim.Pe;
-import org.cloudbus.cloudsim.Storage;
-import org.cloudbus.cloudsim.Vm;
-import org.cloudbus.cloudsim.VmAllocationPolicySimple;
-import org.cloudbus.cloudsim.VmSchedulerTimeShared;
+import ca.uwo.eng.sel.cepsim.QueryCloudlet;
+import ca.uwo.eng.sel.cepsim.gen.Generator;
+import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
+import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
+import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
+import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
+import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
+import ca.uwo.eng.sel.cepsim.metric.History;
+import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
+import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
+import ca.uwo.eng.sel.cepsim.network.FixedDelayNetworkInterface;
+import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
+import ca.uwo.eng.sel.cepsim.placement.Placement;
+import ca.uwo.eng.sel.cepsim.query.*;
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
-
 import scala.Tuple3;
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
-import ca.uwo.eng.sel.cepsim.gen.Generator;
-import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
-import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
-import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
-import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
-import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.metric.History;
-import ca.uwo.eng.sel.cepsim.placement.Placement;
-import ca.uwo.eng.sel.cepsim.query.EventConsumer;
-import ca.uwo.eng.sel.cepsim.query.EventProducer;
-import ca.uwo.eng.sel.cepsim.query.InputVertex;
-import ca.uwo.eng.sel.cepsim.query.Operator;
-import ca.uwo.eng.sel.cepsim.query.OutputVertex;
-import ca.uwo.eng.sel.cepsim.query.Query;
-import ca.uwo.eng.sel.cepsim.query.Vertex;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
+
+import java.text.DecimalFormat;
+import java.util.*;
 
 
-public class CepSimExample {
+public class CepSimExampleWithNetwork {
 
-    private static final Double SIM_INTERVAL = 0.01;
+    private static final Double SIM_INTERVAL = 0.1;
 
 	/** The cloudlet list. */
-	private static List<Cloudlet> cloudletList;
-	/** The vmlist. */
-	private static List<Vm> vmlist;
+	private static List<CepQueryCloudlet> cloudletList;
+	/** The vmList. */
+	private static List<Vm> vmList;
 
 	/**
 	 * Creates main() to run this example.
@@ -76,11 +60,11 @@ public class CepSimExample {
 			Datacenter datacenter0 = createDatacenter("Datacenter_0");
 
 			// Third step: Create Broker
-			DatacenterBroker broker = createBroker();
+            CepSimBroker broker = createBroker();
 			int brokerId = broker.getId();
 
-			// Fourth step: Create one virtual machine
-			vmlist = new ArrayList<Vm>();
+			// Fourth step: Create two virtual machines
+			vmList = new ArrayList<Vm>();
 
 			// VM description
 			int vmid = 1;
@@ -91,17 +75,19 @@ public class CepSimExample {
 			int pesNumber = 1; // number of cpus
 			String vmm = "Xen"; // VMM name
 
-			// create VM
-			Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			// create VMs
+			Vm vm1 = new Vm(vmid,     brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			Vm vm2 = new Vm(vmid + 1, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
 
-			// add the VM to the vmList
-			vmlist.add(vm);
+			// add the VMs to the vmList
+			vmList.add(vm1);
+            vmList.add(vm2);
 
 			// submit vm list to the broker
-			broker.submitVmList(vmlist);
+			broker.submitVmList(vmList);
 
 			// Fifth step: Create one Cloudlet
-			cloudletList = new ArrayList<Cloudlet>();
+			cloudletList = new ArrayList<CepQueryCloudlet>();
 
 			// Cloudlet properties
 //			int id = 0;
@@ -115,7 +101,7 @@ public class CepSimExample {
 //			cloudlet.setVmId(vmid);
 
 			// add the cloudlet to the list
-			cloudletList.addAll(createCloudlets(brokerId));
+			cloudletList.addAll(createCloudlets(broker));
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
@@ -129,59 +115,89 @@ public class CepSimExample {
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
 			printCloudletList(newList);
 
-			
+
+            // get all queries and history from all cloudlets
+            History fullHistory = History.apply();
+            Set<Query> queries = new HashSet<>();
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-
-                //System.out.println("Throughput: " + cepCl.getThroughput("q" + cepCl.getCloudletId()));
-                //System.out.println("Latency   : " + cepCl.getLatency("q" + cepCl.getCloudletId()));
+                fullHistory = fullHistory.merge(cepCl.getExecutionHistory());
+                queries.addAll(cepCl.getQueries());
 			}
-			
-			Log.printLine("CloudSimExample1 finished!");
+
+            for (Query q : queries) {
+                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
+                System.out.println("Latency   : " + LatencyMetric.calculate(q, fullHistory));
+            }
+
+
+            Log.printLine("CloudSimExample1 finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
 		}
 	}
 
-	
-	
-	private static java.util.Set<CepQueryCloudlet> createCloudlets(int brokerId) {
+
+
+	private static Set<CepQueryCloudlet> createCloudlets(CepSimBroker broker) {
 		// 100_000_000 I / interval
 		// 100 events / interval
 		
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-		for (int i = 1; i <= 5; i++) {
-			Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
-			EventProducer p = new EventProducer("p" + i, 10000, gen, true);
-			Operator f = new Operator("f" + i, 100000, 1000);
-			EventConsumer c = new EventConsumer("c" + i, 10000, 1000);
+		//for (int i = 1; i <= 5; i++) {
+		Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+		EventProducer p = new EventProducer("p1", 10000, gen, true);
+		Operator f1 = new Operator("f1", 100000, 1000);
+		Operator f2 = new Operator("f2", 100000, 1000);
+		EventConsumer c = new EventConsumer("c1", 10000, 1000);
 			
-			Set<Vertex> vertices = new HashSet<>();		
-			vertices.add(p);
-			vertices.add(f);
-			vertices.add(c);
+		Set<Vertex> vertices = new HashSet<>();
+		vertices.add(p);
+		vertices.add(f1);
+		vertices.add(f2);
+		vertices.add(c);
 			
-			// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
-			Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f, 1.0);
-			Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f, c, 0.1);
-			Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
-			edges.add(e1);
-			edges.add(e2);
+		// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
+		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f1, 1.0);
+		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f1, f2, 0.5);
+		Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(f2, c, 0.1);
+		Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+		edges.add(e1);
+		edges.add(e2);
+		edges.add(e3);
+
+		Query q = Query.apply("q1", vertices, edges, 10L);
+		Set<Query> queries = new HashSet<Query>();
+		queries.add(q);
+
+        // ------------------ create placements
+        Set<Vertex> p1Vertices = new HashSet<>();
+        p1Vertices.add(p);
+        p1Vertices.add(f1);
+
+        Set<Vertex> p2Vertices = new HashSet<>();
+        p2Vertices.add(f2);
+        p2Vertices.add(c);
+
+        Placement placement1 = Placement.apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
+        Placement placement2 = Placement.apply(JavaConversions.asScalaSet(p2Vertices).<Vertex>toSet(), 2);
+
+        // ------------------  create cloudlets
+		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, new DefaultOpScheduleStrategy());
+		QueryCloudlet p2Cloudlet = new QueryCloudlet("cl2", placement2, new DefaultOpScheduleStrategy());
+
+        NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
+		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);
+        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, p2Cloudlet, false, network);
+
+        cloudlet1.setUserId(broker.getId());
+        cloudlet2.setUserId(broker.getId());
 			
-			Query q = Query.apply("q" + i, vertices, edges, 10L);		
-			Set<Query> queries = new HashSet<Query>();
-			queries.add(q);
-			
-			Placement placement = Placement.withQueries(queries, 1);
-			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());
-						
-			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
-			cloudlet.setUserId(brokerId);
-			
-			cloudlets.add(cloudlet);
-		}
+		cloudlets.add(cloudlet1);
+		cloudlets.add(cloudlet2);
+		//}
 		
 		return cloudlets;
 	}
@@ -208,6 +224,7 @@ public class CepSimExample {
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
+		peList.add(new Pe(1, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
 
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
@@ -250,7 +267,8 @@ public class CepSimExample {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		Datacenter datacenter = null;
 		try {
-			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, SIM_INTERVAL);
+			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList),
+                    storageList, SIM_INTERVAL);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -267,10 +285,10 @@ public class CepSimExample {
 	 *
 	 * @return the datacenter broker
 	 */
-	private static DatacenterBroker createBroker() {
-		DatacenterBroker broker = null;
+	private static CepSimBroker createBroker() {
+        CepSimBroker broker = null;
 		try {
-			broker = new CepSimBroker("CepBroker", 100, 0.1);
+			broker = new CepSimBroker("CepBroker", 100, SIM_INTERVAL);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

@@ -45,12 +45,26 @@ public class CepSimBroker extends DatacenterBroker {
 			isTimerRunning = true;
 			//sendNow(getId(), TIMER_TAG);
 		}
-		
-		super.processEvent(ev);
+
+        switch (ev.getTag()) {
+            case CepSimTags.CEP_EVENT_SENT:
+                System.out.println(ev.getData());
+
+            default:
+                super.processEvent(ev);
+                break;
+        }
+
+		//super.processEvent(ev);
 	}
 	
 	public Vm getVmAllocation(Vertex v) {
         return verticesToVm.get(v);
+    }
+
+
+    public Integer getDatacenterId(Vm vm) {
+        return getVmsToDatacentersMap().get(vm.getId());
     }
 
 	@Override

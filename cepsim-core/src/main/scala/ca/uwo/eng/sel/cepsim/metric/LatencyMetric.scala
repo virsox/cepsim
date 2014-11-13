@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.metric
 
+import ca.uwo.eng.sel.cepsim.metric.History.Entry
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, EventConsumer, Query}
 
 /** Calculates the latency metric */
@@ -11,7 +12,7 @@ object LatencyMetric extends Metric {
     * @param query Query from which the latency is being calculated.
     * @param history history Execution history of this query.
     */
-  def calculate(query: Query, history: History): Double = {
+  def calculate(query: Query, history: History[Entry]): Double = {
     val sum = query.consumers.foldLeft(0.0)((acc, consumer) => {
       acc + calculate(query, history, consumer)
     })
@@ -24,9 +25,10 @@ object LatencyMetric extends Metric {
     * @param history history Execution history of the query.
     * @param consumer Latency from which the latency is being calculated.
     */
-  def calculate(query: Query, history: History, consumer: EventConsumer): Double = {
+  def calculate(query: Query, history: History[Entry], consumer: EventConsumer): Double = {
     
     val entries = history.processedEntriesFrom(consumer).filter(_.quantity > 0)
+    //history.
     val sum = entries.foldLeft(0.0)((acc, entry) =>
       acc + calculate(query, history, consumer, entry.time)
     )
@@ -43,7 +45,7 @@ object LatencyMetric extends Metric {
     * @param time Simulation time when the latency is calculated. 
     * @return Latency (in ms).
     */
-  def calculate(query: Query, history: History, consumer: EventConsumer, time: Double): Double = {
+  def calculate(query: Query, history: History[Entry], consumer: EventConsumer, time: Double): Double = {
 
     /**
       * Estimate the time in the simulation timeline when the producer started producing the
@@ -60,6 +62,8 @@ object LatencyMetric extends Metric {
 
       // from most recent entries to the older ones, starting from the informed cloudlet
       val previousEntries = history.processedEntriesFrom(producer).reverse.dropWhile(_.time > consumerTime)
+
+      // TODO this is not correct. The right approach is to take the older ones, but they need to be removed from history after being processed
 
       // discard the oldest entries that are not needed to generate the output
       var totalEvents = events

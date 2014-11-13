@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.metric
 
-import ca.uwo.eng.sel.cepsim.metric.History.{Processed, Sent}
+import ca.uwo.eng.sel.cepsim.metric.History.{Received, Processed, Sent}
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -34,13 +34,15 @@ class HistoryTest extends FlatSpec
   "A History" should "log all events sent to it" in new Fixture {
 
     history.logSent("c2", 50.0, p1, f1, 500)
+    history.logReceived("c2", 51.0, f1, p1, 500)
     history.logProcessed("c2", 55.0, f1, 500)
 
     history.from(p1) should have size (2)
     history.from(p1) should be (List(Processed("c1", 0.0, p1, 500), Sent("c2", 50.0, p1, f1, 500)))
 
-    history.from(f1) should have size (2)
-    history.from(f1) should be (List(Processed("c1", 10.0, f1, 100), Processed("c2", 55.0, f1, 500)))
+    history.from(f1) should have size (3)
+    history.from(f1) should be (List(Processed("c1", 10.0, f1, 100), Received("c2", 51.0, f1, p1, 500),
+                                     Processed("c2", 55.0, f1, 500)))
 
     history.from(c1) should have size (1)
     history.from(c1) should be (List(Processed("c1", 30.0, c1, 100)))
@@ -50,6 +52,7 @@ class HistoryTest extends FlatSpec
   it should "find processing entries only" in new Fixture {
     history.logSent("c2", 50.0, p1, f1, 500)
     history.logSent("c3", 60.0, p1, f1, 500)
+    history.logReceived("c3", 62.0, p1, f1, 500)
 
     history.processedEntriesFrom(p1) should have size (1)
     history.processedEntriesFrom(p1) should be (List(Processed("c1", 0.0, p1, 500)))

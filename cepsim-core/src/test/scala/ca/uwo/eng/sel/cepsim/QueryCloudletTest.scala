@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim
 
-import ca.uwo.eng.sel.cepsim.metric.History.{Processed, Sent}
+import ca.uwo.eng.sel.cepsim.metric.History.{Received, Processed, Sent}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
@@ -36,9 +36,6 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Set(f2)).when(q).successors(f1)
     doReturn(Set(cons)).when(q).successors(f2)
 
-    val vm = mock[Vm]
-    doReturn(1.0).when(vm).mips
-
     val placement = mock[Placement]
     doReturn(1).when(placement).vmId
     doReturn(Set(prod)).when(placement).producers
@@ -71,7 +68,7 @@ class QueryCloudletTest extends FlatSpec
 
 
   it should "not run operators that are in a different Placement" in new Fixture {
-    val cloudlet = new QueryCloudlet("c1", placement, opSchedule) //, 0.0)
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule)
 
     // create new operators
     val f3 = mock[Operator]
@@ -108,5 +105,17 @@ class QueryCloudletTest extends FlatSpec
     entries should have size (2)
     entries should contain theSameElementsInOrderAs (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
   }
+
+
+  it should "correctly enqueue events received from the network" in new Fixture {
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule)
+    val history = cloudlet.enqueue(100.0, f1, prod, 1000)
+
+    verify(f1).enqueueIntoInput(prod, 1000)
+    val entries = history.from(f1)
+    entries should have size (1)
+    entries should be (List(Received("c1", 100.0, f1, prod, 1000)))
+  }
+
 
 }
