@@ -52,8 +52,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     cons1.outputQueue      should be(31)
 
     // check if history is being correctly logged
-    h.entries should have size (4)
-    h.entries should be (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
+    h should have size (4)
+    h.toList should contain theSameElementsInOrderAs (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
       Processed("c1", 5.0, f2, 312), Processed("c1", 7.5, cons1, 31)))
 
     // --------------------------------------------------------------------------

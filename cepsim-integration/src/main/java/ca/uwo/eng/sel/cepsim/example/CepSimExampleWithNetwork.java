@@ -30,7 +30,7 @@ import java.util.*;
 
 public class CepSimExampleWithNetwork {
 
-    private static final Double SIM_INTERVAL = 0.1;
+    private static final Double SIM_INTERVAL = 0.01;
 
 	/** The cloudlet list. */
 	private static List<CepQueryCloudlet> cloudletList;
@@ -117,7 +117,7 @@ public class CepSimExampleWithNetwork {
 
 
             // get all queries and history from all cloudlets
-            History fullHistory = History.apply();
+            History<History.Entry> fullHistory = new History<>();
             Set<Query> queries = new HashSet<>();
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;

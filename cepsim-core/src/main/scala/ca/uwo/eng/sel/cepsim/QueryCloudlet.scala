@@ -34,10 +34,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     if (!placement.vertices.contains(v))
       throw new IllegalStateException("This cloudlet does not contain the target vertex")
 
-    val history = History()
+    var history = History()
     v.enqueueIntoInput(orig, events)
 
-    history.logReceived(id, receivedTime, v, orig, events)
+    history = history.logReceived(id, receivedTime, v, orig, events)
     history
   }
 
@@ -49,7 +49,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    * @return History containing all logged events.
    */
   def run(instructions: Double, startTime: Double, capacity: Double): History[Entry] = {
-    val history = History()
+    var history = History()
     if (instructions > 0) {
 
       val availableInstructions = instructions
@@ -92,7 +92,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         }
 
 
-        history.logProcessed(id, time, v, processedEvents)
+        history = history.logProcessed(id, time, v, processedEvents)
 
         // check if there are events to be sent to remove vertices
         if (v.isInstanceOf[OutputVertex]) {
@@ -105,7 +105,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           notInPlacement.foreach { (dest) =>
             // log and remove from the output queue
             // the actual sending is not implemented here
-            history.logSent(id, time, v, dest, ov.outputQueues(dest))
+            history = history.logSent(id, time, v, dest, ov.outputQueues(dest))
             ov.dequeueFromOutput((dest, ov.outputQueues(dest)))
           }
         }

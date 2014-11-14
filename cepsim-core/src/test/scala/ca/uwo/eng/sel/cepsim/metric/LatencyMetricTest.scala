@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
-import ca.uwo.eng.sel.cepsim.metric.History.Processed
+import ca.uwo.eng.sel.cepsim.metric.History.{Entry, Processed}
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, Operator, EventProducer, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -40,9 +40,9 @@ class LatencyMetricTest extends FlatSpec
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
     doReturn(50.0).when(gen).average
 
-    val h = mock[History]
-    doReturn(List(Processed("cloudlet1", 0.0,  p1, 50))).when(h).processedEntriesFrom(p1)
-    doReturn(Some(Processed("cloudlet1", 10.0, c1,  5))).when(h).processedEntriesFrom(c1, 10)
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 10.0, c1, 5)
 
     val latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
@@ -52,10 +52,12 @@ class LatencyMetricTest extends FlatSpec
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
     doReturn(50.0).when(gen).average
 
-    val h = mock[History]
-    doReturn(List(Processed("cloudlet1", 0.0,  p1, 50), Processed("cloudlet1", 11.0,  p1, 50))).when(h).processedEntriesFrom(p1)
-    doReturn(Some(Processed("cloudlet1", 10.0, c1,  5))).when(h).processedEntriesFrom(c1, 10)
-    doReturn(Some(Processed("cloudlet1", 21.0, c1,  5))).when(h).processedEntriesFrom(c1, 21)
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 10.0, c1, 5)
+    h = h.logProcessed("cloudlet1", 11.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 21.0, c1, 5)
+
 
     var latency = LatencyMetric.calculate(q, h, c1, 10)
     latency should be (10)
@@ -64,19 +66,19 @@ class LatencyMetricTest extends FlatSpec
     latency should be (10)
   }
 
-
-  it should "calculate the correct value when the producer history needs to be traversed" in new Fixture {
+  it should "calculate the correct value when an producer is partially processed" in new Fixture {
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 1.0)))
     doReturn(10.0).when(gen).average
 
-    val h = mock[History]
-    val h1 = Processed("cloudlet1", 0.0,  p1, 10)
-    doReturn(List(h1, Processed("cloudlet1", 8.0,  p1, 10), Processed("cloudlet1", 12.0,  p1, 10))).when(h).processedEntriesFrom(p1)
-    doReturn(Some(Processed("cloudlet1", 4.0, f1, 10))).when(h).successor(h1)
-    doReturn(Some(Processed("cloudlet1", 15.0, c1,  25))).when(h).processedEntriesFrom(c1, 14.0)
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 10.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 20.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 25.0, c1, 15)  // 25
+    h = h.logProcessed("cloudlet1", 30.0, c1, 15)  // 20
 
-    val latency = LatencyMetric.calculate(q, h, c1, 14.0)
-    latency should be (13)
+    val latency = LatencyMetric.calculate(q, h, c1)
+    latency should be (22.5 +- 0.001)
   }
 
   
@@ -84,44 +86,32 @@ class LatencyMetricTest extends FlatSpec
     val q = Query("q1", Set(p1, p2, f1, f2, c1), Set((p1, f1, 1.0), (p2, f2, 1.0), (f1, c1, 0.5), (f2, c1, 0.1)))
     doReturn(10.0).when(gen).average
 
-    val h = mock[History]
-
-    val h1 = Processed("cloudlet1",  0.0,  p1, 10)
-    val h2 = Processed("cloudlet1", 10.0,  p1, 10)
-    val h3 = Processed("cloudlet1", 20.0,  p1, 10)
-
-    val h4 = Processed("cloudlet1",  0.0,  p2, 15)
-    val h5 = Processed("cloudlet1", 10.0,  p2, 10)
-    val h6 = Processed("cloudlet1", 20.0,  p2, 5)
-
-    doReturn(List(h1, h2, h3)).when(h).processedEntriesFrom(p1)
-    doReturn(List(h4, h5, h6)).when(h).processedEntriesFrom(p2)
-    doReturn(Some(Processed("cloudlet1", 3.0, f1, 10))).when(h).successor(h4)
-    doReturn(Some(Processed("cloudlet1", 28.0, c1, 12))).when(h).processedEntriesFrom(c1, 28)
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 10)
+    h = h.logProcessed("cloudlet1",  0.0, p2, 15)
+    h = h.logProcessed("cloudlet1",  3.0, f1, 10)
+    h = h.logProcessed("cloudlet1", 10.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 10.0, p2, 10)
+    h = h.logProcessed("cloudlet1", 20.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 20.0, p2, 5)
+    h = h.logProcessed("cloudlet1", 28.0, c1, 12)
 
     val latency = LatencyMetric.calculate(q, h, c1, 28)
-    latency should be (26)
+    latency should be (28)
   }
 
   it should "calculate the correct consumer average in a query" in new Fixture {
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
     doReturn(50.0).when(gen).average
 
-    val h = mock[History]
-    
-    val e1 = Processed("cloudlet1",  0.0, p1, 50)
-    val e2 = Processed("cloudlet1", 10.0, c1,  5)
-    val e3 = Processed("cloudlet1", 11.0, p1, 50)
-    val e4 = Processed("cloudlet1", 20.0, c1,  0)
-    val e5 = Processed("cloudlet1", 21.0, p1, 50)
-    val e6 = Processed("cloudlet1", 30.0, c1, 10)
-      
-    doReturn(List(e1, e3, e5)).when(h).processedEntriesFrom(p1)
-    doReturn(List(e2, e4, e6)).when(h).processedEntriesFrom(c1)
-        
-    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
-    doReturn(Some(e6)).when(h).processedEntriesFrom(c1, 30)
-    
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 10.0, c1,  5)
+    h = h.logProcessed("cloudlet1", 11.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 20.0, c1,  0)
+    h = h.logProcessed("cloudlet1", 21.0, p1, 50)
+    h = h.logProcessed("cloudlet1", 30.0, c1, 10)
+
     val latency = LatencyMetric.calculate(q, h, c1)
     latency should be (14.5)    
   }
@@ -131,14 +121,10 @@ class LatencyMetricTest extends FlatSpec
     val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 0.1)))
     doReturn(50.0).when(gen).average
 
-    val h = mock[History]
-    val e1 = Processed("cloudlet1", 0.0,  p1, 50)
-    val e2 = Processed("cloudlet1", 10.0, c1,  5)
+    var h = History()
+    h = h.logProcessed("cloudlet1", 0.0,  p1, 50)
+    h = h.logProcessed("cloudlet1", 10.0, c1,  5)
     
-    doReturn(List(e1)).when(h).processedEntriesFrom(p1)
-    doReturn(List(e2)).when(h).processedEntriesFrom(c1)
-    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
-
     val latency = LatencyMetric.calculate(q, h)
     latency should be (10)    
   }
@@ -151,19 +137,16 @@ class LatencyMetricTest extends FlatSpec
         
     doReturn(50.0).when(gen).average
 
-    val h = mock[History]
-    val e1 = Processed("cloudlet1", 0.0,  p1, 50)
-    val e2 = Processed("cloudlet1", 10.0, c1,  5)
-    val e3 = Processed("cloudlet1", 20.0, c2,  5)
+    var h = History()
+    h = h.logProcessed("cloudlet1", 0.0,  p1, 50)
+    h = h.logProcessed("cloudlet1", 10.0, c1,  5)
+    h = h.logProcessed("cloudlet1", 20.0, c2,  5)
     
-    doReturn(List(e1)).when(h).processedEntriesFrom(p1)
-    doReturn(List(e2)).when(h).processedEntriesFrom(c1)
-    doReturn(List(e3)).when(h).processedEntriesFrom(c2)
-    
-    doReturn(Some(e2)).when(h).processedEntriesFrom(c1, 10)
-    doReturn(Some(e3)).when(h).processedEntriesFrom(c2, 20)
-
     val latency = LatencyMetric.calculate(q, h)
     latency should be (15.0 +- 0.001)
   }
+
+
+
+
 }

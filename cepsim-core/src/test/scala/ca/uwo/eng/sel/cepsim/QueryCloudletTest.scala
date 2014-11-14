@@ -103,7 +103,7 @@ class QueryCloudletTest extends FlatSpec
 
     val entries = history.from(f2)
     entries should have size (2)
-    entries should contain theSameElementsInOrderAs (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
+    entries should be (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
   }
 
 

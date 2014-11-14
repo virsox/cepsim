@@ -31,7 +31,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
 
     private QueryCloudlet cloudlet;
-    private History history;
+    private History<History.Entry> history;
     private Queue<CepNetworkEvent> networkEvents;
 
     private double  executionTime;
@@ -53,7 +53,7 @@ public class CepQueryCloudlet extends Cloudlet {
 				UTIL_MODEL_FULL, record);
 				
 		this.cloudlet = cloudlet;
-		this.history = History.apply();
+		this.history = new History<>();
         this.executionTime = 0;
         this.hasFinished = false;
 
@@ -132,8 +132,8 @@ public class CepQueryCloudlet extends Cloudlet {
         }
 
         // need to transform from seconds to milliseconds
-        History execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
-        for (History.Entry entry : asJavaList(execHistory.entries())) {
+        History<History.Entry> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
+        for (History.Entry entry : asJavaList(execHistory)) {
             if (entry instanceof History.Sent) {
                 History.Sent sentEntry = (History.Sent) entry;
                 this.networkInterface.sendMessage(sentEntry.time() / 1000, sentEntry.v(), sentEntry.dest(), sentEntry.quantity());

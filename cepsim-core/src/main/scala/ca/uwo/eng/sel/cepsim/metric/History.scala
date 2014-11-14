@@ -1,10 +1,23 @@
 package ca.uwo.eng.sel.cepsim.metric
 
-import ca.uwo.eng.sel.cepsim.query.{Operator, EventProducer, Vertex}
+import ca.uwo.eng.sel.cepsim.query.Vertex
 
 /** Companion object. */
 object History {
-  def apply() = new History(List.empty[Entry])
+
+  /**
+    * Create a new empty History object.
+    * @return empty History object.
+    */
+  def apply() = new History[Entry](List.empty[Entry])
+
+  /**
+    * Create a new History object from a sequence of entries.
+    * @param entries Entries to be included in the History.
+    * @tparam T Type of entries.
+    * @return History object from the sequence.
+    */
+  def apply[T <: Entry](entries: Seq[T]) = new History[T](entries.sorted[Entry].toVector)
 
   /** An entry in the cloudlet execution history. */
   trait Entry extends Ordered[Entry] {
@@ -17,9 +30,8 @@ object History {
     /** Vertex. */
     def v: Vertex
 
+    /** Processed events. */
     def quantity: Int
-
-
 
     def compare(that: Entry): Int = {
       val timeComp = this.time.compare(that.time)
@@ -59,38 +71,50 @@ object History {
     */
   case class Received(cloudlet: String, time: Double, v: Vertex, orig: Vertex, quantity: Int) extends Entry
 
-
-  implicit def canBuildFrom[T <: Entry](v: Vector[T]) = new History(v)
-  implicit def canBuildFrom[T <: Entry](v: Seq[T])    = new History(v.toList)
+  /**
+    * Implicit conversion from a sequence to a History.
+    * @param v Sequence being converted.
+    * @tparam T Type of sequence elements.
+    * @return History created from the sequence.
+    */
+  implicit def canBuildFrom[T <: Entry](v: Seq[T]) = new History[T](v.toList)
 
 }
 
 import ca.uwo.eng.sel.cepsim.metric.History._
 
-/** 
+
+/**
   * Represent execution history of one or more cloudlets. Entries should be logged in order,
   * and a vertex belong to a single cloudlet.
+  * @param es Initial entries that are part of the History.
+  * @tparam T Type of history entries.
   */
-class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
+class History[T <: Entry] private (es: Vector[T]) extends Seq[T] {
 
-  //def this(es: Vector[Entry])
+
+  /**
+    * Construct a History from a list.
+    * @param list List of initial entries.
+    * @return History constructed from the list.
+    */
   def this(list: List[T]) = this(Vector.empty ++ list)
+
+  /**
+    * Construct an empty History.
+    * @return Empty history.
+    */
+  def this() = this(Vector.empty)
 
 
   /** vector of entries */
   var history: Vector[T] = Vector.empty ++ es
 
   /**
-    * Obtain all entries as a list.
-    * @return all entries as a list.
-    */
-  //def entries(): List[T] = history.toList
-
-  /**
     * Obtain the last entry from a specific vertex.
     * @return Optional last entry of a vertex.  
     */
-  def lastFrom(v: Vertex): Option[T] = from(v) match {
+  def lastFrom(v: Vertex): Option[T] = from(v) toList match {
   	case Nil => None
 	  case list => Option(list.last)
   }
@@ -106,9 +130,9 @@ class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
   /**
     * Obtain entries from a specific vertex.
     * @param v Vertex of the entries.
-    * @return entries from a specific vertex.
+    * @return History with entries from a specific vertex.
     */
-  def from(v: Vertex): List[T] = history.filter(_.v == v).toList
+  def from(v: Vertex): History[T] = history.filter(_.v == v)
 
   /**
    * Obtain the first processing entry from a specific vertex which occurs at (or after) the specified time.
@@ -121,7 +145,7 @@ class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
   /**
    * Obtain all processing entries from a specific vertex.
    * @param v Vertex of the entries.
-   * @return processing entries from a specific vertex.
+   * @return History with processing entries from a specific vertex.
    */
   def processedEntriesFrom(v: Vertex): History[Processed] = from(v).collect{ case e: Processed => e }
 
@@ -143,6 +167,7 @@ class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
     * @param time Timestamp of the entry.
     * @param v Vertex.
     * @param quantity Quantity of events processed by the vertex.
+    * @return History appended with the entry.
     */
   def logProcessed(cloudlet: String, time: Double, v: Vertex, quantity: Int) =
     new History[Entry](history :+ Processed(cloudlet, time, v, quantity))
@@ -154,6 +179,7 @@ class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
     * @param v Vertex.
     * @param orig Origin vertex.
     * @param quantity Quantity of events received from the origin vertex.
+    * @return History appended with the entry.
     */
   def logReceived(cloudlet: String, time: Double, v: Vertex, orig: Vertex, quantity: Int) =
     new History[Entry](history :+ Received(cloudlet, time, v, orig, quantity))
@@ -166,19 +192,39 @@ class History[T <: Entry] private (es: Vector[T]) extends IndexedSeq[T] {
    * @param v Vertex.
    * @param dest Destination vertex.
    * @param quantity Quantity of events sent to the destination vertex.
+   * @return History appended with the entry.
    */
   def logSent(cloudlet: String, time: Double, v: Vertex, dest: Vertex, quantity: Int) =
     new History[Entry](history :+ Sent(cloudlet, time, v, dest, quantity))
 
   /**
-    * Merge the current history with the informed one.
-    * @param other The history to be merged with.
-    * @return a new history containing entries from both histories. 
-    */
+   * Merge the current history with the informed one.
+   * @param other The history to be merged with.
+   * @return a new history containing entries from both histories.
+   */
   def merge(other: History[Entry]) =
     new History((this.history ++ other.history).sorted.toList)
 
-  //override def iterator: Iterator[Entry] = history.iterator
+  /**
+    * Add a new entry to the history. It is used by the LatencyMetric calculation only.
+    * @param entry Entry to be added.
+    * @return A History with the new entry added in the right place.
+    */
+  private[metric] def add(entry: T): History[T] =
+    new History[T]((this.history :+ entry).sorted[Entry])
+
+  /**
+    * Remove entries from the History. It is used by the LatencyMetric calculation only.
+    * @param entries entries to be removed.
+    * @return A new history without the informed entries.
+    */
+  private[metric] def remove(entries: T*): History[T] =
+    new History(history.filterNot(entries.contains(_)))
+
+
+  // -------------- Methods from the Seq interface
   override def length: Int = history.length
   override def apply(idx: Int): T = history.apply(idx)
+  override def iterator: Iterator[T] = history.iterator
+
 }

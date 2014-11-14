@@ -53,7 +53,7 @@ public class CepQueryCloudletTest {
 	
 	@Test
 	public void testUpdateCloudlet() {
-        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(History.apply());
+        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<History.Entry>());
 
 		// 1st invocation
         // long instructions, double currentTime, double previousTime, double capacity
@@ -65,19 +65,19 @@ public class CepQueryCloudletTest {
 		
 		// 2nd invocation		
         cloudlet.updateQuery(100, 60, 30, 1000);
-		verify(queryCloudlet).run(100, 30, 1000);
+		verify(queryCloudlet).run(100, 30000, 1000);
 		assertEquals(40.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		// 3rd invocation
         cloudlet.updateQuery(100, 100, 60, 1000);
-		verify(queryCloudlet).run(100, 60, 1000);
+		verify(queryCloudlet).run(100, 60000, 1000);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
 	
 	@Test
 	public void testUpdateCloudletWithExtraTime() {
-        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(History.apply());
+        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<History.Entry>());
 
 		// 1st invocation
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
@@ -89,16 +89,16 @@ public class CepQueryCloudletTest {
 		
 		// 2nd invocation		
         cloudlet.updateQuery(100, 180, 80, 1000);
-		verify(queryCloudlet).run(20, 80, 1000);
+		verify(queryCloudlet).run(20, 80000, 1000);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
 
     @Test
     public void testUpdateCloudletWithEventsSent() {
-        History history = History.apply();
-        history.logProcessed("cl1", 0.0, f1, 1000);
-        history.logSent("cl1", 1.0, f1, c1,  1000);
+        History history = new History<History.Entry>();
+        history = history.logProcessed("cl1", 0.0, f1, 1000);
+        history = history.logSent("cl1", 1000.0, f1, c1,  1000);
         when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(history);
 
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
@@ -121,25 +121,25 @@ public class CepQueryCloudletTest {
         cloudlet.enqueue(net3);
 
         // configure the cloudlet to return histories
-        History hist1 = History.apply();
-        hist1.logReceived("cl1", 6.0, f1, p1, 1000);
+        History<History.Entry> hist1 = new History<>();
+        hist1 = hist1.logReceived("cl1", 6000.0, f1, p1, 1000);
 
-        History hist2 = History.apply();
-        hist2.logReceived("cl1", 8.0, f1, p1, 2000);
+        History<History.Entry> hist2 = new History<>();
+        hist2 = hist2.logReceived("cl1", 8000.0, f1, p1, 2000);
 
-        when(queryCloudlet.enqueue(6.0, f1, p1, 1000)).thenReturn(hist1);
-        when(queryCloudlet.enqueue(8.0, f1, p1, 2000)).thenReturn(hist2);
+        when(queryCloudlet.enqueue(6000.0, f1, p1, 1000)).thenReturn(hist1);
+        when(queryCloudlet.enqueue(8000.0, f1, p1, 2000)).thenReturn(hist2);
 
-        History history = History.apply();
+        History history = new History<History.Entry>();
         when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(history);
 
 
         // process them and check if they are correctly processed
         cloudlet.updateQuery(100, 20, 10, 1000);
 
-        verify(queryCloudlet).enqueue(6.0, f1, p1, 1000);
-        verify(queryCloudlet).enqueue(8.0, f1, p1, 2000);
-        verify(queryCloudlet).run(100, 10, 1000);
+        verify(queryCloudlet).enqueue(6000.0, f1, p1, 1000);
+        verify(queryCloudlet).enqueue(8000.0, f1, p1, 2000);
+        verify(queryCloudlet).run(100, 10000, 1000);
 
         //instructions: Double, startTime: Double, capacity: Double)
 

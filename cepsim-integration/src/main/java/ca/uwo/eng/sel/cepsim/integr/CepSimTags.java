@@ -6,7 +6,5 @@ public class CepSimTags {
 
     public static final int CEP_EVENT_SENT = BASE_VALUE + 10;
 
-	//public static final int CLOUDLET_FINISH = BASE_VALUE + 10;
-	//public static final int TIMER_TAG = BASE_VALUE + 20;
 
 }

@@ -47,8 +47,8 @@ class RemoteQueryCloudletTest extends FlatSpec
     cons1.outputQueue should be(100)
 
     // check if history is being correctly logged
-    h.entries should have size (5)
-    h.entries should be (List(
+    h should have size (5)
+    h.toList should be (List(
       Processed("c1", 0.0, prod1, 1000),
       Processed("c1", 1.0, f1, 1000),
       Processed("c1", 5.0, f2, 1000),
