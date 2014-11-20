@@ -110,8 +110,13 @@ public class CepQueryCloudlet extends Cloudlet {
         long instructionsToExecute = instructions;
         double previousTimeInMs = previousTime * 1000;
 
+        // it is the first time this method has been invoked
+        if (this.executionTime == 0) {
+            this.cloudlet.init(previousTimeInMs);
+        }
         this.executionTime += (currentTime - previousTime);
 
+        // events have been received
         CepNetworkEvent netEvent = null;
         while (((netEvent = this.networkEvents.peek()) != null) && (netEvent.getDestTimestamp() < previousTime)) {
             this.networkEvents.remove();

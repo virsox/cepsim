@@ -37,6 +37,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     val placement = Placement(query1, 1)
     val schedStrategy = UniformOpScheduleStrategy()
     var cloudlet = QueryCloudlet("c1", placement, schedStrategy) //, 0.0)
+    cloudlet.init(0.0)
 
     // 10 millions instructions ~ 10 milliseconds
     // 1000 events will be generated per simulation tick
@@ -47,14 +48,16 @@ class BoundedQueryCloudletTest extends FlatSpec
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2)    should be(0)
 
-    f2.inputQueues(f1)     should be(188) // f2 will process 312/500 events only
+    f2.inputQueues(f1)     should be(187.50 +- 0.01) // f2 will process 312.5 events only (from the total of 500)
     f2.outputQueues(cons1) should be(0)
+    cons1.inputQueues(f2)  should be(0.25 +- 0.01)
     cons1.outputQueue      should be(31)
 
     // check if history is being correctly logged
     h should have size (4)
-    h.toList should contain theSameElementsInOrderAs (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
-      Processed("c1", 5.0, f2, 312), Processed("c1", 7.5, cons1, 31)))
+    h.toList should contain theSameElementsInOrderAs (
+      List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
+      Processed("c1", 5.0, f2, 312.5), Processed("c1", 7.5, cons1, 31)))
 
     // --------------------------------------------------------------------------
     // SECOND ITERATION
@@ -65,11 +68,12 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     prod1.outputQueues(f1) should be(0)
 
-    f1.inputQueues(prod1)  should be(0) // f2 buffer can only store more 812 events, so 1624 can be processed
+    f1.inputQueues(prod1)  should be(0) // f2 buffer can only store more 687.5 events, so 1375 can be processed
     f1.outputQueues(f2)    should be(0)
 
-    f2.inputQueues(f1)     should be(376)
+    f2.inputQueues(f1)     should be(375.0 +- 0.01)
     f2.outputQueues(cons1) should be(0)
+    cons1.inputQueues(f2)  should be(0.50  +- 0.01)
     cons1.outputQueue      should be(62)
 
     // --------------------------------------------------------------------------
@@ -80,11 +84,12 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     prod1.outputQueues(f1) should be(0)
 
-    f1.inputQueues(prod1)  should be(0) // f2 buffer can only store more 624 events, so 1248 can be processed
+    f1.inputQueues(prod1)  should be(0) // f2 buffer can only store more 625 events, so 1250 can be processed
     f1.outputQueues(f2)    should be(0)
 
-    f2.inputQueues(f1)     should be(564)
+    f2.inputQueues(f1)     should be(562.50 +- 0.01)
     f2.outputQueues(cons1) should be(0)
+    cons1.inputQueues(f2)  should be(0.75  +- 0.01)
     cons1.outputQueue      should be(93)
 
     // --------------------------------------------------------------------------
@@ -95,12 +100,16 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     prod1.outputQueues(f1) should be(0)
 
-    f1.inputQueues(prod1)  should be(128) // f2 buffer can only store more 436 events, so 872 can be processed
+    f1.inputQueues(prod1)  should be(125) // f2 buffer can only store more 437.5 events, so 875 can be processed
     f1.outputQueues(f2)    should be(0)
 
-    f2.inputQueues(f1)     should be(688)
+    f2.inputQueues(f1)     should be(687.50)
     f2.outputQueues(cons1) should be(0)
-    cons1.outputQueue      should be(124)
+    cons1.inputQueues(f2)  should be(0.00  +- 0.01)
+
+    // this iteration produces 32 events because of the remainder accumulated from
+    // the previous iterations
+    cons1.outputQueue      should be(125)
 
     // --------------------------------------------------------------------------
     // FIFTH ITERATION
@@ -108,18 +117,16 @@ class BoundedQueryCloudletTest extends FlatSpec
     //var cloudlet5 = QueryCloudlet("c5", placement, schedStrategy, 30.0)
     cloudlet.run(10000000, 40.0, 1000)
 
-    prod1.outputQueues(f1) should be(0) // f2 buffer can only store more 872 events
+    prod1.outputQueues(f1) should be(0) // f1 buffer can only store more 875 events
     prod1.inputQueue       should be(0)
-    gen.nonProcessed       should be(128)
+    gen.nonProcessed       should be(125)
 
-    f1.inputQueues(prod1)  should be(376)
+    f1.inputQueues(prod1)  should be(375) // f2 buffer can only store more 312.5 events, so 625 can be processed
     f1.outputQueues(f2)    should be(0)
 
-    f2.inputQueues(f1)     should be(688)
+    f2.inputQueues(f1)     should be(687.50)
     f2.outputQueues(cons1) should be(0)
-
-    // this iteration produces 32 events because of the remainder accumulated from
-    // the previous iterations
+    cons1.inputQueues(f2)  should be(0.25  +- 0.01)
     cons1.outputQueue      should be(156)
 
   }

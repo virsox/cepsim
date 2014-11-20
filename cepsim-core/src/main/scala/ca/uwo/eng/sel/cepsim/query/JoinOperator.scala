@@ -22,13 +22,13 @@ class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize:
     * @return Map containing a predecessor and the max number of events that should be consumed from
     *         that predecessor.
     */
-  private[query] def estimation(): Map[Vertex, Int] = {
+  private[query] def estimation(): Map[Vertex, Double] = {
 
     // get the first vertex
     val first = inputQueues.keysIterator.next()
 
-    // calculate the relation (b.queueSize / first.queueSize) for all vertices
-    val proportion = inputQueues.map((elem) => (elem._1, elem._2.toDouble / inputQueues(first)))
+    // calculate the relation (b.queueSize / first.queueSize) for all vertices b
+    val proportion = inputQueues.map((elem) => (elem._1, elem._2 / inputQueues(first)))
 
     // multiply all relations, and multiply by the reduction factor
     val denominator = proportion.foldLeft(1.0)((accum, elem) => accum * elem._2) * reduction
@@ -39,19 +39,19 @@ class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize:
     val value = Math.pow(numerator / denominator, 1.0 / inputQueues.size)
 
     // then, we calculate for each vertex
-    proportion.map((elem) => (elem._1, Math.floor(value * elem._2).toInt))
+    proportion.map((elem) => (elem._1, value * elem._2))
   }
 
-  override def run(instructions: Double): Int = {
+  override def run(instructions: Double): Double = {
 
     val events = retrieveFromInput(instructions, sumOfValues(estimation()))
 
     // calculate the cartesian product among all input events
-    val total = events.foldLeft(1)((accum, elem) => accum * elem._2)
+    val total = events.foldLeft(1.0)((accum, elem) => accum * elem._2)
 
     // the reduction parameter represents how much the join condition reduces
     // the number of joined elements
-    sendToAllOutputs(Math.floor(total * reduction).toInt)
+    sendToAllOutputs(total * reduction)
     sumOfValues(events)
   }
 

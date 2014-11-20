@@ -13,14 +13,20 @@ trait Vertex {
   private[query] def addQuery(q: Query) = queries += q
   private[query] def removeQuery(q: Query) = queries -= q
 
-  def run(instructions: Double): Int
+  def init(startTime: Double = 0.0): Unit = { }
+  def run(instructions: Double): Double
 
 
   override def toString: String = s"[id: $id]"
 
   def compare(that: Vertex) = id.compare(that.id)
 
-  def sumOfValues(map: Map[Vertex, Int]): Int = map.foldLeft(0)((sum, elem) => sum + elem._2)
+  /**
+    * Calculate the sum of all values of the informed map.
+    * @param map Map from which the values will be summed.
+    * @return The sum of all values contained in the map.
+    */
+  def sumOfValues(map: Map[Vertex, Double]): Double = map.foldLeft(0.0)((sum, elem) => sum + elem._2)
 
 
 }

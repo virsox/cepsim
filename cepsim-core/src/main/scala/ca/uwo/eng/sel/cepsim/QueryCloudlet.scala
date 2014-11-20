@@ -16,15 +16,23 @@ object QueryCloudlet {
 
 class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy) {
 
-  // a cloudlet should be  stateless
-  // for each interval, a cloudlet will represent the execution of all queries allocated
-  // to a VM. So, we may create another one for the next interval - and the state regarding the
-  // query execution shouldn' be kept here
+
+
+  // a cloudlet should be  stateless. for each interval, a cloudlet will represent the execution of
+  // all queries allocated to a VM.
+
+  /**
+    * Initialize all vertices from the cloudlet's placement.
+    * @param startTime Execution start time (in milliseconds).
+    */
+  def init(startTime: Double): Unit = {
+    placement.vertices.foreach(_.init(startTime))
+  }
 
   /**
    * Enqueue into a vertex events received from another vertex that is currently running in
    * another placement.
-   * @param receivedTime Time in which the events has been received.
+   * @param receivedTime Time in which the events has been received (in milliseconds).
    * @param v Vertex that has received the events.
    * @param orig Origin of the received events.
    * @param events Number of events that has been received.
@@ -44,7 +52,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   /**
    * Run the cloudlet for the specified number of instructions.
    * @param instructions Number of instructions that can be used in this simulation tick.
-   * @param startTime The current simulation time.
+   * @param startTime The current simulation time (in milliseconds)..
    * @param capacity The total processor capacity (in MIPS) that is allocated to this cloudlet.
    * @return History containing all logged events.
    */
@@ -67,7 +75,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
       verticesList.foreach { (elem) =>
 
         val v: Vertex = elem._1
-        var processedEvents = 0
+        var processedEvents = 0.0
         if (v.isInstanceOf[InputVertex]) {
 
           val iv = v.asInstanceOf[InputVertex]
@@ -94,7 +102,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
         history = history.logProcessed(id, time, v, processedEvents)
 
-        // check if there are events to be sent to remove vertices
+        // check if there are events to be sent to remote vertices
         if (v.isInstanceOf[OutputVertex]) {
 
           val ov = v.asInstanceOf[OutputVertex]
@@ -105,8 +113,12 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           notInPlacement.foreach { (dest) =>
             // log and remove from the output queue
             // the actual sending is not implemented here
-            history = history.logSent(id, time, v, dest, ov.outputQueues(dest))
-            ov.dequeueFromOutput((dest, ov.outputQueues(dest)))
+
+            val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
+            if (sentMessages > 0) {
+              history = history.logSent(id, time, v, dest, sentMessages)
+              ov.dequeueFromOutput((dest, sentMessages))
+            }
           }
         }
 

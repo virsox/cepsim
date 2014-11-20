@@ -9,12 +9,48 @@ object EventConsumer {
 class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) extends Vertex
   with InputVertex {
 
-  var outputQueue = 0
+  var outputQueue = 0L
+  //var accumulated = 0.0
 
-  override def run(instructions: Double): Int = {
+  def retrieveFromInput(instructions: Double): Map[Vertex, Double] = {
+
+    // total number of input events
+    val total = totalInputEvents
+
+    // number of events that can be processed
+    val events = total.min(instructions / ipe)
+
+    // number of events processed from each queue
+    // current implementation distribute processing according to the queue size
+    var toProcess = inputQueues.map(elem =>
+      (elem._1 -> Math.floor( (elem._2.toDouble / total) * events ))
+    )
+
+    // events not processed due to rounding
+    var correctionFactor = events - sumOfValues(toProcess)
+
+    // distribute the correction in round robin fashion among all input queues
+    val iterator = inputQueues.keys.iterator
+    var v = iterator.next
+    while (Math.abs(correctionFactor - 1.0) < 0.001) {
+      toProcess = toProcess updated (v, toProcess(v) + 1)
+      correctionFactor -= 1
+      v = iterator.next
+    }
+
+    // update the input queues
+    dequeueFromInput(toProcess.toList:_*)
+
+    // return the number of elements per input
+    toProcess
+  }
+
+  override def run(instructions: Double): Double = {
     val processed = sumOfValues(retrieveFromInput(instructions))
-    outputQueue += processed
-    processed
+
+    var output = Math.round(processed)
+    outputQueue += output
+    output
   }
 
 

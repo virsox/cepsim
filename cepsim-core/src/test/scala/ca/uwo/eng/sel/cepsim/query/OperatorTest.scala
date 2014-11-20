@@ -28,18 +28,18 @@ class OperatorTest extends FlatSpec
       op.addOutputQueue(n1, outputSelectivity)
     }
 
-    def enqueue(op: Operator, sizes: Int*) = {
+    def enqueue(op: Operator, sizes: Double*) = {
       op.enqueueIntoInput(p1, sizes(0))
       if (sizes.length > 1) op.enqueueIntoInput(p2, sizes(1))
       if (sizes.length > 2) op.enqueueIntoInput(p3, sizes(2))
       if (sizes.length > 3) op.enqueueIntoInput(p4, sizes(3))
     }
 
-    def assertInput(op: Operator, sizes: Int*) = {
-      op.inputQueues(p1) should be (sizes(0))
-      if (sizes.length > 1) op.inputQueues(p2) should be (sizes(1))
-      if (sizes.length > 2) op.inputQueues(p3) should be (sizes(2))
-      if (sizes.length > 3) op.inputQueues(p4) should be (sizes(3))
+    def assertInput(op: Operator, sizes: Double*) = {
+      op.inputQueues(p1) should be (sizes(0) +- 0.01)
+      if (sizes.length > 1) op.inputQueues(p2) should be (sizes(1) +- 0.01)
+      if (sizes.length > 2) op.inputQueues(p3) should be (sizes(2) +- 0.01)
+      if (sizes.length > 3) op.inputQueues(p4) should be (sizes(3) +- 0.01)
     }
 
   }
@@ -127,11 +127,11 @@ class OperatorTest extends FlatSpec
     setup(op, 1.0, p1, p2, p3)
     enqueue(op, 10, 10, 10)
 
-    // there are three queues, and it is possible to process 10 events in new Fixture total
+    // there are three queues, and it is possible to process 10 events in total
     op.run(100)
 
-    assertInput(op, 6, 7, 7)
-    op.outputQueues(n1) should be (10)
+    assertInput(op, 6.66, 6.66, 6.66)
+    op.outputQueues(n1) should be (10.00)
   }
 
   it should "not waste CPU instructions again" in new Fixture {
@@ -139,10 +139,10 @@ class OperatorTest extends FlatSpec
     setup(op, 1.0, p1, p2, p3, p4)
     enqueue(op, 10, 10, 10, 10)
 
-    // there are three queues, and it is possible to process 10 events in new Fixture total
+    // there are four queues, and it is possible to process 27 events in total
     op.run(270)
 
-    assertInput(op, 3, 3, 3, 4)
+    assertInput(op, 3.25, 3.25, 3.25, 3.25)
     op.outputQueues(n1) should be (27)
   }
 
@@ -153,7 +153,7 @@ class OperatorTest extends FlatSpec
 
     op.run(300)
 
-    assertInput(op, 2, 1, 4, 3)
+    assertInput(op, 2.5, 1.25, 3.5, 2.75)
     op.outputQueues(n1) should be (3)
   }
 
@@ -166,7 +166,7 @@ class OperatorTest extends FlatSpec
     op.run(100)
 
     assertInput(op, 0, 0)
-    op.outputQueues(n1) should be (0)
+    op.outputQueues(n1) should be (0.5)
 
     enqueue(op, 5, 5)
     op.run(100)
@@ -206,8 +206,8 @@ class OperatorTest extends FlatSpec
     op.run(50)
 
     assertInput(op, 5)
-    op.outputQueues(n1) should be (0)
-    op.outputQueues(n2) should be (2)
+    op.outputQueues(n1) should be (0.5)
+    op.outputQueues(n2) should be (2.5)
 
     op.run(50)
     assertInput(op, 0)

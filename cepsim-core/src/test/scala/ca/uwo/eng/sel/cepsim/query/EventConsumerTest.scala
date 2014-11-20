@@ -46,8 +46,8 @@ class EventConsumerTest extends FlatSpec
     cons1 enqueueIntoInput(op2, 50)
     cons1 run(100)
 
-    cons1.inputQueues(op1) should be (33)
-    cons1.inputQueues(op2) should be (17)
+    cons1.inputQueues(op1) should be (33.0 +- 0.001)
+    cons1.inputQueues(op2) should be (17.0 +- 0.001)
     cons1.outputQueue should be (100)
   }
 

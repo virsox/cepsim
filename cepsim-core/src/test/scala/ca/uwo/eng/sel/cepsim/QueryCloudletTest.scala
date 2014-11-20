@@ -48,13 +48,23 @@ class QueryCloudletTest extends FlatSpec
 
   }
 
+  "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
+    val cloudlet = new QueryCloudlet("c1", placement, opSchedule)
+    cloudlet.init(0.0)
 
-  "A QueryCloudlet" should "correctly run all operators" in new Fixture {
+    verify(prod).init(0.0)
+    verify(f1).init(0.0)
+    verify(f2).init(0.0)
+    verify(cons).init(0.0)
+  }
+
+  it should "correctly run all operators" in new Fixture {
     val cloudlet = new QueryCloudlet("c1", placement, opSchedule) //, 0.0)
+    cloudlet.init(0.0)
 
-    doReturn(Map.empty withDefaultValue(0)).when(prod).outputQueues
-    doReturn(Map.empty withDefaultValue(0)).when(f1).outputQueues
-    doReturn(Map.empty withDefaultValue(0)).when(f2).outputQueues
+    doReturn(Map.empty withDefaultValue(0.0)).when(prod).outputQueues
+    doReturn(Map.empty withDefaultValue(0.0)).when(f1).outputQueues
+    doReturn(Map.empty withDefaultValue(0.0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
     cloudlet run(1000000, 0.0, 1)
@@ -84,9 +94,9 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Set(f3, cons)).when(q).successors(f2)
     doReturn(Set(cons2)).when(q).successors(f3)
 
-    doReturn(Map.empty withDefaultValue(0)).when(prod).outputQueues
-    doReturn(Map.empty withDefaultValue(0)).when(f1).outputQueues
-    doReturn(Map(cons -> 100, f3 -> 100)).when(f2).outputQueues
+    doReturn(Map.empty withDefaultValue(0.0)).when(prod).outputQueues
+    doReturn(Map.empty withDefaultValue(0.0)).when(f1).outputQueues
+    doReturn(Map(cons -> 100.0, f3 -> 100.0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
     val history = cloudlet run(1000000, 0.0, 1)

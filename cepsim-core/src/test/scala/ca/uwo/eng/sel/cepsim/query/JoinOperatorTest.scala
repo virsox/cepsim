@@ -85,13 +85,17 @@ class JoinOperatorTest extends FlatSpec
 
     join setLimit(c1, 50)
     join setLimit(c2, 60)
+
+    // the output limit is 50, which means 5000 pairs
+    // the square root of 5000 is 70.71
     join enqueueIntoInput(p1, 100)
     join enqueueIntoInput(p2, 100)
     join run (200)
 
-    join.inputQueues should contain theSameElementsAs(Set((p1, 30), (p2, 30)))
-    join.outputQueues(c1) should be (49)
-    join.outputQueues(c2) should be (49)
+    join.inputQueues(p1)  should be (29.29 +- 0.01)
+    join.inputQueues(p1)  should be (29.29 +- 0.01)
+    join.outputQueues(c1) should be (50.00 +- 0.01)
+    join.outputQueues(c2) should be (50.00 +- 0.01)
   }
 
 }

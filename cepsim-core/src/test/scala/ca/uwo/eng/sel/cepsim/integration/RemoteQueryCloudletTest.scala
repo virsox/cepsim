@@ -38,6 +38,8 @@ class RemoteQueryCloudletTest extends FlatSpec
   "A QueryCloudlet" should "run operators in the placement only" in new Fixture {
     val placement = Placement(Set(prod1, f1, f2, cons1), 1)
     val cloudlet = QueryCloudlet("c1", placement, new DefaultOpScheduleStrategy())
+    cloudlet.init(0.0)
+
     val h = cloudlet run (10000000, 0.0, 1000)
 
     prod1.outputQueues(f1) should be(0)

@@ -12,8 +12,28 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
 
   var accumulator: Double = 0
 
+  def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Double= Double.MaxValue): Map[Vertex, Double] = {
 
-  override def run(instructions: Double): Int = {
+    // total number of input events
+    val total = totalInputEvents
+
+    // number of events that can be processed
+    val events = total.min(instructions / ipe).min(maximumNumberOfEvents)
+
+    // number of events processed from each queue
+    // current implementation distribute processing according to the queue size
+    val toProcess = inputQueues.map(elem =>
+      (elem._1 -> (elem._2.toDouble / total) * events)
+    )
+
+    // update the input queues
+    dequeueFromInput(toProcess.toList:_*)
+
+    // return the number of elements per input
+    toProcess
+  }
+
+  override def run(instructions: Double): Double = {
 
     // number of processed events
     val events = sumOfValues(retrieveFromInput(instructions, maximumNumberOfEvents))

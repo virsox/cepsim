@@ -31,7 +31,7 @@ object History {
     def v: Vertex
 
     /** Processed events. */
-    def quantity: Int
+    //def quantity: Double
 
     def compare(that: Entry): Int = {
       val timeComp = this.time.compare(that.time)
@@ -47,9 +47,7 @@ object History {
     * @param v Vertex.
     * @param quantity Quantity of events processed by the vertex.
     */
-  case class Processed(cloudlet: String, time: Double, v: Vertex, quantity: Int) extends Entry {
-    def reduceBy(value: Int): Processed = new Processed(cloudlet, time, v, quantity - value)
-  }
+  case class Processed(cloudlet: String, time: Double, v: Vertex, quantity: Double) extends Entry
 
   /**
     * * A history entry representing events sent to a remote vertex.
@@ -169,7 +167,7 @@ class History[T <: Entry] private (es: Vector[T]) extends Seq[T] {
     * @param quantity Quantity of events processed by the vertex.
     * @return History appended with the entry.
     */
-  def logProcessed(cloudlet: String, time: Double, v: Vertex, quantity: Int) =
+  def logProcessed(cloudlet: String, time: Double, v: Vertex, quantity: Double) =
     new History[Entry](history :+ Processed(cloudlet, time, v, quantity))
 
   /**

@@ -116,7 +116,7 @@ object LatencyMetric extends Metric {
 
     entry match {
       case Some(consumerEntry) => {
-        val eventsPerProduceResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity)
+        val eventsPerProduceResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity.toInt)
         val minimumPerProducer = eventsPerProduceResult.map((entry) =>
           (entry._1, minimumTime(entry._1, entry._2, consumerEntry.time))
         )

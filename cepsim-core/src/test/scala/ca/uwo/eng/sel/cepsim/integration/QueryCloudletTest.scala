@@ -41,6 +41,8 @@ class QueryCloudletTest extends FlatSpec
 
     // cloudlet going to use 10 millions instructions (10 ms)
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), new DefaultOpScheduleStrategy()) //, 0.0)
+    cloudlet.init(0.0)
+
     val h = cloudlet run (10000000, 0.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
@@ -56,6 +58,8 @@ class QueryCloudletTest extends FlatSpec
 
   it should "accumulate the number of produced events" in new Fixture {
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), new DefaultOpScheduleStrategy())//, 0.0)
+    cloudlet.init(0.0)
+
     cloudlet run (10000000, 0.0, 1000)
     cloudlet run (10000000, 10.0, 1000)
 
@@ -74,6 +78,7 @@ class QueryCloudletTest extends FlatSpec
 
     val placement = Placement(query1.vertices ++ query2.vertices, 1)
     val cloudlet = QueryCloudlet("c1", placement, new DefaultOpScheduleStrategy()) //, 0.0)
+    cloudlet.init(0.0)
 
     val h = cloudlet run (10000000, 0.0, 1000)
     prod1.outputQueues(f1) should be(0)
