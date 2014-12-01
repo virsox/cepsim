@@ -17,16 +17,16 @@ class PlacementTest extends FlatSpec
   with MockitoSugar {
 
   trait Fixture {
-    val q1 = mock[Query]
-    val q2 = mock[Query]
-    val prod1 = mock[EventProducer]
-    val prod2 = mock[EventProducer]
-    val s1 = mock[Operator]
-    val f1 = mock[Operator]
-    val f2 = mock[Operator]
-    val m1 = mock[Operator]
-    val cons1 = mock[EventConsumer]
-    val cons2 = mock[EventConsumer]
+    val q1 = mock[Query]("q1")
+    val q2 = mock[Query]("q2")
+    val prod1 = mock[EventProducer]("prod1")
+    val prod2 = mock[EventProducer]("prod2")
+    val s1 = mock[Operator]("s1")
+    val f1 = mock[Operator]("f1")
+    val f2 = mock[Operator]("f2")
+    val m1 = mock[Operator]("m1")
+    val cons1 = mock[EventConsumer]("cons1")
+    val cons2 = mock[EventConsumer]("cons2")
     //val vm = mock[Vm]
 
     doReturn(100L).when(q1).duration
@@ -124,7 +124,7 @@ class PlacementTest extends FlatSpec
 
   }
 
-  it should "return an iterator that iterates in BFS" in new Fixture {
+  it should "return an iterator that iterates in topological order when queries share operators" in new Fixture {
 
     doReturn(Set(q1)).when(prod1).queries
     doReturn(Set(q1)).when(cons1).queries
@@ -178,7 +178,49 @@ class PlacementTest extends FlatSpec
     it.next should be (cons2)
     it.hasNext should be (false)
   }
-  
+
+
+  it should "return an iterator that iterates in topological order on a irregular graph" in new Fixture {
+    val f3 = mock[Operator]("f3")
+
+    doReturn(Set(q1)).when(prod1).queries
+    doReturn(Set(q1)).when(prod2).queries
+    doReturn(Set(q1)).when(f1).queries
+    doReturn(Set(q1)).when(f2).queries
+    doReturn(Set(q1)).when(f3).queries
+    doReturn(Set(q1)).when(m1).queries
+    doReturn(Set(q1)).when(cons1).queries
+
+    doReturn(Set(prod1, prod2, f1, f2, f3, m1, cons1)).when(q1).vertices
+
+    doReturn(Set.empty).when(q1).predecessors(prod1)
+    doReturn(Set.empty).when(q1).predecessors(prod2)
+    doReturn(Set(prod1)).when(q1).predecessors(f1)
+    doReturn(Set(prod2)).when(q1).predecessors(f2)
+    doReturn(Set(f2)).when(q1).predecessors(f3)
+    doReturn(Set(f1, f3)).when(q1).predecessors(m1)
+    doReturn(Set(m1)).when(q1).predecessors(cons1)
+
+    doReturn(Set(f1)).when(q1).successors(prod1)
+    doReturn(Set(f2)).when(q1).successors(prod2)
+    doReturn(Set(f3)).when(q1).successors(f2)
+    doReturn(Set(m1)).when(q1).successors(f1)
+    doReturn(Set(m1)).when(q1).successors(f3)
+    doReturn(Set(cons1)).when(q1).successors(m1)
+    doReturn(Set.empty).when(q1).successors(cons1)
+
+    val placement = Placement(Set(prod1, prod2, f1, f2, f3, m1, cons1), 1)
+    val it = placement.iterator
+
+    Set(it.next, it.next) should contain allOf (prod1, prod2)
+    Set(it.next, it.next) should contain allOf (f1, f2)
+    it.next should be (f3)
+    it.next should be (m1)
+    it.next should be (cons1)
+    it.hasNext should be (false)
+
+  }
+
   it should "calculate the correct duration" in new Fixture {
     var p = Placement(Set.empty[Vertex], 1)
 

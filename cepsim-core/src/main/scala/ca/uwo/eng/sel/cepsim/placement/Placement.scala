@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.placement
 import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, Query, Vertex}
 
+import scala.collection.mutable
 import scala.collection.mutable.Queue
 
 import java.util.{Set => JavaSet}
@@ -97,17 +98,28 @@ class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Verte
     class VertexIterator extends Iterator[Vertex] {
 
       /** FIFO queue */
-      val queue: Queue[Vertex] = Queue(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
+      var index = 0
+      var toProcess: Vector[Vertex] = Vector(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
+      var neighbours: mutable.Set[Vertex] = mutable.LinkedHashSet[Vertex]()
 
-      def hasNext(): Boolean = !queue.isEmpty
+      def hasNext(): Boolean = index < toProcess.length
       def next(): Vertex = {
-        val v = queue.dequeue()
+        val v = toProcess(index)
+
         // processing neighbours
         v.queries.foreach {(q) =>
-          q.successors(v).foreach { (n) =>
-            if ((!queue.contains(n)) && (vertices.contains(n))) queue.enqueue(n)
+          q.successors(v).foreach { (successor) =>
+            if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
           }
         }
+
+        val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
+          (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
+        )
+        neighbours = neighbours -- toBeMoved
+        toProcess = toProcess ++ toBeMoved
+        index += 1
+
         v
       }
     }
