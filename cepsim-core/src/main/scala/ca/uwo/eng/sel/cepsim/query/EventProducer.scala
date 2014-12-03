@@ -17,7 +17,7 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
     else inputQueue += generator.generate()
   }
 
-  def run(instructions: Double): Double = {
+  def run(instructions: Double, startTime: Double = 0.0): Double = {
 
     val maxOutput = (instructions / ipe)
     val processed = Math.floor(maxOutput.min(inputQueue).min(maximumNumberOfEvents)).toInt

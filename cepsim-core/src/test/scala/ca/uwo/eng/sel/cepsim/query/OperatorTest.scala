@@ -76,6 +76,17 @@ class OperatorTest extends FlatSpec
     op.outputQueues(n1) should be (10)
   }
 
+  it should "run even if there are no events in the input" in new Fixture {
+    val op = Operator("f1", 10)
+    setup(op, 1.0, p1)
+    enqueue(op, 0)
+
+    op.run(1000)
+    assertInput(op, 0)
+    op.outputQueues(n1) should be (0)
+  }
+
+
   "A filter operator" should "correctly apply selectivity" in new Fixture {
     val op = Operator("f1", 10)
     setup(op, 0.1, p1)

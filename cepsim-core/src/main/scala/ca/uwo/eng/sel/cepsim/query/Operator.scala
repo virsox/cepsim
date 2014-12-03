@@ -23,7 +23,7 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
     val toProcess = inputQueues.map(elem =>
-      (elem._1 -> (elem._2.toDouble / total) * events)
+      (elem._1 -> (if (total > 0) (elem._2.toDouble / total) * events else 0))
     )
 
     // update the input queues
@@ -33,10 +33,10 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
     toProcess
   }
 
-  override def run(instructions: Double): Double = {
+  override def run(instructions: Double, startTime: Double = 0.0): Double = {
 
     // number of processed events
-    val events = sumOfValues(retrieveFromInput(instructions, maximumNumberOfEvents))
+    val events = Vertex.sumOfValues(retrieveFromInput(instructions, maximumNumberOfEvents))
 
     sendToAllOutputs(events)
     events

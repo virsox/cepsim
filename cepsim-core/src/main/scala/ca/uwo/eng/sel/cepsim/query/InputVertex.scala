@@ -21,7 +21,7 @@ trait InputVertex extends Vertex  { this: Vertex =>
     inputQueues = inputQueues + (v -> 0)
   }
 
-  def totalInputEvents = sumOfValues(inputQueues)
+  def totalInputEvents = Vertex.sumOfValues(inputQueues)
 
 
 
