@@ -115,22 +115,26 @@ class WindowedOperatorTest extends FlatSpec
     val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
     setup(op)
 
-    op.init(0.0, 1000)
+    op.init(0.0, 100)
 
-    // run 10 times until it reaches the 10 second window
+    // run 10 times until it reaches the 1 second window
     (1 to 10).foreach((i) => {
       op enqueueIntoInput (f1, 10)
       op enqueueIntoInput (f2, 10)
-      op.run(200, i * 1000)
+      op.run(200, i * 100)
     })
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
     op.outputQueues(f3) should be (200.0 +- 0.0001)
 
+    op enqueueIntoInput (f1, 10)
+    op enqueueIntoInput (f2, 10)
     op.run(200, 11000)
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
     op.outputQueues(f3) should be (220.0 +- 0.0001)
+
+
 
   }
 

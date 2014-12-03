@@ -30,6 +30,13 @@ class WindowedOperator(id: String, ipe: Double, size: Duration, advance: Duratio
 
   override def run(instructions: Double, startTime: Double = 0.0): Double = {
 
+
+    // retrieve events from input
+    val retrievedEvents = retrieveFromInput(instructions, maximumNumberOfEvents)
+    retrievedEvents.foreach((elem) => {
+      accumulated = accumulated updated (elem._1, accumulated(elem._1) + elem._2)
+    })
+
     var processed = false
     while (startTime >= processAt.head) {
       processAt = processAt.tail
@@ -40,13 +47,10 @@ class WindowedOperator(id: String, ipe: Double, size: Duration, advance: Duratio
     if (processed) {
       val output = function(accumulated)
       sendToAllOutputs(output)
+      accumulated = Map.empty withDefaultValue(0.0)
     }
 
-    // retrieve events from input
-    val retrievedEvents = retrieveFromInput(instructions, maximumNumberOfEvents)
-    retrievedEvents.foreach((elem) => {
-      accumulated = accumulated updated (elem._1, accumulated(elem._1) + elem._2)
-    })
+
     Vertex.sumOfValues(retrievedEvents)
   }
 
