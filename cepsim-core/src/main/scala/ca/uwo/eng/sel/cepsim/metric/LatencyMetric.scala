@@ -99,7 +99,7 @@ object LatencyMetric extends Metric {
         } else false
       })
 
-      var minimumTime = neededEntries.head.time
+      val minimumTime = neededEntries.head.time
       historyTmp = historyTmp.remove(neededEntries:_*)
 
       // fix history - in case the newest entry from neededEntries hasn't been entirely processed
@@ -116,8 +116,8 @@ object LatencyMetric extends Metric {
 
     entry match {
       case Some(consumerEntry) => {
-        val eventsPerProduceResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity.toInt)
-        val minimumPerProducer = eventsPerProduceResult.map((entry) =>
+        val eventsPerProducerResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity.toInt)
+        val minimumPerProducer = eventsPerProducerResult.map((entry) =>
           (entry._1, minimumTime(entry._1, entry._2, consumerEntry.time))
         )
         (consumerEntry.time - minimumPerProducer.values.min, historyTmp)
