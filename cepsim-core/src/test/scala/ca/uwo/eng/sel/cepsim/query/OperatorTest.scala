@@ -214,6 +214,18 @@ class OperatorTest extends FlatSpec
     op.outputQueues(n1) should be (1)
     op.outputQueues(n2) should be (5)
   }
+
+  "An operator" should "be able to create more events" in new Fixture {
+    val op = Operator("split", 10)
+    setup(op, 5.0, p1)
+
+    enqueue(op, 10)
+    op.run(100)
+
+    assertInput(op, 0)
+    op.outputQueues(n1) should be (50.0)
+  }
+
   // ---------------------------------------------------------------------------------------
 
   "Any Operator" should "respect the bounds of the successor buffer" in new Fixture {

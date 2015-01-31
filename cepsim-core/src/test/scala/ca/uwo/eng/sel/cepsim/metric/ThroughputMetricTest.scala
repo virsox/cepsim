@@ -65,7 +65,6 @@ class ThroughputMetricTest extends FlatSpec
 
 
   it should "consider selectivity" in new Fixture {
-
     val q = Query("q1", Set(p1, f1, c1),
       Set((p1, f1, 1.0), (f1, f2, 0.1), (f2, c1, 0.1)))
     doReturn(500L).when(c1).outputQueue
@@ -73,6 +72,16 @@ class ThroughputMetricTest extends FlatSpec
     val metric = ThroughputMetric.calculate(q, 10 seconds)
     metric shouldBe 5000.0 +- 0.01
   }
+
+
+  it should "consider selectivity larger than one" in new Fixture {
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 5.0)))
+    doReturn(500L).when(c1).outputQueue
+
+    val metric = ThroughputMetric.calculate(q, 1 seconds)
+    metric shouldBe 100.0 +- 0.01
+  }
+
 
   it should "correctly calculate the metric in a query with a split operator" in new Fixture {
     val q = Query("q1", Set(p1, s1, f1, f2, pr1, pr2, c1),
@@ -84,6 +93,14 @@ class ThroughputMetricTest extends FlatSpec
     metric shouldBe 156.25 +- 0.01
   }
 
+  it should "correctly calculate the metric in a query with a split and selectivity larger than one" in new Fixture {
+    val q = Query("q1", Set(p1, f1, c1),
+      Set((p1, s1, 1.0), (s1, f1, 2.5), (s1, f2, 2.5), (f1, c1, 1.0), (f2, c1, 0.1)))
+    doReturn(275L).when(c1).outputQueue
+
+    val metric = ThroughputMetric.calculate(q, 1 seconds)
+    metric shouldBe 100.0 +- 0.01
+  }
 
   it should "correctly calculate the metric in a query with two producers" in new Fixture {
     val q = Query("q1", Set(p1, p2, f1, pr1, pr2, f2, c1),
