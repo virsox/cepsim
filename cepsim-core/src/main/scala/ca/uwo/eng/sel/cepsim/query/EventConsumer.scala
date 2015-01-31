@@ -31,11 +31,11 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
 
     // distribute the correction in round robin fashion among all input queues
     val iterator = inputQueues.keys.iterator
-    var v = iterator.next
+
     while (Math.abs(correctionFactor - 1.0) < 0.001) {
+      val v = iterator.next
       toProcess = toProcess updated (v, toProcess(v) + 1)
       correctionFactor -= 1
-      v = iterator.next
     }
 
     // update the input queues

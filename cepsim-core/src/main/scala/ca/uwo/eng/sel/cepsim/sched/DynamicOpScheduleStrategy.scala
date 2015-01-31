@@ -3,6 +3,11 @@ package ca.uwo.eng.sel.cepsim.sched
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
 
+/** DynamicOpScheduleStrategy companion object. */
+object DynamicOpScheduleStrategy {
+  def apply() = new DynamicOpScheduleStrategy()
+}
+
 /**
   * Schedule strategy that dynamically determines the next vertex to be processed. This strategy operates in
   * two or more rounds: in the first round, all operators receives the minimum between the number of instructions

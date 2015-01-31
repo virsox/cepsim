@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import ca.uwo.eng.sel.cepsim.sched.RoundRobinOpScheduleStrategy;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.DatacenterBroker;
@@ -175,7 +176,7 @@ public class CepSimExample {
 			queries.add(q);
 			
 			Placement placement = Placement.withQueries(queries, 1);
-			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());
+			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());//new RoundRobinOpScheduleStrategy(10));
 						
 			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
 			cloudlet.setUserId(brokerId);
