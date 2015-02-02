@@ -27,7 +27,7 @@ import java.util.*;
 public class CepSimWordCount {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 10L;
+    private static final Long DURATION = 30L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -134,7 +134,7 @@ public class CepSimWordCount {
 		
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-        for (int i = 1; i <= 2; i++) {
+        for (int i = 1; i <= 4; i++) {
             Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
             EventProducer p = new EventProducer("spout" + i, 10, gen, false);
             Operator split = new Operator("split" + i, 25000, 1000000);
@@ -161,7 +161,7 @@ public class CepSimWordCount {
             queries.add(q);
 
             Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new RRDynOpScheduleStrategy(50));
+            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new RRDynOpScheduleStrategy(100));
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);
 

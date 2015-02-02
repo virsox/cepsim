@@ -4,6 +4,11 @@ import ca.uwo.eng.sel.cepsim.metric.History.Entry
 import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, EventConsumer, Query}
 
+import scala.collection.mutable
+import scala.collection.mutable.LinkedList
+import scala.collection.mutable.Map
+import scala.collection.mutable.HashMap
+
 /** Calculates the latency metric */
 object LatencyMetric extends Metric {
 
@@ -27,14 +32,18 @@ object LatencyMetric extends Metric {
     * @param consumer Latency from which the latency is being calculated.
     */
   def calculate(query: Query, history: History[Entry], consumer: EventConsumer): Double = {
-    
+
+    // all consumer entries
     val entries = history.processedEntriesFrom(consumer).filter(_.quantity > 0)
 
-    var historyTmp = history
+    val producerEntriesSet = query.producers.map((p) => {
+      (p, mutable.LinkedList(history.processedEntriesFrom(p):_*))
+    })
+
+    val producerEntries = HashMap(producerEntriesSet.toList:_*)
     val sum = entries.foldLeft(0.0)((acc, entry) => {
-      val perEntry = internalCalculate(query, historyTmp, consumer, entry.time)
-      historyTmp = perEntry._2
-      acc + perEntry._1
+      val perEntry = internalCalculate(query, producerEntries, consumer, entry)
+      acc + perEntry
     })
     
     sum / entries.size
@@ -52,28 +61,48 @@ object LatencyMetric extends Metric {
   def calculate(query: Query, history: History[Entry], consumer: EventConsumer, time: Double): Double = {
 
     var historyTmp = history
-    val entries = history.processedEntriesFrom(consumer)
-    entries.takeWhile(_.time < time).foreach((entry) => {
-      historyTmp = internalCalculate(query, historyTmp, consumer, entry.time)._2
+
+    val producerEntriesSet = query.producers.map((p) => {
+      (p, mutable.LinkedList(history.processedEntriesFrom(p):_*))
     })
-    internalCalculate(query, historyTmp, consumer, time)._1
+    val producerEntries = HashMap(producerEntriesSet.toList:_*)
+
+    var entries = history.processedEntriesFrom(consumer)
+    val (removed, remaining) = entries.span(_.time < time)
+
+    removed.foreach((entry) => {
+      internalCalculate(query, producerEntries, consumer, entry)
+    })
+    internalCalculate(query, producerEntries, consumer, remaining.head)
   }
 
 
-  /**
-    * Method used internally to calculate latency. It calculates the latency for a specific consumer
-    * at a specific time, but also return a new History with the entries used in the calculation removed.
-    *
-    * @param query Query to which the consumer belongs.
-    * @param history Query execution history.
-    * @param consumer Consumer of which the latency is calculated.
-    * @param time Simulation time when the latency is calculated.
-    * @return A pair containing the calculated latency and the new History.
-    */
-  private def internalCalculate(query: Query, history: History[Entry], consumer: EventConsumer,
-                                time: Double): (Double, History[Entry]) = {
+//  /**
+//   * Method used internally to calculate latency. It calculates the latency for a specific consumer
+//   * at a specific time, but also return a new History with the entries used in the calculation removed.
+//   *
+//   * @param query Query to which the consumer belongs.
+//   * @param history Query execution history.
+//   * @param consumer Consumer of which the latency is calculated.
+//   * @param time Simulation time when the latency is calculated.
+//   * @return A pair containing the calculated latency and the new History.
+//   */
+//  private def internalCalculate(query: Query, history: History[Entry], consumer: EventConsumer,
+//                                time: Double): (Double, History[Entry]) = {
+//    val entry = history.processedEntriesFrom(consumer, time)
+//    entry match {
+//      case Some(consumerEntry) => internalCalculate(query, history, consumer, consumerEntry)
+//      case None => throw new IllegalArgumentException()
+//    }
+  //}
 
-    var historyTmp = history
+
+  private def internalCalculate(query: Query,
+                                producerEntries: Map[EventProducer, LinkedList[Processed]],
+                                consumer: EventConsumer,
+                                consumerEntry: Processed): Double = {//, History[Entry]) = {
+
+    //var historyTmp = history
 
     /**
      * Estimate the time in the simulation timeline when the producer started producing the
@@ -90,7 +119,8 @@ object LatencyMetric extends Metric {
 
       // select the first entries needed to generate the output
       var totalEvents = events
-      val neededEntries = history.processedEntriesFrom(producer).takeWhile((entry) => {
+
+      var (neededEntries, remaining) = producerEntries(producer).span((entry) => {
         if (entry.time < consumerTime) {
           if (totalEvents <= 0) false
           else {
@@ -100,30 +130,25 @@ object LatencyMetric extends Metric {
       })
 
       val minimumTime = neededEntries.head.time
-      historyTmp = historyTmp.remove(neededEntries:_*)
+      //historyTmp = historyTmp.remove(neededEntries:_*)
 
       // fix history - in case the newest entry from neededEntries hasn't been entirely processed
       if (totalEvents < 0) {
         val newest = neededEntries.last
         val remainingQuantity = -totalEvents // totalEvents is already negative
-        historyTmp = historyTmp.add(Processed(newest.cloudlet, newest.time, newest.v, remainingQuantity))
+        remaining = Processed(newest.cloudlet, newest.time, newest.v, remainingQuantity) +: remaining
       }
+      producerEntries.update(producer, remaining)
 
       minimumTime
     }
 
-    val entry = history.processedEntriesFrom(consumer, time)
+    val eventsPerProducerResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity.toInt)
+    val minimumPerProducer = eventsPerProducerResult.map((entry) =>
+      (entry._1, minimumTime(entry._1, entry._2, consumerEntry.time))
+    )
+    consumerEntry.time - minimumPerProducer.values.min//, historyTmp)
 
-    entry match {
-      case Some(consumerEntry) => {
-        val eventsPerProducerResult = this.eventsPerProducer(query, consumer, consumerEntry.quantity.toInt)
-        val minimumPerProducer = eventsPerProducerResult.map((entry) =>
-          (entry._1, minimumTime(entry._1, entry._2, consumerEntry.time))
-        )
-        (consumerEntry.time - minimumPerProducer.values.min, historyTmp)
-      }
-      case None => throw new IllegalArgumentException()
-    }
   }
 
 }
