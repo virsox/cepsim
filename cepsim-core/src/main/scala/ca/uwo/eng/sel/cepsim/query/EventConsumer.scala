@@ -23,7 +23,7 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
     var toProcess = inputQueues.map(elem =>
-      (elem._1 -> Math.floor( (elem._2.toDouble / total) * events ))
+      (elem._1 -> (if (total == 0) 0.0 else Math.floor( (elem._2.toDouble / total) * events )))
     )
 
     // events not processed due to rounding

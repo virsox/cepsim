@@ -62,6 +62,7 @@ public class CepQueryCloudletScheduler extends CloudletSchedulerTimeShared {
 
 		for (ResCloudlet rcl : getCloudletExecList()) {
 			double capacity = getCapacity(mipsShare);
+
 			long instructions = (long) (capacity * timeSpam * rcl.getNumberOfPes() * Consts.MILLION);
 			
 			// [WAH] ----------------------------------------

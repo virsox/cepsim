@@ -106,7 +106,7 @@ object LatencyMetric extends Metric {
       if (totalEvents < 0) {
         val newest = neededEntries.last
         val remainingQuantity = -totalEvents // totalEvents is already negative
-        historyTmp = historyTmp.add(Processed(newest.cloudlet, newest.time, newest.v, remainingQuantity.toInt))
+        historyTmp = historyTmp.add(Processed(newest.cloudlet, newest.time, newest.v, remainingQuantity))
       }
 
       minimumTime

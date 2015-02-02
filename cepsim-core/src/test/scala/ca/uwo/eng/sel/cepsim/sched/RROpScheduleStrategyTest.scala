@@ -11,7 +11,7 @@ import org.scalatest.{Matchers, FlatSpec}
 /**
  * Created by virso on 15-01-30.
  */
-class RoundRobinOpScheduleStrategyTest extends FlatSpec
+class RROpScheduleStrategyTest extends FlatSpec
   with Matchers
   with MockitoSugar {
 
@@ -36,9 +36,9 @@ class RoundRobinOpScheduleStrategyTest extends FlatSpec
   }
 
 
-  "A RoundRobinOpScheduleStrategy" should "iterate N times over the vertices" in new Fixture {
+  "A RROpScheduleStrategy" should "iterate N times over the vertices" in new Fixture {
 
-    val strategy = RoundRobinOpScheduleStrategy(10)
+    val strategy = RROpScheduleStrategy(10)
     val ret = strategy.allocate(1000, placement)
 
     for (i <- 1 to 10) {
@@ -54,7 +54,7 @@ class RoundRobinOpScheduleStrategyTest extends FlatSpec
 
 
   it should "use all instructions on the last iterator" in new Fixture {
-    val strategy = RoundRobinOpScheduleStrategy(3)
+    val strategy = RROpScheduleStrategy(3)
     val ret = strategy.allocate(1000, placement)
 
     for (i <- 1 to 2) {

@@ -3,9 +3,9 @@ package ca.uwo.eng.sel.cepsim.sched
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
-/** Companion object to RoundRobinOpScheduleStrategy. */
-object RoundRobinOpScheduleStrategy {
-  def apply(iterations: Int) = new RoundRobinOpScheduleStrategy(iterations)
+/** Companion object to RROpScheduleStrategy. */
+object RROpScheduleStrategy {
+  def apply(iterations: Int) = new RROpScheduleStrategy(iterations)
 }
 
 
@@ -16,7 +16,7 @@ object RoundRobinOpScheduleStrategy {
  *
  * @param iterations Number of passes over the vertices.
  */
-class RoundRobinOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
+class RROpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
 
   /**
    * Allocates instructions to vertices from a placement.
@@ -28,7 +28,7 @@ class RoundRobinOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
    */
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] = {
     val instrPerOperator = DefaultOpScheduleStrategy.instructionsPerOperator(instructions, placement)
-    new RoundRobinScheduleIterator(placement, iterations, instrPerOperator)
+    new RRScheduleIterator(placement, iterations, instrPerOperator)
   }
 
   /**
@@ -37,7 +37,7 @@ class RoundRobinOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
     * @param iterations Number of passes over the vertices.
     * @param instrPerOperator Map containing the total number of instructions allocated to each vertex.
     */
-  class RoundRobinScheduleIterator(placement: Placement, iterations: Int, instrPerOperator: Map[Vertex, Double])
+  class RRScheduleIterator(placement: Placement, iterations: Int, instrPerOperator: Map[Vertex, Double])
     extends Iterator[(Vertex, Double)] {
 
     /** Count the number of passes. */

@@ -7,9 +7,12 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
+import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
+import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.RROpScheduleStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -24,6 +27,7 @@ import java.util.*;
 public class CepSimWordCount {
 
     private static final Double SIM_INTERVAL = 0.01;
+    private static final Long DURATION = 10L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -61,7 +65,7 @@ public class CepSimWordCount {
 
 			// VM description
 			int vmid = 1;
-			int mips = 1000;
+			int mips = 2500;
 			long size = 10000; // image size (MB)
 			int ram = 512; // vm memory (MB)
 			long bw = 1000;
@@ -109,9 +113,10 @@ public class CepSimWordCount {
 
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
+                Query q = cepCl.getQueries().iterator().next();
 
-                //System.out.println("Throughput: " + cepCl.getThroughput("q" + cepCl.getCloudletId()));
-                //System.out.println("Latency   : " + cepCl.getLatency("q" + cepCl.getCloudletId()));
+                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
+                System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -129,40 +134,42 @@ public class CepSimWordCount {
 		
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-		Generator gen = new UniformGenerator(100000, (long) Math.floor(SIM_INTERVAL * 1000));
-		EventProducer p = new EventProducer("spout", 10, gen, false);
-		Operator split = new Operator("split", 25000, 1000000);
-        Operator count = new Operator("count", 12500, 1000000);
-		EventConsumer c = new EventConsumer("end", 1, 1000000);
-			
-		Set<Vertex> vertices = new HashSet<>();
-		vertices.add(p);
-		vertices.add(split);
-        vertices.add(count);
-		vertices.add(c);
-//
-//		// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
-//		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f, 1.0);
-//		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f, c, 0.1);
-//		Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
-//		edges.add(e1);
-//		edges.add(e2);
-//
-//			Query q = Query.apply("q" + i, vertices, edges, 10L);
-//			Set<Query> queries = new HashSet<Query>();
-//			queries.add(q);
-//
-//			Placement placement = Placement.withQueries(queries, 1);
-//			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new DefaultOpScheduleStrategy());
-//
-//			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
-//			cloudlet.setUserId(brokerId);
-//
-//			cloudlets.add(cloudlet);
-//
-//
-//		return cloudlets;
-        return null;
+        for (int i = 1; i <= 2; i++) {
+            Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+            EventProducer p = new EventProducer("spout" + i, 10, gen, false);
+            Operator split = new Operator("split" + i, 25000, 1000000);
+            Operator count = new Operator("count" + i, 12500, 1000000);
+            EventConsumer c = new EventConsumer("end" + i, 10, 1000000);
+
+            Set<Vertex> vertices = new HashSet<>();
+            vertices.add(p);
+            vertices.add(split);
+            vertices.add(count);
+            vertices.add(c);
+
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, split, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(split, count, 5.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(count, c, 1.0);
+
+            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+            edges.add(e1);
+            edges.add(e2);
+            edges.add(e3);
+
+            Query q = Query.apply("testlatency" + i, vertices, edges, DURATION);
+            Set<Query> queries = new HashSet<Query>();
+            queries.add(q);
+
+            Placement placement = Placement.withQueries(queries, 1);
+            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new RRDynOpScheduleStrategy(50));
+            CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
+            cloudlet.setUserId(brokerId);
+
+            cloudlets.add(cloudlet);
+
+        }
+
+		return cloudlets;
 	}
 	
 	/**

@@ -112,8 +112,10 @@ class QueryCloudletTest extends FlatSpec
     verify(cons2, never()).run(anyLong())
 
     val entries = history.from(f2)
-    entries should have size (2)
-    entries should be (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
+    //entries should have size (2)
+    //entries should be (List(Processed("c1", 500.0, f2, 0), Sent("c1", 500.0, f2, f3, 100)))
+    entries should have size (1)
+    entries should be (List(Sent("c1", 500.0, f2, f3, 100)))
   }
 
 

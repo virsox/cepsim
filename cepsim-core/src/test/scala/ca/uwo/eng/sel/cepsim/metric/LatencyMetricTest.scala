@@ -81,7 +81,23 @@ class LatencyMetricTest extends FlatSpec
     latency should be (22.5 +- 0.001)
   }
 
-  
+  it should "calculate the correct value when selectivity is greater than one" in new Fixture {
+    val q = Query("q1", Set(p1, f1, c1), Set((p1, f1, 1.0), (f1, c1, 5.0)))
+    doReturn(10.0).when(gen).average
+
+    var h = History()
+    h = h.logProcessed("cloudlet1",  0.0, p1, 10)
+    h = h.logProcessed("cloudlet1", 10.0, f1, 10)
+    h = h.logProcessed("cloudlet1", 20.0, c1, 10)  // 20
+    h = h.logProcessed("cloudlet1", 30.0, c1, 10)  // 30
+    h = h.logProcessed("cloudlet1", 40.0, c1, 10)  // 40
+    h = h.logProcessed("cloudlet1", 50.0, c1, 10)  // 50
+    h = h.logProcessed("cloudlet1", 60.0, c1, 10)  // 60
+
+    val latency = LatencyMetric.calculate(q, h, c1)
+    latency should be (40.0 +- 0.001)
+  }
+
   it should "calculate the correct value when there are more than one producer" in new Fixture {
     val q = Query("q1", Set(p1, p2, f1, f2, c1), Set((p1, f1, 1.0), (p2, f2, 1.0), (f1, c1, 0.5), (f2, c1, 0.1)))
     doReturn(10.0).when(gen).average
