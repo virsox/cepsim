@@ -23,7 +23,7 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
     var toProcess = inputQueues.map(elem =>
-      (elem._1 -> Math.floor( (elem._2.toDouble / total) * events ))
+      (elem._1 -> (if (total == 0) 0.0 else Math.floor( (elem._2.toDouble / total) * events )))
     )
 
     // events not processed due to rounding
@@ -31,11 +31,11 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
 
     // distribute the correction in round robin fashion among all input queues
     val iterator = inputQueues.keys.iterator
-    var v = iterator.next
-    while (correctionFactor > 0.999) {
+
+    while (Math.abs(correctionFactor - 1.0) < 0.001) {
+      val v = iterator.next
       toProcess = toProcess updated (v, toProcess(v) + 1)
       correctionFactor -= 1
-      v = iterator.next
     }
 
     // update the input queues

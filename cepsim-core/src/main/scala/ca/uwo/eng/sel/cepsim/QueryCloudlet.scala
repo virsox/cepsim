@@ -99,8 +99,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           processedEvents = v.run(elem._2)
         }
 
-
-        history = history.logProcessed(id, time, v, processedEvents)
+        if (processedEvents > 0)
+          history = history.logProcessed(id, time, v, processedEvents)
 
         // check if there are events to be sent to remote vertices
         if (v.isInstanceOf[OutputVertex]) {

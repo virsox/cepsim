@@ -60,14 +60,16 @@ public class CepQueryCloudletScheduler extends CloudletSchedulerTimeShared {
 			return 0.0;
 		}
 
+        double peSpeed = mipsShare.get(0); // assume it is always the same
 		for (ResCloudlet rcl : getCloudletExecList()) {
 			double capacity = getCapacity(mipsShare);
+
 			long instructions = (long) (capacity * timeSpam * rcl.getNumberOfPes() * Consts.MILLION);
 			
 			// [WAH] ----------------------------------------
 			if (rcl instanceof CepQueryResCloudlet) {
 				((CepQueryResCloudlet) rcl).updateCloudletFinishedSoFar(instructions, currentTime, 
-						getPreviousTime(), capacity);
+						getPreviousTime(), peSpeed);
 			}
 			// ----------------------------------------------
 			else {
