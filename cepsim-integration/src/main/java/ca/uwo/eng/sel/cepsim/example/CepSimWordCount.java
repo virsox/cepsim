@@ -27,7 +27,7 @@ import java.util.*;
 public class CepSimWordCount {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 30L;
+    private static final Long DURATION = 10L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -112,11 +112,16 @@ public class CepSimWordCount {
 
 
 			for (Cloudlet cl : newList) {
+                if (!(cl instanceof CepQueryCloudlet)) continue;
+
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
                 Query q = cepCl.getQueries().iterator().next();
 
                 System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-                System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
+
+                if (cepCl.getCloudletId() == 1) {
+                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
+                }
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -128,18 +133,19 @@ public class CepSimWordCount {
 
 
 
-	private static Set<CepQueryCloudlet> createCloudlets(int brokerId) {
+	private static Set<Cloudlet> createCloudlets(int brokerId) {
 		// 100_000_000 I / interval
 		// 100 events / interval
-		
-		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-        for (int i = 1; i <= 4; i++) {
+        final int MAX_QUERIES = 5;
+		Set<Cloudlet> cloudlets = new HashSet<>();
+
+        for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
-            EventProducer p = new EventProducer("spout" + i, 10, gen, false);
+            EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
             Operator split = new Operator("split" + i, 25000, 1000000);
             Operator count = new Operator("count" + i, 12500, 1000000);
-            EventConsumer c = new EventConsumer("end" + i, 10, 1000000);
+            EventConsumer c = new EventConsumer("end" + i, 5000, 1000000);
 
             Set<Vertex> vertices = new HashSet<>();
             vertices.add(p);
@@ -161,15 +167,34 @@ public class CepSimWordCount {
             queries.add(q);
 
             Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new RRDynOpScheduleStrategy(100));
-            CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
+            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, new RRDynOpScheduleStrategy(0.1, 2500));
+            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);
 
             cloudlets.add(cloudlet);
 
         }
+        //
+        //long length = 400000;
+        //long fileSize = 300;
+        //long outputSize = 300;
 
-		return cloudlets;
+        // overhead
+        UtilizationModel utilizationModel = new UtilizationModelFull();
+        for (int j = 1; j <= 7; j++) {
+            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
+                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
+
+            cloudlet.setUserId(brokerId);
+            cloudlets.add(cloudlet);
+
+        }
+
+
+
+
+
+        return cloudlets;
 	}
 	
 	/**

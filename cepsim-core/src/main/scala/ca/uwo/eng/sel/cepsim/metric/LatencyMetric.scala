@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.metric
 
+import java.io.{PrintWriter, FileWriter, BufferedWriter, FileOutputStream}
+
 import ca.uwo.eng.sel.cepsim.metric.History.Entry
 import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, EventConsumer, Query}
@@ -40,11 +42,14 @@ object LatencyMetric extends Metric {
       (p, mutable.LinkedList(history.processedEntriesFrom(p):_*))
     })
 
+    //val out = new PrintWriter(new FileWriter("/Users/virso/tmp/latencies.txt"))
     val producerEntries = HashMap(producerEntriesSet.toList:_*)
     val sum = entries.foldLeft(0.0)((acc, entry) => {
       val perEntry = internalCalculate(query, producerEntries, consumer, entry)
+      //out.println(entry.time + ", " + entry.quantity + ", " + perEntry)
       acc + perEntry
     })
+    //out.close();
     
     sum / entries.size
   }

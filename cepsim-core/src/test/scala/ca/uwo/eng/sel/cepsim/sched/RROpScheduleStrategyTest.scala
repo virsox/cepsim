@@ -2,15 +2,18 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
+import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created by virso on 15-01-30.
  */
+@RunWith(classOf[JUnitRunner])
 class RROpScheduleStrategyTest extends FlatSpec
   with Matchers
   with MockitoSugar {

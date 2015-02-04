@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim
 
-import ca.uwo.eng.sel.cepsim.metric.History.{Received, Processed, Sent}
+import ca.uwo.eng.sel.cepsim.metric.History.{Received, Sent}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy

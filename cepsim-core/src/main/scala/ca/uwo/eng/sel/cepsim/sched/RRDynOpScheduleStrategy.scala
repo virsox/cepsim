@@ -3,10 +3,13 @@ package ca.uwo.eng.sel.cepsim.sched
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
 
+import scala.concurrent.duration._
+
 
 /** RRDynOpScheduleStrategy companion object. */
 object RRDynOpScheduleStrategy {
   def apply(iterations: Int): RRDynOpScheduleStrategy = new RRDynOpScheduleStrategy(iterations)
+  def apply(iterationLength: Duration, capacity: Double) = new RRDynOpScheduleStrategy(iterationLength, capacity)
 }
 
 
@@ -16,7 +19,12 @@ object RRDynOpScheduleStrategy {
   *
  * @param iterations Number of passes over the vertices.
   */
-class RRDynOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
+class RRDynOpScheduleStrategy private (iterations: Int, iterationLength: Duration, capacity: Double) extends OpScheduleStrategy {
+
+  def this(iterations: Int) = this(iterations, null, 0.0)
+  def this(iterationLength: Duration, capacity: Double) = this(-1, iterationLength, capacity)
+  def this(iterationLength: Double, capacity: Double) = this(iterationLength millisecond, capacity)
+
   /**
    * Allocates instructions to vertices from a placement.
    *
@@ -27,7 +35,13 @@ class RRDynOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
    */
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] = {
     val instrPerOperator = DefaultOpScheduleStrategy.instructionsPerOperator(instructions, placement)
-    new RRDynamicScheduleIterator(placement, iterations, instrPerOperator)
+
+    var iterationsNo = iterations
+    if (iterationsNo == -1)
+      // number of instructions per millisecond
+      iterationsNo = Math.ceil(instructions / (iterationLength.toUnit(MILLISECONDS) * (capacity * 1000))).toInt
+
+    new RRDynamicScheduleIterator(placement, iterationsNo, instrPerOperator)
   }
 
   /**
@@ -75,7 +89,7 @@ class RRDynOpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
           nextIndex = 0
 
           // position the index on the first vertex which has something to process
-          while ((inputEvents(vertices(nextIndex)) == 0) && (nextIndex < vertices.length))
+          while ((nextIndex < vertices.length) && (inputEvents(vertices(nextIndex)) == 0))
             nextIndex += 1
 
           if (nextIndex == vertices.length) nextIndex = -1
