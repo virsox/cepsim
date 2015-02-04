@@ -5,6 +5,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
 
+import scala.concurrent.duration._
+
 /**
  * Created by virso on 2014-07-30.
  */
@@ -19,8 +21,24 @@ class JoinOperatorTest extends FlatSpec
     val c1 = Operator("c1", 1.0)
   }
 
-  "A Join operator" should "match events coming from two inputs" in new Fixture {
-    val join = JoinOperator("j1", 1, 1.0)
+  "A Join object" should "create operators with the right reduction" in {
+    val join = JoinOperator("j1", 1, 0.1, 1 second)
+    join.init(0.0, 100)
+
+    join.reductionFactor should be (1.0 +- 0.001)
+  }
+
+  it should "accept reduction definitions using different time intervals" in {
+    val join = JoinOperator("j1", 1, 0.1, 100 milliseconds)
+    join.init(0.0, 100)
+
+    join.reductionFactor should be (0.1 +- 0.001)
+  }
+
+
+  "A Join Operator" should "match events coming from two inputs" in new Fixture {
+    val join = JoinOperator("j1", 1, 1.0, 1 second)
+    join.init(0.0, 1000)
 
     join addInputQueue(p1)
     join addInputQueue(p2)
@@ -38,9 +56,14 @@ class JoinOperatorTest extends FlatSpec
 
   it should "match events coming from all inputs and apply reduction" in new Fixture {
 
-    val join = JoinOperator("j1", 1, 0.01)
-    val p3 = Operator("p3", 1)
+    val join = JoinOperator("j1", 1, 0.01, 1 second)
 
+    // the simulation uses 100ms ticks, but the operator has been specified
+    // at 1 second window - so, the reduction factor is adjusted to take
+    // this into consideration
+    join.init(0.0, 100)
+
+    val p3 = Operator("p3", 1)
     join addInputQueue(p1)
     join addInputQueue(p2)
     join addInputQueue(p3)
@@ -53,11 +76,11 @@ class JoinOperatorTest extends FlatSpec
     join run(30)
 
     join.inputQueues should contain theSameElementsAs Set((p1, 0), (p2, 0) ,(p3, 0))
-    join outputQueues c1 should be (10)
+    join outputQueues c1 should be (100)
   }
 
   it should "correctly estimate the number of events that should be consumed" in new Fixture {
-    val join = JoinOperator("j1", 1, 0.1)
+    val join = JoinOperator("j1", 1, 0.1, 1 second)
 
     join addInputQueue(p1)
     join addInputQueue(p2)
@@ -74,7 +97,7 @@ class JoinOperatorTest extends FlatSpec
   }
 
   it should "respect the bounds of all successor buffers" in new Fixture {
-    val join = JoinOperator("j1", 1, 0.01)
+    val join = JoinOperator("j1", 1, 0.01, 1 second)
     val c2 = EventConsumer("c2", 1)
 
     join addInputQueue(p1)

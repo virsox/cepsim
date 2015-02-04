@@ -22,9 +22,11 @@ import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
 import scala.collection.JavaConversions;
+import scala.concurrent.duration.Duration;
 
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 public class CepSimExperiment1 {
@@ -67,10 +69,10 @@ public class CepSimExperiment1 {
 
 			// VM description
 			int vmid = 1;
-			int mips = 1000;
+			int mips = 2000;
 			long size = 10000; // image size (MB)
-			int ram = 512; // vm memory (MB)
-			long bw = 1000;
+			int ram = 4096; // vm memory (MB)
+			long bw = 10000;
 			int pesNumber = 1; // number of cpus
 			String vmm = "Xen"; // VMM name
 
@@ -142,65 +144,51 @@ public class CepSimExperiment1 {
 	private static Set<CepQueryCloudlet> createCloudlets(CepSimBroker broker) {
 		// 100_000_000 I / interval
 		// 100 events / interval
-		
-		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
-		//for (int i = 1; i <= 5; i++) {
-		Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
-		EventProducer p = new EventProducer("p1", 10000, gen, true);
-		Operator f1 = new Operator("f1", 100000, 1000);
-		Operator f2 = new Operator("f2", 100000, 1000);
-		EventConsumer c = new EventConsumer("c1", 10000, 1000);
-			
-		Set<Vertex> vertices = new HashSet<>();
-		vertices.add(p);
-		vertices.add(f1);
-		vertices.add(f2);
-		vertices.add(c);
-			
-		// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
-		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f1, 1.0);
-		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f1, f2, 0.5);
-		Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(f2, c, 0.1);
-		Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
-		edges.add(e1);
-		edges.add(e2);
-		edges.add(e3);
+		Query q = getQuery1(1);
+        Placement placement1 = Placement.apply(q, 1);
+				//apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
 
-		Query q = Query.apply("q1", vertices, edges, 10L);
-		Set<Query> queries = new HashSet<Query>();
-		queries.add(q);
-
-        // ------------------ create placements
-        Set<Vertex> p1Vertices = new HashSet<>();
-        p1Vertices.add(p);
-        p1Vertices.add(f1);
-
-        Set<Vertex> p2Vertices = new HashSet<>();
-        p2Vertices.add(f2);
-        p2Vertices.add(c);
-
-        Placement placement1 = Placement.apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
-        Placement placement2 = Placement.apply(JavaConversions.asScalaSet(p2Vertices).<Vertex>toSet(), 2);
-
-        // ------------------  create cloudlets
 		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, new DefaultOpScheduleStrategy());
-		QueryCloudlet p2Cloudlet = new QueryCloudlet("cl2", placement2, new DefaultOpScheduleStrategy());
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
 		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);
-        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, p2Cloudlet, false, network);
-
         cloudlet1.setUserId(broker.getId());
-        cloudlet2.setUserId(broker.getId());
-			
+
+		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 		cloudlets.add(cloudlet1);
-		cloudlets.add(cloudlet2);
-		//}
-		
 		return cloudlets;
 	}
-	
+
+
+	public static Query getQuery1(int number) {
+
+		Generator gen1 = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+		Generator gen2 = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+
+		EventProducer p1 = new EventProducer("p1_" + number, 1000, gen1, true);
+		EventProducer p2 = new EventProducer("p2_" + number, 1000, gen2, true);
+		Operator f1 = new Operator("f1_" + number, 5000, 10000);
+		Operator f2 = new Operator("f2_" + number, 5000, 10000);
+		Operator f3 = new Operator("f3_" + number, 5000, 10000);
+		Operator j1 = new JoinOperator("j1_" + number, 20000, 0.01, Duration.apply(100, TimeUnit.MILLISECONDS), 10000);
+		EventConsumer c = new EventConsumer("c1" + number, 1000, 1000);
+		Set<Vertex> vertices = new HashSet<>(Arrays.asList(p1, p2, f1, f2, f3, j1, c));
+
+		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, f1, 1.0);
+		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, f2, 1.0);
+		Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(f1, j1, 0.1);
+		Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(f2, f3, 0.5);
+		Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(f3, j1, 0.1);
+		Tuple3<OutputVertex, InputVertex, Object> e6 = new Tuple3<OutputVertex, InputVertex, Object>(j1,  c, 1.0);
+		Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>(
+				Arrays.asList(e1, e2, e3, e4, e5, e6)
+		);
+
+		Query q = Query.apply("q1_" + number, vertices, edges, 10L);
+		return q;
+	}
+
 	/**
 	 * Creates the datacenter.
 	 *
@@ -219,18 +207,20 @@ public class CepSimExperiment1 {
 		// In this example, it will have only one core.
 		List<Pe> peList = new ArrayList<>();
 
-		int mips = 1000;
+		int mips = 2000;
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
-		peList.add(new Pe(1, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
+		peList.add(new Pe(1, new PeProvisionerSimple(mips)));
+		peList.add(new Pe(2, new PeProvisionerSimple(mips)));
+		peList.add(new Pe(3, new PeProvisionerSimple(mips)));
 
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 2048; // host memory (MB)
-		long storage = 1000000; // host storage
-		int bw = 10000;
+		int ram = 16384; // host memory (MB)
+		long storage = 1000000000; // host storage (1TB)
+		int bw = 100000;
 
 		hostList.add(
 			new Host(

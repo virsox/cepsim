@@ -1,15 +1,24 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import scala.concurrent.duration._
+
 object JoinOperator {
-  def apply(id: String, ipe: Double, reduction: Double, queueMaxSize: Int = 0) =
-    new JoinOperator(id, ipe, reduction, queueMaxSize)
+  def apply(id: String, ipe: Double, reduction: Double, window: Duration, queueMaxSize: Int = 0) =
+    new JoinOperator(id, ipe, reduction, window, queueMaxSize)
 
 }
 
-class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize: Int)
+class JoinOperator(id: String, ipe: Double, val reduction: Double, val window: Duration, queueMaxSize: Int)
     extends Operator(id, ipe, queueMaxSize)
     with InputVertex
     with OutputVertex {
+
+  var reductionFactor = reduction
+
+  override def init(startTime: Double = 0.0, simInterval: Double = 10.0): Unit = {
+    val multiplier = window.div(Duration(simInterval, MILLISECONDS))
+    reductionFactor = reduction * multiplier
+  }
 
 
   /**
@@ -31,7 +40,7 @@ class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize:
     val proportion = inputQueues.map((elem) => (elem._1, elem._2 / inputQueues(first)))
 
     // multiply all relations, and multiply by the reduction factor
-    val denominator = proportion.foldLeft(1.0)((accum, elem) => accum * elem._2) * reduction
+    val denominator = proportion.foldLeft(1.0)((accum, elem) => accum * elem._2) * reductionFactor
 
     val numerator = maximumNumberOfEvents
 
@@ -42,17 +51,17 @@ class JoinOperator(id: String, ipe: Double, val reduction: Double, queueMaxSize:
     proportion.map((elem) => (elem._1, value * elem._2))
   }
 
-  override def run(instructions: Double): Double = {
+  override def run(instructions: Double, startTime: Double = 0.0): Double = {
 
-    val events = retrieveFromInput(instructions, sumOfValues(estimation()))
+    val events = retrieveFromInput(instructions, Vertex.sumOfValues(estimation()))
 
     // calculate the cartesian product among all input events
     val total = events.foldLeft(1.0)((accum, elem) => accum * elem._2)
 
     // the reduction parameter represents how much the join condition reduces
     // the number of joined elements
-    sendToAllOutputs(total * reduction)
-    sumOfValues(events)
+    sendToAllOutputs(total * reductionFactor)
+    Vertex.sumOfValues(events)
   }
 
 }
