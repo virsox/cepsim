@@ -5,7 +5,7 @@ import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.metric.History.Processed
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
-import ca.uwo.eng.sel.cepsim.sched.UniformOpScheduleStrategy
+import ca.uwo.eng.sel.cepsim.sched.{DefaultOpScheduleStrategy}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
@@ -35,7 +35,7 @@ class BoundedQueryCloudletTest extends FlatSpec
 
   "A QueryCloudlet" should "respect the buffer bounds" in new Fixture {
     val placement = Placement(query1, 1)
-    val schedStrategy = UniformOpScheduleStrategy()
+    val schedStrategy = DefaultOpScheduleStrategy.uniform()
     var cloudlet = QueryCloudlet("c1", placement, schedStrategy) //, 0.0)
     cloudlet.init(0.0)
 

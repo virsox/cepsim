@@ -2,6 +2,7 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
+import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -45,7 +46,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 
-    val strategy = RRDynOpScheduleStrategy(5)
+    val strategy = RRDynOpScheduleStrategy(WeightedAllocationStrategy(), 5)
     val ret = strategy.allocate(1000, placement)
 
     // if there are events to be processed, then the strategy works as the RRSchedulingStrategy
@@ -65,7 +66,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 
-    val strategy = RRDynOpScheduleStrategy(4)
+    val strategy = RRDynOpScheduleStrategy(WeightedAllocationStrategy(), 4)
     val ret = strategy.allocate(1000, placement)
 
 
@@ -98,7 +99,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 
-    val strategy = RRDynOpScheduleStrategy(0.1 millisecond, 1000.0)
+    val strategy = RRDynOpScheduleStrategy(WeightedAllocationStrategy(), 0.1 millisecond, 1000.0)
 
     // 10 millions instructions is a 10 ms simulation tick
     // the goal is to have an iteration of 0.1 ms (100,000 instructions).

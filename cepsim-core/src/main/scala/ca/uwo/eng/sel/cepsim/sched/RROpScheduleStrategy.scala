@@ -2,10 +2,12 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.Vertex
+import ca.uwo.eng.sel.cepsim.sched.alloc.{WeightedAllocationStrategy, UniformAllocationStrategy, AllocationStrategy}
 
 /** Companion object to RROpScheduleStrategy. */
 object RROpScheduleStrategy {
-  def apply(iterations: Int) = new RROpScheduleStrategy(iterations)
+
+  def apply(allocStrategy: AllocationStrategy, iterations: Int) = new RROpScheduleStrategy(allocStrategy, iterations)
 }
 
 
@@ -16,7 +18,7 @@ object RROpScheduleStrategy {
  *
  * @param iterations Number of passes over the vertices.
  */
-class RROpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
+class RROpScheduleStrategy(allocStrategy: AllocationStrategy, iterations: Int) extends OpScheduleStrategy {
 
   /**
    * Allocates instructions to vertices from a placement.
@@ -27,7 +29,7 @@ class RROpScheduleStrategy(iterations: Int) extends OpScheduleStrategy {
    *         instructions allocated to that vertex.
    */
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] = {
-    val instrPerOperator = DefaultOpScheduleStrategy.instructionsPerOperator(instructions, placement)
+    val instrPerOperator = allocStrategy.instructionsPerOperator(instructions, placement)
     new RRScheduleIterator(placement, iterations, instrPerOperator)
   }
 

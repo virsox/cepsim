@@ -108,8 +108,8 @@ class QueryCloudletTest extends FlatSpec
     verify(cons).run(100000)
 
     // these operators shouldn't run
-    verify(f3, never()).run(anyLong())
-    verify(cons2, never()).run(anyLong())
+    verify(f3, never()).run(anyLong(), anyLong())
+    verify(cons2, never()).run(anyLong(), anyLong())
 
     val entries = history.from(f2)
     //entries should have size (2)

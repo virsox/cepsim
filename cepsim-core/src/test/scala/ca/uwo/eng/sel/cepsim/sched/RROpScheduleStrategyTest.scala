@@ -2,6 +2,7 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
+import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -41,7 +42,7 @@ class RROpScheduleStrategyTest extends FlatSpec
 
   "A RROpScheduleStrategy" should "iterate N times over the vertices" in new Fixture {
 
-    val strategy = RROpScheduleStrategy(10)
+    val strategy = RROpScheduleStrategy(WeightedAllocationStrategy(), 10)
     val ret = strategy.allocate(1000, placement)
 
     for (i <- 1 to 10) {
@@ -57,7 +58,7 @@ class RROpScheduleStrategyTest extends FlatSpec
 
 
   it should "use all instructions on the last iterator" in new Fixture {
-    val strategy = RROpScheduleStrategy(3)
+    val strategy = RROpScheduleStrategy(WeightedAllocationStrategy(), 3)
     val ret = strategy.allocate(1000, placement)
 
     for (i <- 1 to 2) {

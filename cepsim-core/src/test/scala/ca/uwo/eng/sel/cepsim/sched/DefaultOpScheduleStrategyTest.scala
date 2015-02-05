@@ -43,7 +43,7 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     doReturn(Set(p1, f1, c1)).when(placement).vertices(query1)
     doReturn(Iterator(p1, f1, c1)).when(placement).iterator
 
-    val strategy = new DefaultOpScheduleStrategy()
+    val strategy = DefaultOpScheduleStrategy.weighted()
 
     val ret = strategy.allocate(1000, placement)
 
@@ -61,7 +61,7 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     doReturn(Set(p2, f2, c2)).when(placement).vertices(query2)
     doReturn(Iterator(p1, p2, f1, f2, c1, c2)).when(placement).iterator
 
-    val strategy = new DefaultOpScheduleStrategy()
+    val strategy = DefaultOpScheduleStrategy.weighted
     val ret = strategy.allocate(1000, placement)
 
 
@@ -82,7 +82,7 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     doReturn(Set(p2, f1, c2)).when(placement).vertices(query2)
     doReturn(Iterator(p1, p2, f1, c1, c2)).when(placement).iterator
 
-    val strategy = new DefaultOpScheduleStrategy()
+    val strategy = DefaultOpScheduleStrategy.weighted()
     val ret = strategy.allocate(1000, placement)
 
 
@@ -94,5 +94,74 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     ret.hasNext should be (false)
   }
 
+  "A RRScheduleStrategy" should "allocate the same number of instructions for every operator" in {
+    val p1 = mock[EventProducer]
+    val p2 = mock[EventProducer]
+    val f1 = mock[Operator]
+    val f2 = mock[Operator]
+    val c1 = mock[EventConsumer]
+    val c2 = mock[EventConsumer]
+
+    val placement = mock[Placement]
+    doReturn(Set(p1, p2, f1, f2, c1, c2)).when(placement).vertices
+    doReturn(Iterator(p1, p2, f1, f2, c1, c2)).when(placement).iterator
+
+    val strategy = DefaultOpScheduleStrategy.uniform()
+    val ret = strategy.allocate(1200, placement)
+
+    ret.next    should be ((p1, 200))
+    ret.next    should be ((p2, 200))
+    ret.next    should be ((f1, 200))
+    ret.next    should be ((f2, 200))
+    ret.next    should be ((c1, 200))
+    ret.next    should be ((c2, 200))
+    ret.hasNext should be (false)
+  }
+
+  "A UserDefOpScheduleStrategy" should "respect user weights" in new Fixture {
+    val prod1 = mock[EventProducer]
+    val split1 = mock[Operator]
+    val count1 = mock[Operator]
+    val cons1 = mock[EventConsumer]
+    doReturn(10.0).when(prod1).ipe
+    doReturn(50.0).when(split1).ipe
+    doReturn(25.0).when(count1).ipe
+    doReturn(10.0).when(cons1).ipe
+
+    val query = mock[Query]
+    val placement = mock[Placement]
+
+    doReturn(Set(query1)).when(placement).queries
+    doReturn(Set(prod1, split1, count1, cons1)).when(placement).vertices
+    doReturn(Set(prod1, split1, count1, cons1)).when(placement).vertices(query1)
+    doReturn(Iterator(prod1, split1, count1, cons1)).when(placement).iterator
+    val weights = Map((prod1 -> 1.0), (split1 -> 1.0), (count1 -> 5.0), (cons1 -> 5.0))
+
+    val strategy = DefaultOpScheduleStrategy.weighted(weights)
+    val ret = strategy.allocate(10000, placement)
+
+    ret.hasNext should be (true)
+    var pair = ret.next
+    pair._1 should be (prod1)
+    pair._2 should be (425.53 +- 0.01)
+
+    ret.hasNext should be (true)
+    pair = ret.next
+    pair._1 should be (split1)
+    pair._2 should be (2127.65 +- 0.01)
+
+    ret.hasNext should be (true)
+    pair = ret.next
+    pair._1 should be (count1)
+    pair._2 should be (5319.14 +- 0.01)
+
+    ret.hasNext should be (true)
+    pair = ret.next
+    pair._1 should be (cons1)
+    pair._2 should be (2127.65 +- 0.01)
+
+    ret.hasNext should be (false)
+
+  }
 }
 

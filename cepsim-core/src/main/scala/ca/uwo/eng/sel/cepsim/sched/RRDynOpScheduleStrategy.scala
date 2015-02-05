@@ -2,14 +2,17 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
+import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy
 
 import scala.concurrent.duration._
 
 
 /** RRDynOpScheduleStrategy companion object. */
 object RRDynOpScheduleStrategy {
-  def apply(iterations: Int): RRDynOpScheduleStrategy = new RRDynOpScheduleStrategy(iterations)
-  def apply(iterationLength: Duration, capacity: Double) = new RRDynOpScheduleStrategy(iterationLength, capacity)
+  def apply(allocStrategy: AllocationStrategy, iterations: Int) = new RRDynOpScheduleStrategy(allocStrategy, iterations)
+
+  def apply(allocStrategy: AllocationStrategy, iterationLength: Double, capacity: Double) = new RRDynOpScheduleStrategy(allocStrategy, iterationLength, capacity)
+  def apply(allocStrategy: AllocationStrategy, iterationLength: Duration, capacity: Double) = new RRDynOpScheduleStrategy(allocStrategy, iterationLength, capacity)
 }
 
 
@@ -19,11 +22,13 @@ object RRDynOpScheduleStrategy {
   *
  * @param iterations Number of passes over the vertices.
   */
-class RRDynOpScheduleStrategy private (iterations: Int, iterationLength: Duration, capacity: Double) extends OpScheduleStrategy {
+class RRDynOpScheduleStrategy private (allocStrategy: AllocationStrategy, iterations: Int, iterationLength: Duration, capacity: Double) extends OpScheduleStrategy {
 
-  def this(iterations: Int) = this(iterations, null, 0.0)
-  def this(iterationLength: Duration, capacity: Double) = this(-1, iterationLength, capacity)
-  def this(iterationLength: Double, capacity: Double) = this(iterationLength millisecond, capacity)
+  def this(allocStrategy: AllocationStrategy, iterations: Int) = this(allocStrategy, iterations, null, 0.0)
+  def this(allocStrategy: AllocationStrategy, iterationLength: Duration, capacity: Double) = this(allocStrategy, -1, iterationLength, capacity)
+
+  // used for java code
+  def this(allocStrategy: AllocationStrategy, iterationLength: Double, capacity: Double) = this(allocStrategy, iterationLength millisecond, capacity)
 
   /**
    * Allocates instructions to vertices from a placement.
@@ -34,7 +39,7 @@ class RRDynOpScheduleStrategy private (iterations: Int, iterationLength: Duratio
    *         instructions allocated to that vertex.
    */
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] = {
-    val instrPerOperator = DefaultOpScheduleStrategy.instructionsPerOperator(instructions, placement)
+    val instrPerOperator = allocStrategy.instructionsPerOperator(instructions, placement)
 
     var iterationsNo = iterations
     if (iterationsNo == -1)

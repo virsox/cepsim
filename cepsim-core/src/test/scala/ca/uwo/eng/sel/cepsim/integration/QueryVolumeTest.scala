@@ -38,7 +38,7 @@ class QueryVolumeTest extends FlatSpec {
     for (i <- 1 to MAX_ITERATIONS) {
       val cloudletName = s"c${i}"
       val cloudlet = QueryCloudlet(cloudletName, Placement.withQueries(queries.values.toSet, 1),
-        new DefaultOpScheduleStrategy())//, (i - 1) * INTERVAL)
+        DefaultOpScheduleStrategy.weighted())//, (i - 1) * INTERVAL)
       cloudlet.init((i - 1) * INTERVAL)
 
       val h1 = cloudlet run (INTERVAL * 1000000, (i - 1) * INTERVAL, 10) // 10 million instructions ~ 10 milliseconds

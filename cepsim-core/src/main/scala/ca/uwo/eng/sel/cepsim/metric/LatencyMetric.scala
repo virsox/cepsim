@@ -42,14 +42,14 @@ object LatencyMetric extends Metric {
       (p, mutable.LinkedList(history.processedEntriesFrom(p):_*))
     })
 
-    //val out = new PrintWriter(new FileWriter("/Users/virso/tmp/latencies.txt"))
+    val out = new PrintWriter(new FileWriter("/Users/virso/tmp/latencies.txt"))
     val producerEntries = HashMap(producerEntriesSet.toList:_*)
     val sum = entries.foldLeft(0.0)((acc, entry) => {
       val perEntry = internalCalculate(query, producerEntries, consumer, entry)
-      //out.println(entry.time + ", " + entry.quantity + ", " + perEntry)
+      out.println(entry.time + ", " + entry.quantity + ", " + perEntry)
       acc + perEntry
     })
-    //out.close();
+    out.close();
     
     sum / entries.size
   }

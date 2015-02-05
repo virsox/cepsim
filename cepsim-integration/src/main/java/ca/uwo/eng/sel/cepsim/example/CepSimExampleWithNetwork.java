@@ -185,8 +185,8 @@ public class CepSimExampleWithNetwork {
         Placement placement2 = Placement.apply(JavaConversions.asScalaSet(p2Vertices).<Vertex>toSet(), 2);
 
         // ------------------  create cloudlets
-		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, new DefaultOpScheduleStrategy());
-		QueryCloudlet p2Cloudlet = new QueryCloudlet("cl2", placement2, new DefaultOpScheduleStrategy());
+		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted());
+		QueryCloudlet p2Cloudlet = new QueryCloudlet("cl2", placement2, DefaultOpScheduleStrategy.weighted());
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
 		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);

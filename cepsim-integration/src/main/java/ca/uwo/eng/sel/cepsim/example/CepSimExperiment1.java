@@ -149,7 +149,7 @@ public class CepSimExperiment1 {
         Placement placement1 = Placement.apply(q, 1);
 				//apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
 
-		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, new DefaultOpScheduleStrategy());
+		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted());
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
 		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);
