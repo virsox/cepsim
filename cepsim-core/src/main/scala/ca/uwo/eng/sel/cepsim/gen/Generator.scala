@@ -14,7 +14,7 @@ trait Generator {
   protected var invocations = 0L
 
   /** Number of accumulated events that have not been processed. */
-  protected var accumulated = 0
+  protected var accumulated = 0.0
 
   /**
     * The average number of events generated per second.
@@ -26,13 +26,13 @@ trait Generator {
    * Obtain the number of events that have not been processed.
    * @return the number of events that have not been processed.
    */
-  def nonProcessed: Int = accumulated
+  def nonProcessed: Double = accumulated
 
   /**
    * Abstract method that should be overriden by subclasses with the generation logic.
    * @return The number of events generated events.
    */
-  def doGenerate(): Int
+  def doGenerate(): Double
 
   /** Simulation interval in milliseconds. */
   def samplingInterval: Long
@@ -42,7 +42,7 @@ trait Generator {
    * @param limit Limit in the number of generated events.
    * @return Number of events generated.
    */
-  def generate(limit: Int = 10000): Int = {
+  def generate(limit: Int = 10000): Double = {
     accumulated += doGenerate()
 
     // determine how many events should be returned

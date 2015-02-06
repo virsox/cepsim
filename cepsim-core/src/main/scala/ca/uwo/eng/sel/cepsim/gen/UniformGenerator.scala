@@ -17,20 +17,6 @@ object UniformGenerator {
   */
 class UniformGenerator(val rate: Double, override val samplingInterval: Long) extends Generator {
 
-  /** Keep track of partially generated events, in case the tuplesPerInterval is smaller than one. */
-  var count: Double = 0
-  
-  override def doGenerate(): Int = {
-    // Number of events in this tick
-    val tuplesPerInterval: Double = ((samplingInterval / 1000.0) * rate)
-
-    if (tuplesPerInterval < 1) {
-      count = count + tuplesPerInterval
-      if (count >= 1) {
-        count = 1 - count
-        1        
-      } else 0
-    } else tuplesPerInterval.toInt
-  }
+  override def doGenerate(): Double = ((samplingInterval / 1000.0) * rate)
 
 }

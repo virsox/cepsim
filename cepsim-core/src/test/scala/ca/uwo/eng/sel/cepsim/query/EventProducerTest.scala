@@ -19,7 +19,7 @@ class EventProducerTest extends FlatSpec
   trait Fixture {
     val generator = mock[Generator]
     val value: Int = 10000
-    doReturn(100).when(generator).generate(anyInt())
+    doReturn(100.0).when(generator).generate(anyInt())
 
 
     val prod = EventProducer("p1", 1, generator)

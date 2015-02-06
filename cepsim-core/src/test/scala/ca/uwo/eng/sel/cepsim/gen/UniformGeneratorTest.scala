@@ -13,29 +13,25 @@ class UniformGeneratorTest extends FlatSpec
 	"A UniformGenerator" should "always generate the same value" in {
 	  val generator = UniformGenerator(20, 1 second)
 	  
-	  generator.generate() should be (20)
-	  generator.generate() should be (20)
-	  generator.generate() should be (20)
+	  generator.generate() should be (20.00 +- 0.001)
+	  generator.generate() should be (20.00 +- 0.001)
+	  generator.generate() should be (20.00 +- 0.001)
 	}
 	
 	it should "calculate the correct value if interval is large" in {
 	  val generator = UniformGenerator(20, 5 seconds)
-	  generator.generate() should be (100)
+	  generator.generate() should be (100.00 +- 0.001)
 	}
 	
 	it should "calculate the correct value if interval is small" in {
     val generator = UniformGenerator(20, 500 milliseconds)
-    generator.generate() should be(10)
+    generator.generate() should be(10.00 +- 0.001)
   }
 	
-	it should "calculate a correct sequence of values if interval is very small" in {
+	it should "generate partial events if interval is very small" in {
 	  val generator = UniformGenerator(20, 10 milliseconds)
-	  generator.generate() should be (0)	  
-	  generator.generate() should be (0)
-	  generator.generate() should be (0)
-	  generator.generate() should be (0)
-	  generator.generate() should be (1)
-	  generator.generate() should be (0)
+	  generator.generate() should be (0.2 +- 0.001)
+	  generator.generate() should be (0.2 +- 0.001)
 	}
 
   it should "calculate the correct event generation average" in {

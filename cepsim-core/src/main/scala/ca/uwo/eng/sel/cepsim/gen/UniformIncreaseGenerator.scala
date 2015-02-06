@@ -36,7 +36,7 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
   /** Multiplier used during the rate growth period. */
   val multiplier = maxRateInMs / durationInMs
 
-  override def doGenerate(): Int = {
+  override def doGenerate(): Double = {
     val nextPos = currentPos + samplingInterval
     var area = 0.0
     
@@ -63,7 +63,7 @@ class UniformIncreaseGenerator(val increaseDuration: Duration, val maxRate: Doub
     }
     currentPos = nextPos
 
-    area.toInt
+    area
   }
 
   /**
