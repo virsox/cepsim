@@ -217,8 +217,8 @@ public class CepSimWordCount2 {
             queries.add(q);
 
             Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, DefaultOpScheduleStrategy.weighted());
-                    //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 0.15, 2500));
+            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
+                    RRDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply(), 100));
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);

@@ -53,5 +53,16 @@ class EventProducerTest extends FlatSpec
     prod.outputQueues(n1) should be (50)
   }
 
+  it should "partially process input events" in new Fixture {
+    val prod2 = EventProducer("p2", 3, generator)
+    prod2.addOutputQueue(n1)
+    prod2.generate()
+    prod2.run(100)
+
+    prod2.inputQueue should be (66.666 +- 0.001)
+    prod2.outputQueues(n1) should be (33.333 +- 0.001)
+
+
+  }
 
 }

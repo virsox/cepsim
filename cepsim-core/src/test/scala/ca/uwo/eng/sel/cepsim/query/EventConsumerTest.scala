@@ -17,8 +17,6 @@ class EventConsumerTest extends FlatSpec
   trait Fixture {
     import org.mockito.Matchers._
 
-    val cons1 = EventConsumer("c1", 1)
-
     val op1 = mock[Operator]
     val op2 = mock[Operator]
     when(op1.id) thenReturn("op1")
@@ -29,6 +27,7 @@ class EventConsumerTest extends FlatSpec
   }
 
   "An EventConsumer" should "send all events to the output" in new Fixture {
+    val cons1 = EventConsumer("c1", 1)
     cons1 addInputQueue op1
 
     cons1 enqueueIntoInput(op1, 100)
@@ -39,6 +38,7 @@ class EventConsumerTest extends FlatSpec
   }
 
   it should "consume events from all predecessors" in new Fixture {
+    val cons1 = EventConsumer("c1", 1)
     cons1 addInputQueue op1
     cons1 addInputQueue op2
 
@@ -46,9 +46,29 @@ class EventConsumerTest extends FlatSpec
     cons1 enqueueIntoInput(op2, 50)
     cons1 run(100)
 
-    cons1.inputQueues(op1) should be (33.0 +- 0.001)
-    cons1.inputQueues(op2) should be (17.0 +- 0.001)
+    cons1.inputQueues(op1) should be (33.333 +- 0.001)
+    cons1.inputQueues(op2) should be (16.666 +- 0.001)
     cons1.outputQueue should be (100)
+  }
+
+  it should "accumulate partial events" in new Fixture {
+    val cons1 = EventConsumer("c1", 3)
+    cons1 addInputQueue op1
+
+    cons1 enqueueIntoInput (op1, 100)
+    cons1 run(100)
+
+    cons1.inputQueues(op1) should be (66.666 +- 0.001)
+    cons1.outputQueue should be (33)
+
+    cons1 run(100)
+    cons1.inputQueues(op1) should be (33.333 +- 0.001)
+    cons1.outputQueue should be (66)
+
+    cons1 run(100)
+    cons1.inputQueues(op1) should be (0.000 +- 0.001)
+    cons1.outputQueue should be (100)
+
   }
 
 }

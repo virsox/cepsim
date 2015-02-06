@@ -11,7 +11,7 @@ trait Generator {
   protected var currentAvg = 0.0
 
   /** Number of invocations */
-  protected var invocations = 0
+  protected var invocations = 0L
 
   /** Number of accumulated events that have not been processed. */
   protected var accumulated = 0

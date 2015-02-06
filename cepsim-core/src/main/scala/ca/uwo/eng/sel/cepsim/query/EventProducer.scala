@@ -10,7 +10,7 @@ object EventProducer {
 class EventProducer(val id: String, val ipe: Double, val generator: Generator, limitProducer: Boolean)
   extends Vertex with OutputVertex {
 
-  var inputQueue = 0
+  var inputQueue = 0.0
 
   def generate() {
     if (limitProducer) inputQueue += generator.generate(Math.floor(maximumNumberOfEvents).toInt)
@@ -20,7 +20,8 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   def run(instructions: Double, startTime: Double = 0.0): Double = {
 
     val maxOutput = (instructions / ipe)
-    val processed = Math.floor(maxOutput.min(inputQueue).min(maximumNumberOfEvents)).toInt
+
+    val processed = maxOutput.min(inputQueue).min(maximumNumberOfEvents)
 
     inputQueue -= processed
     sendToAllOutputs(processed)

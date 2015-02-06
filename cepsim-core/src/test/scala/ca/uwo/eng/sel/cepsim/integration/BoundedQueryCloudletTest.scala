@@ -49,8 +49,8 @@ class BoundedQueryCloudletTest extends FlatSpec
     f1.outputQueues(f2)    should be(0)
 
     f2.inputQueues(f1)     should be(187.50 +- 0.01) // f2 will process 312.5 events only (from the total of 500)
-    f2.outputQueues(cons1) should be(0)
-    cons1.inputQueues(f2)  should be(0.25 +- 0.01)
+    f2.outputQueues(cons1) should be(0.0)
+    cons1.inputQueues(f2)  should be(0.00 +- 0.01)    // 0.25 will be accumulated into cons1
     cons1.outputQueue      should be(31)
 
     // check if history is being correctly logged
@@ -73,7 +73,7 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     f2.inputQueues(f1)     should be(375.0 +- 0.01)
     f2.outputQueues(cons1) should be(0)
-    cons1.inputQueues(f2)  should be(0.50  +- 0.01)
+    cons1.inputQueues(f2)  should be(0.00  +- 0.01)  // 0.25 will be accumulated into cons1
     cons1.outputQueue      should be(62)
 
     // --------------------------------------------------------------------------
@@ -89,7 +89,7 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     f2.inputQueues(f1)     should be(562.50 +- 0.01)
     f2.outputQueues(cons1) should be(0)
-    cons1.inputQueues(f2)  should be(0.75  +- 0.01)
+    cons1.inputQueues(f2)  should be(0.00  +- 0.01) // 0.75 will be accumulated into cons1
     cons1.outputQueue      should be(93)
 
     // --------------------------------------------------------------------------
@@ -126,7 +126,7 @@ class BoundedQueryCloudletTest extends FlatSpec
 
     f2.inputQueues(f1)     should be(687.50)
     f2.outputQueues(cons1) should be(0)
-    cons1.inputQueues(f2)  should be(0.25  +- 0.01)
+    cons1.inputQueues(f2)  should be(0.00 +- 0.01)
     cons1.outputQueue      should be(156)
 
   }

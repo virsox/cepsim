@@ -10,8 +10,6 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
   with InputVertex
   with OutputVertex {
 
-  var accumulator: Double = 0
-
   def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Double= Double.MaxValue): Map[Vertex, Double] = {
 
     // total number of input events

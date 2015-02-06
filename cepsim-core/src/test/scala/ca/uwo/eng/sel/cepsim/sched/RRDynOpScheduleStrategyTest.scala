@@ -42,7 +42,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
   }
 
   "A RRDynOpScheduleStrategy" should "iterate N times over the vertices" in new Fixture {
-    doReturn(100).when(p1).inputQueue
+    doReturn(100.0).when(p1).inputQueue
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 
@@ -62,7 +62,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
   }
 
   it should "skip vertices without events to be processed" in new Fixture {
-    doReturn(100  ).when(p1).inputQueue
+    doReturn(100.0).when(p1).inputQueue
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 
@@ -75,18 +75,18 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
     ret.next    should be ((f1, 200.0))
     ret.next    should be ((c1, 25.0))
 
-    doReturn(    0).when(p1).inputQueue
+    doReturn(  0.0).when(p1).inputQueue
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
     ret.next    should be ((f1, 200.0))
     ret.next    should be ((c1, 25.0))
 
-    doReturn(    0).when(p1).inputQueue
+    doReturn(  0.0).when(p1).inputQueue
     doReturn(  0.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
     ret.next    should be ((c1, 25.0))
 
-    doReturn(    0).when(p1).inputQueue
+    doReturn(  0.0).when(p1).inputQueue
     doReturn(  0.0).when(f1).totalInputEvents
     doReturn(  0.0).when(c1).totalInputEvents
 
@@ -95,7 +95,7 @@ class RRDynOpScheduleStrategyTest extends FlatSpec
   }
 
   it should "calculate the number of iterations based on the aimed iteration length" in new Fixture {
-    doReturn(100  ).when(p1).inputQueue
+    doReturn(100.0).when(p1).inputQueue
     doReturn(100.0).when(f1).totalInputEvents
     doReturn(100.0).when(c1).totalInputEvents
 

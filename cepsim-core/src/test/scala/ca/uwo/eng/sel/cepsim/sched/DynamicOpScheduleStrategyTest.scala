@@ -48,7 +48,7 @@ class DynamicOpScheduleStrategyTest extends FlatSpec
     doReturn(1.0).when(f2).ipe
     doReturn(1.0).when(c1).ipe
 
-    doReturn(250).when(p1).inputQueue
+    doReturn(250.0).when(p1).inputQueue
     ret.next should be ((p1, 250))
 
     doReturn(250.0).when(f1).totalInputEvents
@@ -71,7 +71,7 @@ class DynamicOpScheduleStrategyTest extends FlatSpec
     doReturn(5.0).when(f2).ipe
     doReturn(1.0).when(c1).ipe
 
-    doReturn(  150).when(p1).inputQueue
+    doReturn(150.0).when(p1).inputQueue
     doReturn(150.0).when(f1).totalInputEvents
     doReturn(150.0).when(f2).totalInputEvents
     doReturn( 50.0).when(c1).totalInputEvents
@@ -82,7 +82,7 @@ class DynamicOpScheduleStrategyTest extends FlatSpec
     ret.next should be ((c1, 50))
 
     // ----- round 2
-    doReturn(    0).when(p1).inputQueue
+    doReturn(  0.0).when(p1).inputQueue
     doReturn(  0.0).when(f1).totalInputEvents
     doReturn(100.0).when(f2).totalInputEvents
     ret.next should be ((f2, 250))
