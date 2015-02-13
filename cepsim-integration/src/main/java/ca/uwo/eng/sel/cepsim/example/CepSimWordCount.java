@@ -138,7 +138,7 @@ public class CepSimWordCount {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 5;
+        final int MAX_QUERIES = 1;
 		Set<Cloudlet> cloudlets = new HashSet<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
@@ -163,12 +163,20 @@ public class CepSimWordCount {
             edges.add(e2);
             edges.add(e3);
 
+            Map<Vertex, Object> weights = new HashMap<>();
+            weights.put(p, 1.0);
+            weights.put(split, 1.0);
+            weights.put(count, 5.0);
+            weights.put(c, 5.0);
+
             Query q = Query.apply("testlatency" + i, vertices, edges, DURATION);
             Set<Query> queries = new HashSet<Query>();
             queries.add(q);
 
             Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 0.1, 2500));
+            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
+                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500));
+
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);
 
@@ -180,16 +188,16 @@ public class CepSimWordCount {
         //long fileSize = 300;
         //long outputSize = 300;
 
-        // overhead
-        UtilizationModel utilizationModel = new UtilizationModelFull();
-        for (int j = 1; j <= 7; j++) {
-            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
-                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
-
-            cloudlet.setUserId(brokerId);
-            cloudlets.add(cloudlet);
-
-        }
+//        // overhead
+//        UtilizationModel utilizationModel = new UtilizationModelFull();
+//        for (int j = 1; j <= 7; j++) {
+//            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
+//                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
+//
+//            cloudlet.setUserId(brokerId);
+//            cloudlets.add(cloudlet);
+//
+//        }
 
 
 

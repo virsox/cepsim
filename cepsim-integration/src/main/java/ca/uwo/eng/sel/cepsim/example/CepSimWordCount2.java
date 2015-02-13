@@ -140,6 +140,12 @@ public class CepSimWordCount2 {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
+        /*
+          This is a multiline comment
+          ....
+         */
+        int x = 10;
+
         final int MAX_QUERIES = 1;
 		Set<Cloudlet> cloudlets = new HashSet<>();
 
@@ -218,7 +224,7 @@ public class CepSimWordCount2 {
 
             Placement placement = Placement.withQueries(queries, 1);
             QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
-                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 100));
+                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50));
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);
