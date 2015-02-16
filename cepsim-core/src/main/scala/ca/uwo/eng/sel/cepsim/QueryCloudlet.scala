@@ -87,7 +87,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
       // events to be consumed
       placement.producers foreach ((prod) => {
         val generated = prod.generate()
-        val event = Produced(prod, generated, startTime - prod.generator.samplingInterval, startTime)
+        val event = Produced(prod, generated, startTime)
         calculators.values.foreach(_.update(event))
       })
 

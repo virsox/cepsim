@@ -2,12 +2,15 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.metric.History.Processed
+import ca.uwo.eng.sel.cepsim.metrics
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
 import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
 import org.junit.runner.RunWith
+import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.duration._
@@ -18,7 +21,8 @@ import scala.concurrent.duration._
  */
 @RunWith(classOf[JUnitRunner])
 class QueryCloudletTest extends FlatSpec
-  with Matchers {
+  with Matchers
+  with MockitoSugar {
 
   trait Fixture {
     val gen = UniformGenerator(100000, 1.second)
@@ -69,6 +73,24 @@ class QueryCloudletTest extends FlatSpec
     cons1.outputQueue should be (200)
   }
 
+  it should "correctly invoke the metric calculation" in new Fixture {
+
+    val calculator = mock[metrics.MetricCalculator]
+    doReturn("latency").when(calculator).id
+
+    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
+    cloudlet.init(0.0, calculator)
+
+    cloudlet run(10000000, 0.0, 1000)
+
+    verify(calculator).update(metrics.Produced (prod1, 100000.0,  0.0))
+    verify(calculator).update(metrics.Processed(prod1, 1000.0,  1.0))
+    verify(calculator).update(metrics.Processed(f1,    1000.0,  5.0, Map(prod1 -> 1000.0)))
+    verify(calculator).update(metrics.Processed(f2,    1000.0,  9.0, Map(f1    -> 1000.0)))
+    verify(calculator).update(metrics.Consumed (cons1,  100.0, 10.0, Map(f2    -> 100.0)))
+
+  }
+
   it should "run all queries in the placement" in new Fixture {
     val prod2 = EventProducer("p2", 1000, gen)
     val f3 = Operator("f3", 4000)
@@ -105,3 +127,5 @@ class QueryCloudletTest extends FlatSpec
   }
 
 }
+
+

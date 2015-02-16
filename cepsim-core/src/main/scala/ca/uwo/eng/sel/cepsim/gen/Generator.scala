@@ -42,7 +42,7 @@ trait Generator {
    * @param limit Limit in the number of generated events.
    * @return Number of events generated.
    */
-  def generate(limit: Int = 10000): Double = {
+  def generate(limit: Int = 10000000): Double = {
     accumulated += doGenerate()
 
     // determine how many events should be returned

@@ -69,8 +69,8 @@ object LatencyMetric {
 
 
     private def updateWithProduced(produced: Produced) = {
-      val avgTime = ((produced.at - produced.from) / 2) + produced.from
-      queues((null, produced.v)) enqueue (produced.quantity, avgTime, 0.0)
+      //val avgTime = ((produced.at - produced.from) / 2) + produced.from
+      queues((null, produced.v)) enqueue (produced.quantity, produced.at, 0.0)
     }
 
 
