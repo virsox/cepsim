@@ -29,14 +29,17 @@ class EventProducerTest extends FlatSpec
   }
 
   "An EventProducer" should "generate events and put in the input queue" in new Fixture {
-    prod.generate()
+    val result = prod.generate()
+    result should be (100)
 
     verify(generator).generate(anyInt())
     prod.inputQueue should be (100)
   }
 
   it should "process events and put them in the output queue" in new Fixture {
-    prod.generate()
+    val result = prod.generate()
+    result should be (100)
+
     prod.run(100)
 
     verify(generator).generate(anyInt())
@@ -45,7 +48,9 @@ class EventProducerTest extends FlatSpec
   }
 
   it should "generate events and put half of them in the output queue" in new Fixture {
-    prod.generate()
+    val result = prod.generate()
+    result should be (100)
+
     prod.run(50)
 
     verify(generator).generate(anyInt())
@@ -56,7 +61,10 @@ class EventProducerTest extends FlatSpec
   it should "partially process input events" in new Fixture {
     val prod2 = EventProducer("p2", 3, generator)
     prod2.addOutputQueue(n1)
-    prod2.generate()
+
+    val result = prod2.generate()
+    result should be (100)
+
     prod2.run(100)
 
     prod2.inputQueue should be (66.666 +- 0.001)

@@ -24,6 +24,10 @@ trait Vertex {
 
   def compare(that: Vertex) = id.compare(that.id)
 
+  // must be overriden
+  def successors: Set[InputVertex] = Set.empty[InputVertex]
+  def predecessors: Set[OutputVertex] = Set.empty[OutputVertex]
+
 
 
 }

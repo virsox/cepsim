@@ -13,6 +13,10 @@ trait OutputVertex extends Vertex { //this: Vertex =>
 
   var limits: Map[Vertex, Double] = Map.empty
 
+
+  override def successors: Set[InputVertex] = queries.flatMap(_.successors(this))
+
+
   def initOutputQueues(successors: Set[Vertex]) = {
     successors.foreach(addOutputQueue(_))
   }

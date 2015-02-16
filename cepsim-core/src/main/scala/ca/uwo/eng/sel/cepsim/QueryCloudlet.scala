@@ -2,10 +2,12 @@ package ca.uwo.eng.sel.cepsim
 
 import ca.uwo.eng.sel.cepsim.metric.History
 import ca.uwo.eng.sel.cepsim.metric.History.Entry
+import ca.uwo.eng.sel.cepsim.metrics._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
 
+import scala.annotation.varargs
 import scala.concurrent.duration.Duration
 
 
@@ -16,6 +18,21 @@ object QueryCloudlet {
 
 class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy) {
 
+  // --------------- Metric manipulation
+
+  var calculators =  Map.empty[String, MetricCalculator]
+  //List(LatencyMetric.calculator(placement)) // List.empty[MetricCalculator]//.calculator(placement))
+
+  def registerCalculator(id: String, calculator: MetricCalculator) =
+    calculators = calculators updated (id, calculator)
+
+  def metric(id: String) = calculators(id).consolidate
+  def metricList(id: String) = calculators(id).results
+
+  // ---------------------------------------
+
+
+
 
 
   // a cloudlet should be  stateless. for each interval, a cloudlet will represent the execution of
@@ -25,7 +42,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     * Initialize all vertices from the cloudlet's placement.
     * @param startTime Execution start time (in milliseconds).
     */
-  def init(startTime: Double): Unit = {
+  @varargs def init(startTime: Double, calculators: MetricCalculator*): Unit = {
+    calculators.foreach((calculator) => registerCalculator(calculator.id, calculator))
     placement.vertices.foreach(_.init(startTime))
   }
 
@@ -67,8 +85,16 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
       // generate the events before calling the scheduling strategy
       // in theory this enables more complex strategies that consider the number of
       // events to be consumed
-      placement.producers foreach (_.generate())
+      placement.producers foreach ((prod) => {
+        val generated = prod.generate()
+        val event = Produced(prod, generated, startTime - prod.generator.samplingInterval, startTime)
+        calculators.values.foreach(_.update(event))
+      })
 
+//      case class Produced (val v: Vertex, val quantity: Double, val from: Double, val at: Double) extends Event
+//      case class Processed(val v: Vertex, val quantity: Double, val at: Double, val queues: Map[Vertex, Double] = Map.empty) extends Event
+//      case class Consumed (val v: Vertex, val quantity: Double, val at: Double, val queues: Map[Vertex, Double]) extends Event
+//
       val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
       var time = startTime
 
@@ -76,24 +102,44 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
         val v: Vertex = elem._1
         var processedEvents = 0.0
+        var processedQueues = Map.empty[Vertex, Double]
+
         if (v.isInstanceOf[InputVertex]) {
 
           val iv = v.asInstanceOf[InputVertex]
 
           // predecessors from all queries
           val predecessors = iv.queries.flatMap(_.predecessors(v))
+
+          // ------------------ queue status before running vertex
+          var before = Map.empty[Vertex, Double]
+          // ------------------------------------------------------------------------------
+
           predecessors.foreach { (pred) =>
             val events = pred.outputQueues(iv)
             pred.dequeueFromOutput((iv, events))
             iv.enqueueIntoInput(pred, events)
+
+            before = before updated (pred, iv.inputQueues(pred))
           }
           processedEvents = iv.run(elem._2)
+
+          // ------------------ queue status after running vertex
+          before.foreach((entry) => {
+            processedQueues = processedQueues updated (entry._1, entry._2 - iv.inputQueues(entry._1))
+          })
+          // ------------------------------------------------------------------------------
+
 
           if (iv.isBounded()) {
             predecessors.foreach { (pred) =>
               pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
             }
           }
+
+          // ------------------ build event
+         // event = Processed(v, processedEvents, )
+
 
         } else {
           processedEvents = v.run(elem._2)
@@ -123,6 +169,19 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         }
 
         time += totalMs(elem._2)
+
+        // ---------------- Update metrics
+        var event: Event = null;
+        if (v.isInstanceOf[EventProducer]) {
+          event = Processed(v, processedEvents, time)
+        } else if (v.isInstanceOf[EventConsumer]) {
+          event = Consumed(v, processedEvents, time, processedQueues)
+        } else {
+          event = Processed(v, processedEvents, time, processedQueues)
+        }
+        calculators.values.foreach(_.update(event))
+        // ------------------------------------------------------------------------------
+
       }
     }
 

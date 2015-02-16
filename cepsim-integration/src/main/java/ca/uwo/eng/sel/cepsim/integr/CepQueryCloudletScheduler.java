@@ -69,7 +69,7 @@ public class CepQueryCloudletScheduler extends CloudletSchedulerTimeShared {
 			// [WAH] ----------------------------------------
 			if (rcl instanceof CepQueryResCloudlet) {
 				((CepQueryResCloudlet) rcl).updateCloudletFinishedSoFar(instructions, currentTime, 
-						getPreviousTime(), peSpeed);
+						getPreviousTime(), capacity);
 			}
 			// ----------------------------------------------
 			else {

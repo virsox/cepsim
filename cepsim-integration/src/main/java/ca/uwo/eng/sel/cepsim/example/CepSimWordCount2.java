@@ -118,13 +118,14 @@ public class CepSimWordCount2 {
                 if (!(cl instanceof CepQueryCloudlet)) continue;
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
+                System.out.println("Latency: " + cepCl.getLatency());
                 Query q = cepCl.getQueries().iterator().next();
 
-                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-
-                if (cepCl.getCloudletId() == 1) {
-                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
-                }
+//                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
+//
+//                if (cepCl.getCloudletId() == 1) {
+//                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
+//                }
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -139,12 +140,6 @@ public class CepSimWordCount2 {
 	private static Set<Cloudlet> createCloudlets(int brokerId) {
 		// 100_000_000 I / interval
 		// 100 events / interval
-
-        /*
-          This is a multiline comment
-          ....
-         */
-        int x = 10;
 
         final int MAX_QUERIES = 1;
 		Set<Cloudlet> cloudlets = new HashSet<>();
@@ -183,6 +178,7 @@ public class CepSimWordCount2 {
                 counts[j] = count;
 
                 weights.put(count, 1.667);
+                //weights.put(count, 1.0);
                 vertices.add(count);
             }
 
@@ -224,7 +220,7 @@ public class CepSimWordCount2 {
 
             Placement placement = Placement.withQueries(queries, 1);
             QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
-                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50));
+                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 100));
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);

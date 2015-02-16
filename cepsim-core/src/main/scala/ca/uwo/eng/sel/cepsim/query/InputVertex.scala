@@ -36,4 +36,6 @@ trait InputVertex extends Vertex  { this: Vertex =>
     }
 
 
+  override def predecessors: Set[OutputVertex] = queries.flatMap(_.predecessors(this))
+
 }

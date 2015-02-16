@@ -12,9 +12,13 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
 
   var inputQueue = 0.0
 
-  def generate() {
-    if (limitProducer) inputQueue += generator.generate(Math.floor(maximumNumberOfEvents).toInt)
-    else inputQueue += generator.generate()
+  def generate(): Double = {
+
+    val generated = (if (limitProducer) generator.generate(Math.floor(maximumNumberOfEvents).toInt)
+                     else generator.generate())
+
+    inputQueue += generated
+    generated
   }
 
   def run(instructions: Double, startTime: Double = 0.0): Double = {

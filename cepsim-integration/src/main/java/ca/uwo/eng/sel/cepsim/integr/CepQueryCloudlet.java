@@ -1,7 +1,6 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
-import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
+import ca.uwo.eng.sel.cepsim.metrics.LatencyMetric;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.query.InputVertex;
@@ -112,7 +111,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
         // it is the first time this method has been invoked
         if (this.executionTime == 0) {
-            this.cloudlet.init(previousTimeInMs);
+            this.cloudlet.init(previousTimeInMs, LatencyMetric.calculator(this.cloudlet.placement()));
         }
         this.executionTime += (currentTime - previousTime);
 
@@ -165,4 +164,9 @@ public class CepQueryCloudlet extends Cloudlet {
     public void enqueue(CepNetworkEvent netEvent) {
         this.networkEvents.offer(netEvent);
     }
+
+    public double getLatency() {
+        return this.cloudlet.metric(LatencyMetric.ID());
+    }
+
 }

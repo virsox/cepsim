@@ -4,12 +4,17 @@ import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.Vertex
 import ca.uwo.eng.sel.cepsim.sched.alloc.{UniformAllocationStrategy, WeightedAllocationStrategy, AllocationStrategy}
 
+import java.util.{Map => JavaMap}
+
 /** DefaultOpScheduleStrategy companion object. */
 object DefaultOpScheduleStrategy {
 
   def uniform() = new DefaultOpScheduleStrategy(UniformAllocationStrategy())
   def weighted() = new DefaultOpScheduleStrategy(WeightedAllocationStrategy.apply(Map.empty[Vertex, Double].withDefaultValue(1.0)))
+
+
   def weighted(weights: Map[Vertex, Double]) = new DefaultOpScheduleStrategy(WeightedAllocationStrategy.apply(weights))
+  def weighted(weights: JavaMap[Vertex, Double]) = new DefaultOpScheduleStrategy(WeightedAllocationStrategy.apply(weights))
 
 }
 
