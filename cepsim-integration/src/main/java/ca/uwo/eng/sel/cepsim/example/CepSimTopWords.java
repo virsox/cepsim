@@ -7,12 +7,9 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.RROpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -25,10 +22,10 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class CepSimWordCount {
+public class CepSimTopWords {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 10L;
+    private static final Long DURATION = 30L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -149,20 +146,27 @@ public class CepSimWordCount {
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
-            Operator split = new Operator("split" + i, 25000, 1000000);
-            Operator count = new Operator("count" + i, 12500, 1000000);
+
+            Operator wordCount = WindowedOperator.apply("wordCount" + i, 5000, 9000, 3000,
+                    WindowedOperator.constant(10));//new Operator("split" + i, 25000, 1000000);
+
+            Operator ranking = WindowedOperator.apply("ranking" + i, 10000, 3000, 3000,
+                    WindowedOperator.constant(3));//new Operator("split" + i, 25000, 1000000);
+
             EventConsumer c = new EventConsumer("end" + i, 5000, 1000000);
+
 
             Set<Vertex> vertices = new HashSet<>();
             vertices.add(p);
-            vertices.add(split);
-            vertices.add(count);
+            vertices.add(wordCount);
+            vertices.add(ranking);
             vertices.add(c);
 
-            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, split, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(split, count, 5.0);
-            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(count, c, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, wordCount, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(wordCount, ranking, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(ranking, c, 1.0);
 
             Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             edges.add(e1);
@@ -170,9 +174,9 @@ public class CepSimWordCount {
             edges.add(e3);
 
             weights.put(p, 1.0);
-            weights.put(split, 1.0);
-            weights.put(count, 5.0);
-            weights.put(c, 5.0);
+            weights.put(wordCount, 1.0);
+            weights.put(ranking, 1.0);
+            weights.put(c, 1.0);
 
 
             Query q = Query.apply("testlatency" + i, vertices, edges, DURATION);

@@ -132,10 +132,11 @@ class WindowedOperatorTest extends FlatSpec
     op.run(200, 11000)
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
+
+    // TODO this result is wrong - it should consider the past 10 second
     op.outputQueues(f3) should be (220.0 +- 0.0001)
-
-
-
   }
+
+
 
 }

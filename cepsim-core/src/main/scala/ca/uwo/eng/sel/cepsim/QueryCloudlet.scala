@@ -120,9 +120,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
             pred.dequeueFromOutput((iv, events))
             iv.enqueueIntoInput(pred, events)
 
-            before = before updated (pred, iv.inputQueues(pred))
+            if (!calculators.isEmpty)
+              before = before updated (pred, iv.inputQueues(pred))
           }
-          processedEvents = iv.run(elem._2)
+          processedEvents = iv.run(elem._2, time)
 
           // ------------------ queue status after running vertex
           before.foreach((entry) => {
@@ -142,7 +143,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
 
         } else {
-          processedEvents = v.run(elem._2)
+          processedEvents = v.run(elem._2, time)
         }
 
         if (processedEvents > 0)

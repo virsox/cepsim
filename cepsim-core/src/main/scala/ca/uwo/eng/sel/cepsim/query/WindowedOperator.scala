@@ -5,6 +5,9 @@ import scala.concurrent.duration._
 
 object WindowedOperator {
 
+  def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double) =
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, 1000)
+
   def identity(): (Map[Vertex, Double]) => Double = ((x) => Vertex.sumOfValues(x))
   def constant(c: Double): (Map[Vertex, Double]) => Double = ((x) => c)
 
@@ -44,7 +47,7 @@ class WindowedOperator(id: String, ipe: Double, size: Duration, advance: Duratio
     }
 
     // some window has passed
-    if (processed) {
+    if ((processed) && (Vertex.sumOfValues(accumulated) > 0)) {
       val output = function(accumulated)
       sendToAllOutputs(output)
       accumulated = Map.empty withDefaultValue(0.0)
