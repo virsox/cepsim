@@ -70,10 +70,10 @@ class QueryCloudletTest extends FlatSpec
     cloudlet run(1000000, 0.0, 1)
 
     verify(prod).generate()
-    verify(prod).run(100000)
-    verify(f1).run(400000)
-    verify(f2).run(400000)
-    verify(cons).run(100000)
+    verify(prod).run(100000, 0.0)
+    verify(f1).run(400000, 100.0)
+    verify(f2).run(400000, 500.0)
+    verify(cons).run(100000, 900.0)
   }
 
 
@@ -102,10 +102,10 @@ class QueryCloudletTest extends FlatSpec
     val history = cloudlet run(1000000, 0.0, 1)
 
     verify(prod).generate()
-    verify(prod).run(100000)
-    verify(f1  ).run(400000)
-    verify(f2  ).run(400000)
-    verify(cons).run(100000)
+    verify(prod).run(100000,   0.0)
+    verify(f1  ).run(400000, 100.0)
+    verify(f2  ).run(400000, 500.0)
+    verify(cons).run(100000, 900.0)
 
     // these operators shouldn't run
     verify(f3, never()).run(anyLong(), anyLong())

@@ -30,7 +30,7 @@ import java.util.*;
 public class CepSimWordCount2 {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 10L;
+    private static final Long DURATION = 30L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -220,7 +220,8 @@ public class CepSimWordCount2 {
 
             Placement placement = Placement.withQueries(queries, 1);
             QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
-                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 100));
+                    //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 100));
+                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50));
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);

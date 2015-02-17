@@ -83,11 +83,11 @@ class QueryCloudletTest extends FlatSpec
 
     cloudlet run(10000000, 0.0, 1000)
 
-    verify(calculator).update(metrics.Produced (prod1, 100000.0,  0.0))
-    verify(calculator).update(metrics.Processed(prod1, 1000.0,  1.0))
-    verify(calculator).update(metrics.Processed(f1,    1000.0,  5.0, Map(prod1 -> 1000.0)))
-    verify(calculator).update(metrics.Processed(f2,    1000.0,  9.0, Map(f1    -> 1000.0)))
-    verify(calculator).update(metrics.Consumed (cons1,  100.0, 10.0, Map(f2    -> 100.0)))
+    verify(calculator).update(metrics.Produced (prod1,  0.0, 100000.0))
+    verify(calculator).update(metrics.Processed(prod1,  1.0,   1000.0))
+    verify(calculator).update(metrics.Processed(f1,     5.0,   1000.0, Map(prod1 -> 1000.0)))
+    verify(calculator).update(metrics.Processed(f2,     9.0,   1000.0, Map(f1    -> 1000.0)))
+    verify(calculator).update(metrics.Consumed (cons1, 10.0,    100.0, Map(f2    -> 100.0)))
 
   }
 

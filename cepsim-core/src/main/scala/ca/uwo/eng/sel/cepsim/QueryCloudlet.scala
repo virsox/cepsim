@@ -87,7 +87,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
       // events to be consumed
       placement.producers foreach ((prod) => {
         val generated = prod.generate()
-        val event = Produced(prod, generated, startTime)
+        val event = Produced(prod, startTime, generated)
         calculators.values.foreach(_.update(event))
       })
 
@@ -101,7 +101,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
       verticesList.foreach { (elem) =>
 
         val v: Vertex = elem._1
+
         var processedEvents = 0.0
+        var generatedEvents = 0.0
         var processedQueues = Map.empty[Vertex, Double]
 
         if (v.isInstanceOf[InputVertex]) {
@@ -111,8 +113,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           // predecessors from all queries
           val predecessors = iv.queries.flatMap(_.predecessors(v))
 
-          // ------------------ queue status before running vertex
-          var before = Map.empty[Vertex, Double]
+          // ------------------ queues status before running vertex
+          var outputBefore: Double = 0.0
+          var inputBefore = Map.empty[Vertex, Double]
           // ------------------------------------------------------------------------------
 
           predecessors.foreach { (pred) =>
@@ -121,14 +124,36 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
             iv.enqueueIntoInput(pred, events)
 
             if (!calculators.isEmpty)
-              before = before updated (pred, iv.inputQueues(pred))
+              inputBefore = inputBefore updated (pred, iv.inputQueues(pred))
           }
+
+          // TODO remove this
+          if ((!calculators.isEmpty) && (iv.isInstanceOf[OutputVertex])) {
+              outputBefore = iv.asInstanceOf[OutputVertex].outputQueues.head._2
+          }
+
+
           processedEvents = iv.run(elem._2, time)
 
           // ------------------ queue status after running vertex
-          before.foreach((entry) => {
+          inputBefore.foreach((entry) => {
             processedQueues = processedQueues updated (entry._1, entry._2 - iv.inputQueues(entry._1))
           })
+
+          if (!calculators.isEmpty) {
+
+            // operators
+            if (iv.isInstanceOf[OutputVertex]) {
+              val ov = iv.asInstanceOf[OutputVertex]
+              generatedEvents = (ov.outputQueues.head._2 - outputBefore) / ov.selectivities(ov.outputQueues.head._1)
+
+            // consumer
+            } else {
+              generatedEvents = processedEvents
+            }
+          }
+
+
           // ------------------------------------------------------------------------------
 
 
@@ -144,6 +169,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
         } else {
           processedEvents = v.run(elem._2, time)
+
+          // TODO remove this
+          // its a producer, so the number of processed events is the same as the number of generated
+          generatedEvents = processedEvents
         }
 
         if (processedEvents > 0)
@@ -174,11 +203,11 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // ---------------- Update metrics
         var event: Event = null;
         if (v.isInstanceOf[EventProducer]) {
-          event = Processed(v, processedEvents, time)
+          event = Processed(v, time, generatedEvents)
         } else if (v.isInstanceOf[EventConsumer]) {
-          event = Consumed(v, processedEvents, time, processedQueues)
+          event = Consumed(v, time, generatedEvents, processedQueues)
         } else {
-          event = Processed(v, processedEvents, time, processedQueues)
+          event = Processed(v, time, generatedEvents, processedQueues)
         }
         calculators.values.foreach(_.update(event))
         // ------------------------------------------------------------------------------

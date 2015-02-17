@@ -149,10 +149,10 @@ public class CepSimTopWords {
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
-            Operator wordCount = WindowedOperator.apply("wordCount" + i, 5000, 9000, 3000,
+            Operator wordCount = WindowedOperator.apply("wordCount" + i, 5000, 3000, 3000,
                     WindowedOperator.constant(10));//new Operator("split" + i, 25000, 1000000);
 
-            Operator ranking = WindowedOperator.apply("ranking" + i, 10000, 3000, 3000,
+            Operator ranking = WindowedOperator.apply("ranking" + i, 10000, 2000, 2000,
                     WindowedOperator.constant(3));//new Operator("split" + i, 25000, 1000000);
 
             EventConsumer c = new EventConsumer("end" + i, 5000, 1000000);

@@ -23,10 +23,12 @@ object LatencyMetric {
       }
 
       def enqueue(quantity: Double, newTime: Double, newLatency: Double) = {
-        var newQuantity = selectivity * quantity
-        timestamp = ((size * timestamp) + (newQuantity * newTime))    / (size + newQuantity)
-        latency   = ((size * latency)   + (newQuantity * newLatency)) / (size + newQuantity)
-        size     += newQuantity
+        if (quantity > 0) {
+          var newQuantity = selectivity * quantity
+          timestamp = ((size * timestamp) + (newQuantity * newTime))    / (size + newQuantity)
+          latency   = ((size * latency)   + (newQuantity * newLatency)) / (size + newQuantity)
+          size     += newQuantity          
+        }
       }
 
       def reset() = {
@@ -83,9 +85,9 @@ object LatencyMetric {
       if (predQueues.isEmpty) {
         val key = (null, event.v)
 
-        quantitySum = event.quantity
+        quantitySum  = event.quantity
         timestampSum = queues(key).timestamp * event.quantity
-        latencySum = 0.0
+        latencySum   = 0.0
 
         queues(key).dequeue(quantitySum)
 
@@ -100,12 +102,13 @@ object LatencyMetric {
           queues(key).dequeue(entry._2)
         })
       }
-      (timestampSum / quantitySum, latencySum / quantitySum, quantitySum)
+      if (quantitySum == 0) (0.0, 0.0, 0.0)
+      else (timestampSum / quantitySum, latencySum / quantitySum, quantitySum)
     }
 
 
     private def updateWithProcessed(processed: Processed) = {
-      val previous = updatePredecessors(processed, processed.queues)
+      val previous = updatePredecessors(processed, processed.processed)
 
       keys(processed.v).foreach((key) => {
 
@@ -125,6 +128,7 @@ object LatencyMetric {
             // enqueue
             queues(key) enqueue (processed.quantity, processed.at, accEntry.latency + (processed.at - accEntry.timestamp))
             accEntry reset()
+            
           } else {
             queues(key) enqueue (processed.quantity, processed.at, previous._2 + (processed.at - previous._1))
           }
@@ -135,7 +139,7 @@ object LatencyMetric {
     }
 
     private def updateWithConsumed(consumed: Consumed) = {
-      val previous = updatePredecessors(consumed, consumed.queues)
+      val previous = updatePredecessors(consumed, consumed.processed)
 
       if (consumed.quantity > 0) {
         metrics = metrics :+ LatencyMetric(consumed.v, consumed.at, consumed.quantity,
