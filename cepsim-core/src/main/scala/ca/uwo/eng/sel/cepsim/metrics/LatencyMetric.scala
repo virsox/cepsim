@@ -34,6 +34,9 @@ object LatencyMetric {
       def reset() = {
         size = 0; timestamp = 0; latency = 0;
       }
+      
+      override def toString(): String =
+        s"(size = $size, timestamp=$timestamp, latency=$latency)"
 
     }
 

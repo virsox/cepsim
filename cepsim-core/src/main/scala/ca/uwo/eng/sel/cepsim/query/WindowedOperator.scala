@@ -21,14 +21,16 @@ class WindowedOperator(id: String, ipe: Double, size: Duration, advance: Duratio
   extends Operator(id, ipe, queueMaxSize) {
 
   var start = 0.0
-  var processAt: Stream[Double] = Stream.empty
+  //var processAt: Stream[Double] = Stream.empty
+  var processAt: Double = 0.0
   var accumulated: Map[Vertex, Double] = Map.empty withDefaultValue(0.0)
 
   override def init(startTime: Double = 0.0, simInterval: Double = 10.0): Unit = {
     start = startTime
 
-    def next(n: Double): Stream[Double] = n #:: next(n + advance.toUnit(MILLISECONDS))
-    processAt = next(start + size.toUnit(MILLISECONDS))
+    //def next(n: Double): Stream[Double] = n #:: next(n + advance.toUnit(MILLISECONDS))
+    //processAt = next(start + size.toUnit(MILLISECONDS))
+    processAt = start + size.toUnit(MILLISECONDS)
   }
 
   override def run(instructions: Double, startTime: Double = 0.0): Double = {
@@ -41,8 +43,8 @@ class WindowedOperator(id: String, ipe: Double, size: Duration, advance: Duratio
     })
 
     var processed = false
-    while (startTime >= processAt.head) {
-      processAt = processAt.tail
+    while (startTime >= processAt) {
+      processAt = processAt + advance.toUnit(MILLISECONDS)
       processed = true
     }
 
