@@ -7,8 +7,10 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
+import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
@@ -113,13 +115,17 @@ public class CepSimTopWords {
                 if (!(cl instanceof CepQueryCloudlet)) continue;
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
+                Query q = cepCl.getQueries().iterator().next();
+
                 System.out.println("Latency: " + cepCl.getLatency());
-
-                //Query q = cepCl.getQueries().iterator().next();
-
+                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
 
 
-//                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
+
+
+
+
+
 //
 //                if (cepCl.getCloudletId() == 1) {
 //                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
@@ -145,7 +151,7 @@ public class CepSimTopWords {
         Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
-            Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+            Generator gen = new UniformGenerator(100, (long) Math.floor(SIM_INTERVAL * 1000));
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
@@ -190,7 +196,7 @@ public class CepSimTopWords {
 
 
         QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
-                RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500));
+                DefaultOpScheduleStrategy.weighted(weights));
 
 
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);

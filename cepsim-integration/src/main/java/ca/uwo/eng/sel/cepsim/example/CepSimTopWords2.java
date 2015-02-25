@@ -162,7 +162,7 @@ public class CepSimTopWords2 {
             // producers
             EventProducer[] producers = new EventProducer[3];
             for (int j = 0; j  < producers.length; j++) {
-                Generator gen = new UniformGenerator(10, (long) Math.floor(SIM_INTERVAL * 1000));
+                Generator gen = new UniformGenerator(100, (long) Math.floor(SIM_INTERVAL * 1000));
                 EventProducer producer = new EventProducer("spout" + j + "_" + i, 1000, gen, false);
 
                 producers[j] = producer;
@@ -185,15 +185,15 @@ public class CepSimTopWords2 {
             Operator[] intRankings = new Operator[2];
             for (int j = 0; j < counters.length; j++) {
                 Operator intRanking = WindowedOperator.apply("intRank" + j + "_" + i, 10000, 2000, 2000,
-                        WindowedOperator.constant(5));//new Operator("split" + i, 25000, 1000000);
+                        WindowedOperator.constant(1));//new Operator("split" + i, 25000, 1000000);
 
                 intRankings[j] = intRanking;
                 weights.put(intRanking, 1.0);
                 vertices.add(intRanking);
             }
 
-            Operator finalRanking = WindowedOperator.apply("ranking_" + i, 10000, 5000, 5000,
-                    WindowedOperator.constant(3));//new Operator("split" + i, 25000, 1000000);
+            Operator finalRanking = WindowedOperator.apply("ranking_" + i, 10000, 2000, 2000,
+                    WindowedOperator.constant(1));//new Operator("split" + i, 25000, 1000000);
             weights.put(finalRanking, 1.0);
             vertices.add(finalRanking);
 
