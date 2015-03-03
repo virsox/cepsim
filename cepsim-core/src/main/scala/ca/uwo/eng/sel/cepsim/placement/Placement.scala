@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.placement
 
 import ca.uwo.eng.sel.cepsim.Vm
-import ca.uwo.eng.sel.cepsim.query.{EventProducer, Query, Vertex}
+import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Query, Vertex}
 
 import scala.collection.mutable
 import scala.collection.mutable.Queue
@@ -73,6 +73,12 @@ class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Verte
     * @return all event producers in this placement.
     */
   def producers: Set[EventProducer] = vertices collect { case ep: EventProducer => ep }
+
+  /**
+    * Get all event consumers in this placement.
+    * @return all event consumers in this placement.
+    */
+  def consumers: Set[EventConsumer] = vertices collect { case ec: EventConsumer => ec }
 
   /**
     * Find all vertices from the placement that are producers, or do not have predecessors

@@ -44,6 +44,6 @@ object Vertex {
    * @param map Map from which the values will be summed.
    * @return The sum of all values contained in the map.
    */
-  def sumOfValues(map: Map[Vertex, Double]): Double = map.foldLeft(0.0)((sum, elem) => sum + elem._2)
+  def sumOfValues[T](map: Map[T, Double]): Double = map.foldLeft(0.0)((sum, elem) => sum + elem._2)
 
 }

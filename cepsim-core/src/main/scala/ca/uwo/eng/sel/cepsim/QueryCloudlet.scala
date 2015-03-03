@@ -205,7 +205,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         if (v.isInstanceOf[EventProducer]) {
           event = Processed(v, time, generatedEvents)
         } else if (v.isInstanceOf[EventConsumer]) {
-          event = Consumed(v, time, generatedEvents, processedQueues)
+          event = Consumed(v.asInstanceOf[EventConsumer], time, generatedEvents, processedQueues)
         } else {
           event = Processed(v, time, generatedEvents, processedQueues)
         }
