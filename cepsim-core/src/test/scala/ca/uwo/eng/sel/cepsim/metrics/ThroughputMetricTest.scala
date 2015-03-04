@@ -126,7 +126,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Processed(op2,   22.0,  1.0, Map(op1   ->  1.0))
     throughput update Consumed (cons1, 23.0,  1.0, Map(op2   ->  1.0))
 
-    val results = throughput.results
+    val results = throughput.results(cons1)
     results should have size (1)
 
     results(0) should be (ThroughputMetric(cons1, 23.0, 10.0))
@@ -148,7 +148,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Processed(op2,   44.0,  1.0, Map(op1   ->  1.0))
     throughput update Consumed (cons1, 47.0,  1.0, Map(op2   ->  1.0))
 
-    val results = throughput.results
+    val results = throughput.results(cons1)
     results should have size (2)
 
     results(0) should be (ThroughputMetric(cons1, 27.0, 30.0))
@@ -167,7 +167,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Consumed(cons1, 42.0,  3.0, Map(op3 -> 3.0))
 
 
-    val results = throughput.results
+    val results = throughput.results(cons1)
     results should have size (1)
 
     results(0) should be (ThroughputMetric(cons1, 42.0, 10.0))
@@ -187,7 +187,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Consumed(cons1,  60.0,  5.0, Map(op3 -> 5.0))
 
 
-    val results = throughput.results
+    val results = throughput.results(cons1)
     results should have size (1)
     results(0) should be (ThroughputMetric(cons1, 60.0, 30.0))
   }

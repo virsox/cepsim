@@ -87,7 +87,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Processed(op2,   20.0, 10.0, Map(op1  -> 10)))
     latency.update(Consumed (cons1, 25.0, 10.0, Map(op2  -> 10)))
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (1)
 
     results.head should be (LatencyMetric(cons1, 25.0, 10.0, 15.0))
@@ -109,7 +109,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Processed(op2,   40.0, 5.0, Map(op1  -> 5)))
     latency.update(Consumed (cons1, 45.0, 5.0, Map(op2  -> 5)))
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (2)
 
     results(0) should be (LatencyMetric(cons1, 25.0, 5.0, 15.0))
@@ -145,7 +145,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Consumed (cons1, 85.0, 5.0, Map(op2  -> 5)))
 
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (4)
 
     results(0) should be (LatencyMetric(cons1, 25.0, 5.0, 20.0))
@@ -164,7 +164,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Consumed (cons1, 25.0,  0.0, Map(op2   ->  5.0)))
     latency.update(Consumed (cons1, 30.0,  1.0, Map(op2   ->  5.0)))
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (1)
 
     results(0) should be (LatencyMetric(cons1, 30.0, 1.0, 20.0))
@@ -187,7 +187,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Processed(op2,   40.0, 50.0, Map(op1  -> 50)))
     latency.update(Consumed (cons1, 45.0, 50.0, Map(op2  -> 50)))
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (2)
 
     results(0) should be (LatencyMetric(cons1, 25.0, 50.0, 15.0))
@@ -221,7 +221,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Consumed (cons1, 55.0, 1.0, Map(op2  -> 1)))
 
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (2)
 
     results(0) should be (LatencyMetric(cons1, 45.0, 1.0, 25.0))
@@ -244,7 +244,7 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Processed(op3,   25.0, 20.0, Map(op1 -> 10.0, op2 -> 10.0))) // latency (10 * 15 + 10 * 13) / 20 = 14
     latency.update(Consumed (cons1, 30.0, 20.0, Map(op3   -> 20.0)))
 
-    val results = latency.results
+    val results = latency.results(cons1)
     results should have size (1)
 
     results(0) should be (LatencyMetric(cons1, 30.0, 20.0, 19.0))

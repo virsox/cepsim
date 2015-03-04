@@ -26,8 +26,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   def registerCalculator(id: String, calculator: MetricCalculator) =
     calculators = calculators updated (id, calculator)
 
-  def metric(id: String) = calculators(id).consolidate
-  def metricList(id: String) = calculators(id).results
+  def metric(id: String, v: Vertex) = calculators(id).consolidate(v)
+  def metricList(id: String, v: Vertex) = calculators(id).results(v)
 
   // ---------------------------------------
 

@@ -44,7 +44,7 @@ object LatencyMetric {
     var acc: Map[QueueKey, QueueEntry] = Map.empty
 
     var keys: Map[Vertex, Set[QueueKey]] = Map.empty withDefaultValue(Set.empty)
-    var metrics: Vector[Metric] = Vector.empty
+    var metrics: Map[Vertex, Vector[Metric]] = Map.empty withDefaultValue(Vector.empty)
 
 
     placement.iterator.foreach((v) => { v match {
@@ -143,14 +143,16 @@ object LatencyMetric {
 
     private def updateWithConsumed(consumed: Consumed) = {
       val previous = updatePredecessors(consumed, consumed.processed)
+      val consumer = consumed.v
 
       if (consumed.quantity > 0) {
-        metrics = metrics :+ LatencyMetric(consumed.v, consumed.at, consumed.quantity,
-          previous._2 + (consumed.at - previous._1))
+        metrics = metrics updated (consumer,
+          metrics(consumer) :+ LatencyMetric(consumed.v, consumed.at, consumed.quantity,
+                                             previous._2 + (consumed.at - previous._1)))
       }
     }
 
-    override def results: List[Metric] = metrics.toList
+    override def results(v: Vertex): List[Metric] = metrics(v).toList
 
 
   }
