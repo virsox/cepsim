@@ -43,7 +43,7 @@ class WindowedOperatorTest extends FlatSpec
     // first run - process the events and accumulate
     op enqueueIntoInput (f1, 10)
     op enqueueIntoInput (f2, 10)
-    op run (200, 500)
+    op run (200, 10.0)
 
     op.inputQueues (f1) should be (0.0 +- 0.0001)
     op.inputQueues (f2) should be (0.0 +- 0.0001)
@@ -52,7 +52,7 @@ class WindowedOperatorTest extends FlatSpec
     // second run - end of the first window
     op enqueueIntoInput (f1, 10)
     op enqueueIntoInput (f2, 10)
-    op run (200, 1000)
+    op run (200, 1010)
 
     op.inputQueues (f1) should be (0.0 +- 0.0001)
     op.inputQueues (f2) should be (0.0 +- 0.0001)
@@ -111,6 +111,25 @@ class WindowedOperatorTest extends FlatSpec
 
   }
 
+  it should "not emit anything if there is no event accumualted" in new Fixture {
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    setup(op)
+
+    op.init(0.0, 100)
+
+    op.run(200, 1000)
+    op.outputQueues(f3) should be (0.0)
+
+    op.run(200, 1100)
+    op.outputQueues(f3) should be (0.0)
+
+    op enqueueIntoInput (f1, 10)
+    op enqueueIntoInput (f2, 10)
+    op.run(200, 1200)
+    op.outputQueues(f3) should be (20.0 +- 0.001)
+
+  }
+
   it should "correctly execute the aggregation function" in new Fixture {
     val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
     setup(op)
@@ -126,15 +145,37 @@ class WindowedOperatorTest extends FlatSpec
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
     op.outputQueues(f3) should be (200.0 +- 0.0001)
+    op.dequeueFromOutput((f3, 200.00))
 
-    op enqueueIntoInput (f1, 10)
-    op enqueueIntoInput (f2, 10)
-    op.run(200, 11000)
+    op enqueueIntoInput (f1, 5)
+    op enqueueIntoInput (f2, 5)
+    op.run(200, 1100)
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
 
-    // TODO this result is wrong - it should consider the past 10 second
-    op.outputQueues(f3) should be (220.0 +- 0.0001)
+    op.outputQueues(f3) should be (190.0 +- 0.0001)
+  }
+
+  it should "skip more than one slot if needed" in new Fixture {
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    setup(op)
+
+    op.init(0.0, 100)
+
+    // run 10 times until it reaches the 1 second window
+    (1 to 10).foreach((i) => {
+      op enqueueIntoInput (f1, 10)
+      op enqueueIntoInput (f2, 10)
+      op.run(200, i * 100)
+    })
+    op.outputQueues(f3) should be (200.0 +- 0.0001)
+    op.dequeueFromOutput((f3, 200.00))
+
+    op.run(200, 1400)
+
+    // it should execute 4 windows - (100 -> 1100) = 180, (200 -> 1200) = 160, (300 -> 1300) = 140, (400 -> 1400) = 120
+    op.outputQueues(f3) should be (600.0 +- 0.0001)
+
   }
 
 

@@ -114,7 +114,9 @@ public class CepSimTopWords2 {
                 if (!(cl instanceof CepQueryCloudlet)) continue;
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-                System.out.println("Latency: " + cepCl.getLatency());
+                Query q = cepCl.getQueries().iterator().next();
+                Vertex consumer = q.consumers().head();
+                System.out.println("Latency: " + cepCl.getLatency(consumer));
 
                 //Query q = cepCl.getQueries().iterator().next();
 

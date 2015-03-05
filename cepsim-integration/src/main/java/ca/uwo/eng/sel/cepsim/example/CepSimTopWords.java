@@ -116,8 +116,8 @@ public class CepSimTopWords {
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
                 Query q = cepCl.getQueries().iterator().next();
-
-                System.out.println("Latency: " + cepCl.getLatency());
+                Vertex consumer = q.consumers().head();
+                System.out.println("Latency: " + cepCl.getLatency(consumer));
                 System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
 
 

@@ -165,8 +165,8 @@ public class CepQueryCloudlet extends Cloudlet {
         this.networkEvents.offer(netEvent);
     }
 
-    public double getLatency() {
-        return this.cloudlet.metric(LatencyMetric.ID());
+    public double getLatency(Vertex consumer) {
+        return this.cloudlet.metric(LatencyMetric.ID(), consumer);
     }
 
 }
