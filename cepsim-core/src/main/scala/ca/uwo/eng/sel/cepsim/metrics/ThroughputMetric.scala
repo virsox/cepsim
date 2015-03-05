@@ -149,12 +149,12 @@ object ThroughputMetric {
 
     /**
      * Consolidates all the metric values that have been calculated for a specific vertex.
-     * This implementation simply
+     * This implementation simply sums the totals from each producer.
      * @param v the specified vertex.
      * @return A single value that consolidates the metric values.
      */
     override def consolidate(v: Vertex): Double =
-      results(v).foldLeft(0.0)((acc, metric) => acc + metric.value) / results(v).length
+      totalEvents(v.asInstanceOf[EventConsumer]).foldLeft(0.0)((acc, entry) => acc + entry._2)
 
     /**
      * Update the metric calculation with a Produced event.
@@ -218,12 +218,14 @@ object ThroughputMetric {
 
       } else {
         processed.foreach((e) => {
-          val totalFromProducers = edges((e._1, v)).dequeue(e._2)
+          if (e._2 > 0) {
+            val totalFromProducers = edges((e._1, v)).dequeue(e._2)
 
-          // sum all these totals
-          totalFromProducers.foreach((e) => {
-            sum = sum updated (e._1, sum.getOrElse(e._1, 0.0) + e._2)
-          })
+            // sum all these totals
+            totalFromProducers.foreach((e) => {
+              sum = sum updated (e._1, sum.getOrElse(e._1, 0.0) + e._2)
+            })
+          }
         })
       }
       sum

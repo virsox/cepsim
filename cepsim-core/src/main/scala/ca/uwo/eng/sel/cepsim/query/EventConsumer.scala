@@ -39,9 +39,9 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     var output = Math.floor(processed).toInt
 
     accumulated += processed - output
-    if (Math.abs(accumulated - 1.0) < 0.001) {
+    if (Math.abs(accumulated - 1.0) < 0.01) {
       output += 1
-      accumulated -= 1.0
+      accumulated = Math.abs(accumulated - 1.0)
     }
 
     outputQueue += output
