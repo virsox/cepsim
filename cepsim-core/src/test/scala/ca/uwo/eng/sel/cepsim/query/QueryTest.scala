@@ -15,7 +15,6 @@ class QueryTest extends FlatSpec
   
   trait Fixture {
     val generator = mock[Generator]
-    doReturn(10).when(generator).generate()    
     val prod1 = EventProducer("p1", 10, generator)
     val cons1 = EventConsumer("c1", 10)
     val f1 = Operator("f1", 1000)

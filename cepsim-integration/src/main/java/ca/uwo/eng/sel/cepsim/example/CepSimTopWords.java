@@ -151,7 +151,7 @@ public class CepSimTopWords {
         Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
-            Generator gen = new UniformGenerator(100, (long) Math.floor(SIM_INTERVAL * 1000));
+            Generator gen = new UniformGenerator(100);//, (long) Math.floor(SIM_INTERVAL * 1000));
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
@@ -196,7 +196,7 @@ public class CepSimTopWords {
 
 
         QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights));
+                DefaultOpScheduleStrategy.weighted(weights), 1);
 
 
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);

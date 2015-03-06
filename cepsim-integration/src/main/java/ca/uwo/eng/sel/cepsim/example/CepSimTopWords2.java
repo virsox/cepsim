@@ -164,7 +164,7 @@ public class CepSimTopWords2 {
             // producers
             EventProducer[] producers = new EventProducer[3];
             for (int j = 0; j  < producers.length; j++) {
-                Generator gen = new UniformGenerator(100, (long) Math.floor(SIM_INTERVAL * 1000));
+                Generator gen = new UniformGenerator(100); //, (long) Math.floor(SIM_INTERVAL * 1000));
                 EventProducer producer = new EventProducer("spout" + j + "_" + i, 1000, gen, false);
 
                 producers[j] = producer;
@@ -244,7 +244,7 @@ public class CepSimTopWords2 {
 
             Placement placement = Placement.withQueries(queries, 1);
             QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
-                    DefaultOpScheduleStrategy.weighted(weights));
+                    DefaultOpScheduleStrategy.weighted(weights), 1);
                     //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500));
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);

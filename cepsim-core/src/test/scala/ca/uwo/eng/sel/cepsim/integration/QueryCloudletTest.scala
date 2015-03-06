@@ -25,7 +25,7 @@ class QueryCloudletTest extends FlatSpec
   with MockitoSugar {
 
   trait Fixture {
-    val gen = UniformGenerator(100000, 1.second)
+    val gen = UniformGenerator(100000)
 
     val prod1 = EventProducer("p1", 1000, gen)
     val f1 = Operator("f1", 4000)
@@ -83,7 +83,7 @@ class QueryCloudletTest extends FlatSpec
 
     cloudlet run(10000000, 0.0, 1000)
 
-    verify(calculator).update(metrics.Produced (prod1,  0.0, 100000.0))
+    verify(calculator).update(metrics.Produced (prod1,  0.0,   1000.0))
     verify(calculator).update(metrics.Processed(prod1,  1.0,   1000.0))
     verify(calculator).update(metrics.Processed(f1,     5.0,   1000.0, Map(prod1 -> 1000.0)))
     verify(calculator).update(metrics.Processed(f2,     9.0,   1000.0, Map(f1    -> 1000.0)))

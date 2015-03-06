@@ -149,7 +149,7 @@ public class CepSimExperiment1 {
         Placement placement1 = Placement.apply(q, 1);
 				//apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
 
-		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted());
+		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted(), 1);
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
 		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);
@@ -163,8 +163,8 @@ public class CepSimExperiment1 {
 
 	public static Query getQuery1(int number) {
 
-		Generator gen1 = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
-		Generator gen2 = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+		Generator gen1 = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
+		Generator gen2 = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
 
 		EventProducer p1 = new EventProducer("p1_" + number, 1000, gen1, true);
 		EventProducer p2 = new EventProducer("p2_" + number, 1000, gen2, true);

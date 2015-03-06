@@ -4,8 +4,7 @@ import scala.concurrent.duration._
 
 /** UniformGenerator companion object. */
 object UniformGenerator {
-  def apply(rate: Double, samplingInterval: Duration) =
-    new UniformGenerator(rate, samplingInterval.toMillis)
+  def apply(rate: Double) = new UniformGenerator(rate)
 }
 
 /**
@@ -13,10 +12,9 @@ object UniformGenerator {
   * of event generation rate and the sampling interval.
   *
   * @param rate Event generation rate in events / sec.
-  * @param samplingInterval Simulation interval in milliseconds
   */
-class UniformGenerator(val rate: Double, override val samplingInterval: Long) extends Generator {
+class UniformGenerator(val rate: Double) extends Generator {
 
-  override def doGenerate(): Double = ((samplingInterval / 1000.0) * rate)
+  override def doGenerate(interval: Double): Double = ((interval / 1000.0) * rate)
 
 }

@@ -154,7 +154,7 @@ public class CepSimWordCount2 {
             // producers
             EventProducer[] producers = new EventProducer[3];
             for (int j = 0; j < producers.length; j++) {
-                Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+                Generator gen = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
                 EventProducer producer = new EventProducer("spout" + j + "_" + i, 1000, gen, false);
                 producers[j] = producer;
 
@@ -222,7 +222,7 @@ public class CepSimWordCount2 {
             Placement placement = Placement.withQueries(queries, 1);
             QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
                     //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 100));
-                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50));
+                    RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50), 1);
 
             CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
             cloudlet.setUserId(brokerId);

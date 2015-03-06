@@ -12,16 +12,16 @@ import scala.concurrent.duration.Duration
 
 
 object QueryCloudlet {
-  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy) =
-    new QueryCloudlet(id, placement, opSchedStrategy)
+  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int = 1) =
+    new QueryCloudlet(id, placement, opSchedStrategy, iterations)
 }
 
-class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy) {
+class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy,
+                    iterations: Int) {
 
   // --------------- Metric manipulation
 
   var calculators =  Map.empty[String, MetricCalculator]
-  //List(LatencyMetric.calculator(placement)) // List.empty[MetricCalculator]//.calculator(placement))
 
   def registerCalculator(id: String, calculator: MetricCalculator) =
     calculators = calculators updated (id, calculator)
@@ -76,144 +76,159 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    */
   def run(instructions: Double, startTime: Double, capacity: Double): History[Entry] = {
     var history = History()
+
     if (instructions > 0) {
 
-      val availableInstructions = instructions
+
+      // auxiliary function
       val instructionsPerMs = (capacity * 1000)
       def totalMs(number: Double) = number / instructionsPerMs
 
-      // generate the events before calling the scheduling strategy
-      // in theory this enables more complex strategies that consider the number of
-      // events to be consumed
-      placement.producers foreach ((prod) => {
-        val generated = prod.generate()
-        val event = Produced(prod, startTime, generated)
-        calculators.values.foreach(_.update(event))
-      })
-
-//      case class Produced (val v: Vertex, val quantity: Double, val from: Double, val at: Double) extends Event
-//      case class Processed(val v: Vertex, val quantity: Double, val at: Double, val queues: Map[Vertex, Double] = Map.empty) extends Event
-//      case class Consumed (val v: Vertex, val quantity: Double, val at: Double, val queues: Map[Vertex, Double]) extends Event
-//
-      val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
+      val instructionsPerIteration = Math.floor(instructions / iterations).toLong
       var time = startTime
 
-      verticesList.foreach { (elem) =>
+      (1 to iterations).foreach((i) => {
 
-        val v: Vertex = elem._1
+        // last iteration uses all remaining instructions
+        val availableInstructions = if (i == iterations) instructions - ((i - 1) * instructionsPerIteration)
+                                    else instructionsPerIteration
 
-        var processedEvents = 0.0
-        var generatedEvents = 0.0
-        var processedQueues = Map.empty[Vertex, Double]
 
-        if (v.isInstanceOf[InputVertex]) {
+        // generate the events before calling the scheduling strategy
+        // in theory this enables more complex strategies that consider the number of
+        // events to be consumed
+        placement.producers foreach ((prod) => {
+          val generated = prod.generate(totalMs(availableInstructions))
+          val event = Produced(prod, startTime, generated)
+          calculators.values.foreach(_.update(event))
+        })
 
-          val iv = v.asInstanceOf[InputVertex]
 
-          // predecessors from all queries
-          val predecessors = iv.queries.flatMap(_.predecessors(v))
+        // Vertices execution
 
-          // ------------------ queues status before running vertex
-          var outputBefore: Double = 0.0
-          var inputBefore = Map.empty[Vertex, Double]
+        val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
+        verticesList.foreach { (elem) =>
+
+          val v: Vertex = elem._1
+
+          var processedEvents = 0.0
+          var generatedEvents = 0.0
+          var processedQueues = Map.empty[Vertex, Double]
+
+          if (v.isInstanceOf[InputVertex]) {
+
+            val iv = v.asInstanceOf[InputVertex]
+
+
+            // ------------------ queues status before running vertex -----------------------
+            // predecessors from all queries
+             //queries.flatMap(_.predecessors(v))
+            var outputBefore: Double = 0.0
+            var inputBefore = Map.empty[Vertex, Double]
+
+            if (!calculators.isEmpty) {
+              inputBefore = iv.inputQueues
+              if (iv.isInstanceOf[OutputVertex])
+                outputBefore = iv.asInstanceOf[OutputVertex].outputQueues.head._2
+            }
+           // ------------------------------------------------------------------------------
+
+
+            processedEvents = iv.run(elem._2, time)
+
+
+            // ------------------ queue status after running vertex ----------------------------
+            inputBefore.foreach((entry) => {
+              processedQueues = processedQueues updated (entry._1, entry._2 - iv.inputQueues(entry._1))
+            })
+
+            if (!calculators.isEmpty) {
+              // operators
+              if (iv.isInstanceOf[OutputVertex]) {
+                val ov = iv.asInstanceOf[OutputVertex]
+                generatedEvents = (ov.outputQueues.head._2 - outputBefore) / ov.selectivities(ov.outputQueues.head._1)
+
+              // consumer
+              } else {
+                generatedEvents = processedEvents
+              }
+            }
+            // ---------------------------------------------------------------------------------
+
+            if (iv.isBounded()) {
+              iv.predecessors.foreach { (pred) =>
+                pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
+              }
+            }
+
+
+          } else {
+            processedEvents = v.run(elem._2, time)
+
+            // TODO remove this
+            // its a producer, so the number of processed events is the same as the number of generated
+            generatedEvents = processedEvents
+          }
+
+          if (processedEvents > 0)
+            history = history.logProcessed(id, time, v, processedEvents)
+
+          // check if there are events to be sent to remote vertices
+          if (v.isInstanceOf[OutputVertex]) {
+
+            val ov = v.asInstanceOf[OutputVertex]
+
+            val successors: Set[InputVertex] = ov.successors //queries.flatMap(_.successors(ov))
+            val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
+
+            val inPlacement = successors.intersect(placementInputVertices)
+            val notInPlacement = successors -- placementInputVertices
+
+
+            notInPlacement.foreach { (dest) =>
+              // log and remove from the output queue
+              // the actual sending is not implemented here
+
+              val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
+              if (sentMessages > 0) {
+                history = history.logSent(id, time, v, dest, sentMessages)
+                ov.dequeueFromOutput((dest, sentMessages))
+              }
+            }
+
+            inPlacement.foreach { (dest) =>
+              val events = ov.outputQueues(dest)
+              ov.dequeueFromOutput((dest, events))
+              dest.enqueueIntoInput(ov, events)
+
+            }
+
+
+          }
+
+          time += totalMs(elem._2)
+
+          // ---------------- Update metrics
+          var event: Event = null;
+          if (v.isInstanceOf[EventProducer]) {
+            event = Processed(v, time, generatedEvents)
+          } else if (v.isInstanceOf[EventConsumer]) {
+            event = Consumed(v.asInstanceOf[EventConsumer], time, generatedEvents, processedQueues)
+          } else {
+            event = Processed(v, time, generatedEvents, processedQueues)
+          }
+          calculators.values.foreach(_.update(event))
           // ------------------------------------------------------------------------------
 
-          predecessors.foreach { (pred) =>
-            val events = pred.outputQueues(iv)
-            pred.dequeueFromOutput((iv, events))
-            iv.enqueueIntoInput(pred, events)
-
-            if (!calculators.isEmpty)
-              inputBefore = inputBefore updated (pred, iv.inputQueues(pred))
-          }
-
-          // TODO remove this
-          if ((!calculators.isEmpty) && (iv.isInstanceOf[OutputVertex])) {
-              outputBefore = iv.asInstanceOf[OutputVertex].outputQueues.head._2
-          }
-
-
-          processedEvents = iv.run(elem._2, time)
-
-          // ------------------ queue status after running vertex
-          inputBefore.foreach((entry) => {
-            processedQueues = processedQueues updated (entry._1, entry._2 - iv.inputQueues(entry._1))
-          })
-
-          if (!calculators.isEmpty) {
-
-            // operators
-            if (iv.isInstanceOf[OutputVertex]) {
-              val ov = iv.asInstanceOf[OutputVertex]
-              generatedEvents = (ov.outputQueues.head._2 - outputBefore) / ov.selectivities(ov.outputQueues.head._1)
-
-            // consumer
-            } else {
-              generatedEvents = processedEvents
-            }
-          }
-
-
-          // ------------------------------------------------------------------------------
-
-
-          if (iv.isBounded()) {
-            predecessors.foreach { (pred) =>
-              pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
-            }
-          }
-
-          // ------------------ build event
-         // event = Processed(v, processedEvents, )
-
-
-        } else {
-          processedEvents = v.run(elem._2, time)
-
-          // TODO remove this
-          // its a producer, so the number of processed events is the same as the number of generated
-          generatedEvents = processedEvents
         }
 
-        if (processedEvents > 0)
-          history = history.logProcessed(id, time, v, processedEvents)
 
-        // check if there are events to be sent to remote vertices
-        if (v.isInstanceOf[OutputVertex]) {
-
-          val ov = v.asInstanceOf[OutputVertex]
-          val successors: Set[Vertex] = ov.queries.flatMap(_.successors(ov))
-          val notInPlacement = successors -- placement.vertices
+      })
 
 
-          notInPlacement.foreach { (dest) =>
-            // log and remove from the output queue
-            // the actual sending is not implemented here
 
-            val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
-            if (sentMessages > 0) {
-              history = history.logSent(id, time, v, dest, sentMessages)
-              ov.dequeueFromOutput((dest, sentMessages))
-            }
-          }
-        }
 
-        time += totalMs(elem._2)
-
-        // ---------------- Update metrics
-        var event: Event = null;
-        if (v.isInstanceOf[EventProducer]) {
-          event = Processed(v, time, generatedEvents)
-        } else if (v.isInstanceOf[EventConsumer]) {
-          event = Consumed(v.asInstanceOf[EventConsumer], time, generatedEvents, processedQueues)
-        } else {
-          event = Processed(v, time, generatedEvents, processedQueues)
-        }
-        calculators.values.foreach(_.update(event))
-        // ------------------------------------------------------------------------------
-
-      }
-    }
+   }
 
     history
   }

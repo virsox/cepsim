@@ -152,7 +152,7 @@ public class CepSimExample {
 		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
 
 		for (int i = 1; i <= 5; i++) {
-			Generator gen = new UniformGenerator(1000, (long) Math.floor(SIM_INTERVAL * 1000));
+			Generator gen = new UniformGenerator(1000); //, (long) Math.floor(SIM_INTERVAL * 1000));
 			EventProducer p = new EventProducer("p" + i, 10000, gen, true);
 			Operator f = new Operator("f" + i, 100000, 1000);
 			EventConsumer c = new EventConsumer("c" + i, 10000, 1000);
@@ -174,7 +174,7 @@ public class CepSimExample {
 			queries.add(q);
 			
 			Placement placement = Placement.withQueries(queries, 1);
-			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, DefaultOpScheduleStrategy.weighted());//new RoundRobinOpScheduleStrategy(10));
+			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, DefaultOpScheduleStrategy.weighted(), 1);//new RoundRobinOpScheduleStrategy(10));
 						
 			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
 			cloudlet.setUserId(brokerId);

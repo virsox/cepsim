@@ -7,7 +7,7 @@ import scala.concurrent.duration._
   */
 trait Generator {
 
-  /** Current calculated average */
+  /** Current calculated average (events per second) */
   protected var currentAvg = 0.0
 
   /** Number of invocations */
@@ -30,27 +30,27 @@ trait Generator {
 
   /**
    * Abstract method that should be overriden by subclasses with the generation logic.
-   * @return The number of events generated events.
+   * @param interval period of time in milliseconds from which the events are generated.
+   * @return The number of generated events.
    */
-  def doGenerate(): Double
-
-  /** Simulation interval in milliseconds. */
-  def samplingInterval: Long
+  def doGenerate(interval: Double): Double
 
   /**
-   * Generates a number of events. It should be invoked at each simulation tick.
+   * Generates a number of events. It should be invoked at the beginning of each iteration
+   * at each simulation tick.
+   * @param interval period of time in milliseconds from which the events are generated.
    * @param limit Limit in the number of generated events.
    * @return Number of events generated.
    */
-  def generate(limit: Int = 10000000): Double = {
-    accumulated += doGenerate()
+  def generate(interval: Double, limit: Int = 10000000): Double = {
+    accumulated += doGenerate(interval)
 
     // determine how many events should be returned
     val toReturn = accumulated.min(limit)
     accumulated -= toReturn
 
     // update average
-    val sampleAvg = toReturn / (samplingInterval / 1000.0)
+    val sampleAvg = toReturn / (interval / 1000.0)
     currentAvg = ((invocations * currentAvg) + sampleAvg) / (invocations + 1)
     invocations = invocations + 1
 

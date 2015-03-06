@@ -22,7 +22,7 @@ class RemoteQueryCloudletTest extends FlatSpec
 
 
   trait Fixture {
-    val gen = UniformGenerator(100000, 1.second)
+    val gen = UniformGenerator(100000)
 
     val prod1 = EventProducer("p1", 1000, gen)
     val f1 = Operator("f1", 4000)

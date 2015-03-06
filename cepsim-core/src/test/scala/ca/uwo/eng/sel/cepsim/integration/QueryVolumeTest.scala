@@ -17,7 +17,7 @@ class QueryVolumeTest extends FlatSpec {
 
   "A cloudlet" should "run many queries simultaneously" in {
     val vm = Vm("vm1", 1000) // 1 billion instructions per second
-    val gen = UniformGenerator(25000, 10.milliseconds)
+    val gen = UniformGenerator(25000)
 
 
     val MAX_QUERIES = 20

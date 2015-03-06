@@ -20,7 +20,7 @@ class BoundedQueryCloudletTest extends FlatSpec
   with Matchers {
 
   trait Fixture {
-    val gen = UniformGenerator(100000, 10.milliseconds)
+    val gen = UniformGenerator(100000)
 
     val prod1 = EventProducer("p1", 1000, gen, true)
     val f1 = Operator("f1", 2500, 1000)

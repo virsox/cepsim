@@ -19,7 +19,7 @@ class EventProducerTest extends FlatSpec
   trait Fixture {
     val generator = mock[Generator]
     val value: Int = 10000
-    doReturn(100.0).when(generator).generate(anyInt())
+    doReturn(100.0).when(generator).generate(anyDouble(), anyInt())
 
 
     val prod = EventProducer("p1", 1, generator)
@@ -29,31 +29,31 @@ class EventProducerTest extends FlatSpec
   }
 
   "An EventProducer" should "generate events and put in the input queue" in new Fixture {
-    val result = prod.generate()
+    val result = prod.generate(1000)
     result should be (100)
 
-    verify(generator).generate(anyInt())
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), anyInt())
     prod.inputQueue should be (100)
   }
 
   it should "process events and put them in the output queue" in new Fixture {
-    val result = prod.generate()
+    val result = prod.generate(1000)
     result should be (100)
 
     prod.run(100)
 
-    verify(generator).generate(anyInt())
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), anyInt())
     prod.inputQueue should be (0)
     prod.outputQueues(n1) should be (100)
   }
 
   it should "generate events and put half of them in the output queue" in new Fixture {
-    val result = prod.generate()
+    val result = prod.generate(500)
     result should be (100)
 
     prod.run(50)
 
-    verify(generator).generate(anyInt())
+    verify(generator).generate(org.mockito.Matchers.eq(500.0), anyInt())
     prod.inputQueue should be (50)
     prod.outputQueues(n1) should be (50)
   }
@@ -62,7 +62,7 @@ class EventProducerTest extends FlatSpec
     val prod2 = EventProducer("p2", 3, generator)
     prod2.addOutputQueue(n1)
 
-    val result = prod2.generate()
+    val result = prod2.generate(100.0)
     result should be (100)
 
     prod2.run(100)

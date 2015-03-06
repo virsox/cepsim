@@ -30,7 +30,7 @@ import java.util.*;
 public class CepSimAvgWindow {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 181L;
+    private static final Long DURATION = 61L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -155,21 +155,21 @@ public class CepSimAvgWindow {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 500;
+        final int NUM_SENSORS = 1750;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
         Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
-            Generator gen = new UniformGenerator(NUM_SENSORS * 10, (long) Math.floor(SIM_INTERVAL * 1000));
+            Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
             Operator outlierDetector = new Operator("outlierDetector" + i, 300000, 100000);
             Operator average = WindowedOperator.apply("average" + i, 200000, 15000, 15000,
                     WindowedOperator.constant(NUM_SENSORS));
-            Operator db = new Operator("db" + i, 12500000, 1000000);
+            Operator db = new Operator("db" + i, 5000000, 1000000);
 
             EventConsumer c = new EventConsumer("end" + i, 1000, 1000000);
 
@@ -209,8 +209,8 @@ public class CepSimAvgWindow {
 
 
 
-        QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights));
+        QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
+                DefaultOpScheduleStrategy.weighted(weights), 10);
                 //DynamicOpScheduleStrategy.apply());
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
