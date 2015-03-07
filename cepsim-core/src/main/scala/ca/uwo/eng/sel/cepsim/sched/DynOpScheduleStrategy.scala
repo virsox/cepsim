@@ -2,10 +2,11 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
+import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy
 
-/** DynamicOpScheduleStrategy companion object. */
-object DynamicOpScheduleStrategy {
-  def apply() = new DynamicOpScheduleStrategy()
+/** DynOpScheduleStrategy companion object. */
+object DynOpScheduleStrategy {
+  def apply(allocStrategy: AllocationStrategy) = new DynOpScheduleStrategy(allocStrategy)
 }
 
 /**
@@ -17,26 +18,24 @@ object DynamicOpScheduleStrategy {
   * has events in the input queue. This process is repeated until all events have been processed OR there are
   * no more instructions to be allocated.
   */
-class DynamicOpScheduleStrategy extends OpScheduleStrategy {
+class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] =
-    new DynamicOpScheduleIterator(instructions, placement)
+    new DynOpScheduleIterator(instructions, placement, allocStrategy)
 
   /**
     * Iterator returned by the strategy.
     * @param instructions Total number of instructions that can be allocated.
     * @param placement Placement object encapsulating the vertices.
     */
-  class DynamicOpScheduleIterator(instructions: Double, placement: Placement) extends Iterator[(Vertex, Double)] {
+  class DynOpScheduleIterator(instructions: Double, placement: Placement, allocStrategy: AllocationStrategy)
+    extends Iterator[(Vertex, Double)] {
 
     /** Maximum number of instructions allocated to each vertex. */
-    private val maxAllocation = instructions / placement.vertices.size
+    private val maxAllocation = allocStrategy.instructionsPerOperator(instructions, placement)
 
     /** Number of instructions still available. This number is updated at each iteration. */
     private var remainingInstructions = instructions
-
-    /** Iterator used in the first round. */
-    private val firstRoundIt = placement.iterator
 
     /** List with all vertices in the iteration order determined by the placement. */
     private val vertices: List[Vertex] = placement.iterator.toList
@@ -95,15 +94,12 @@ class DynamicOpScheduleStrategy extends OpScheduleStrategy {
       }
 
 
-    override def hasNext: Boolean = if (!firstRoundIt.hasNext) (nextVertexIndex != -1) else true
+    override def hasNext: Boolean = (nextVertexIndex != -1)
 
     override def next(): (Vertex, Double) = {
-      var v: Vertex = null
+      val v: Vertex = nextVertex()
 
-      if (firstRoundIt.hasNext) v = firstRoundIt.next()
-      else v = nextVertex()
-
-      val allocation = instructionsNeeded(v).min(maxAllocation).min(remainingInstructions)
+      val allocation = instructionsNeeded(v).min(maxAllocation(v)).min(remainingInstructions)
       remainingInstructions -= allocation
 
       (v, allocation)

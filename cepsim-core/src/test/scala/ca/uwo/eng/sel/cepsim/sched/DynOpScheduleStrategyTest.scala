@@ -2,19 +2,20 @@ package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
+import ca.uwo.eng.sel.cepsim.sched.alloc.{AllocationStrategy, UniformAllocationStrategy}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, FlatSpec}
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created by virso on 2014-08-15.
  */
 @RunWith(classOf[JUnitRunner])
-class DynamicOpScheduleStrategyTest extends FlatSpec
+class DynOpScheduleStrategyTest extends FlatSpec
   with Matchers
   with MockitoSugar {
 
@@ -40,7 +41,11 @@ class DynamicOpScheduleStrategyTest extends FlatSpec
 
   "A DynamicOpScheduleStrategy" should "schedule all operators first" in new Fixture {
 
-    val strategy = new DynamicOpScheduleStrategy()
+    val allocationStrategy = mock[AllocationStrategy]
+    doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 100.0, c1 -> 250.0))
+      .when(allocationStrategy).instructionsPerOperator(1000, placement)
+
+    val strategy = DynOpScheduleStrategy(allocationStrategy)
     val ret = strategy.allocate(1000, placement)
 
     doReturn(1.0).when(p1).ipe
@@ -55,15 +60,20 @@ class DynamicOpScheduleStrategyTest extends FlatSpec
     ret.next should be ((f1, 250))
 
     doReturn(250.0).when(f2).totalInputEvents
-    ret.next should be ((f2, 250))
+    ret.next should be ((f2, 100))
 
-    doReturn(250.0).when(c1).totalInputEvents
-    ret.next should be ((c1, 250))
+    doReturn(200.0).when(c1).totalInputEvents
+    ret.next should be ((c1, 200))
   }
 
   it should "reschedule operators if there are remaining instructions" in new Fixture {
 
-    val strategy = new DynamicOpScheduleStrategy()
+    val allocationStrategy = mock[AllocationStrategy]
+    doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 250.0, c1 -> 250.0))
+      .when(allocationStrategy).instructionsPerOperator(1000, placement)
+
+    val strategy = new DynOpScheduleStrategy(allocationStrategy)
+
     val ret = strategy.allocate(1000, placement)
 
     doReturn(1.0).when(p1).ipe

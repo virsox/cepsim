@@ -8,13 +8,10 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.metric.History;
-import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.DynamicOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -155,7 +152,7 @@ public class CepSimAvgWindow {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1750;
+        final int NUM_SENSORS = 1;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -166,10 +163,10 @@ public class CepSimAvgWindow {
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
-            Operator outlierDetector = new Operator("outlierDetector" + i, 300000, 100000);
-            Operator average = WindowedOperator.apply("average" + i, 200000, 15000, 15000,
+            Operator outlierDetector = new Operator("outlierDetector" + i, 30000, 100000);
+            Operator average = WindowedOperator.apply("average" + i, 32500, 15000, 15000,
                     WindowedOperator.constant(NUM_SENSORS));
-            Operator db = new Operator("db" + i, 5000000, 1000000);
+            Operator db = new Operator("db" + i, 12500000, 1000000);
 
             EventConsumer c = new EventConsumer("end" + i, 1000, 1000000);
 
@@ -192,9 +189,9 @@ public class CepSimAvgWindow {
             edges.add(e3);
             edges.add(e4);
 
-            weights.put(p, 25.0);
-            weights.put(outlierDetector, 25.0);
-            weights.put(average, 25.0);
+            weights.put(p, 100.0);
+            weights.put(outlierDetector, 100.0);
+            weights.put(average, 100.0);
             weights.put(db, 1.0);
             weights.put(c, 1.0);
 
@@ -210,8 +207,8 @@ public class CepSimAvgWindow {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights), 10);
-                //DynamicOpScheduleStrategy.apply());
+                DefaultOpScheduleStrategy.weighted(weights), 1);
+                //DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
