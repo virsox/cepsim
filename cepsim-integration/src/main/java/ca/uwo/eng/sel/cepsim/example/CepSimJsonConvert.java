@@ -11,6 +11,8 @@ import ca.uwo.eng.sel.cepsim.metric.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -25,7 +27,7 @@ import java.util.*;
 public class CepSimJsonConvert {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 61L;
+    private static final Long DURATION = 10L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -150,7 +152,7 @@ public class CepSimJsonConvert {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1;
+        final int NUM_SENSORS = 1000;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -161,25 +163,24 @@ public class CepSimJsonConvert {
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
 
-            Operator outlierDetector = new Operator("outlierDetector" + i, 30000, 100000);
-            Operator average = WindowedOperator.apply("average" + i, 32500, 15000, 15000,
-                    WindowedOperator.constant(NUM_SENSORS));
-            Operator db = new Operator("db" + i, 12500000, 1000000);
+            Operator jsonParser = new Operator("jsonParser" + i, 50000, 100000);
+            Operator validate = new Operator("validate" + i, 30000, 100000);
+            Operator xml = new Operator("xmlOutput" + i, 40000, 100000);
 
             EventConsumer c = new EventConsumer("end" + i, 1000, 1000000);
 
 
             Set<Vertex> vertices = new HashSet<>();
             vertices.add(p);
-            vertices.add(outlierDetector);
-            vertices.add(average);
-            vertices.add(db);
+            vertices.add(jsonParser);
+            vertices.add(validate);
+            vertices.add(xml);
             vertices.add(c);
 
-            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, outlierDetector, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(outlierDetector, average, 0.95);
-            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(average, db, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(db, c, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, c, 1.0);
 
             Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             edges.add(e1);
@@ -187,10 +188,10 @@ public class CepSimJsonConvert {
             edges.add(e3);
             edges.add(e4);
 
-            weights.put(p, 100.0);
-            weights.put(outlierDetector, 100.0);
-            weights.put(average, 100.0);
-            weights.put(db, 1.0);
+            weights.put(p, 1.0);
+            weights.put(jsonParser, 1.0);
+            weights.put(validate, 1.0);
+            weights.put(xml, 1.0);
             weights.put(c, 1.0);
 
 
@@ -205,7 +206,7 @@ public class CepSimJsonConvert {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights), 1);
+                DefaultOpScheduleStrategy.weighted(weights), 100);
                 //DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));

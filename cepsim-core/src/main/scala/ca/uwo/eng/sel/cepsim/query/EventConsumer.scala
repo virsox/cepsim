@@ -39,9 +39,15 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     var output = Math.floor(processed).toInt
 
     accumulated += processed - output
+    while (accumulated > 1.0) {
+      output += 1
+      accumulated -= 1.0
+    }
+
+    // consider this is true if there were double rounding errors
     if (Math.abs(accumulated - 1.0) < 0.01) {
       output += 1
-      accumulated = Math.abs(accumulated - 1.0)
+      accumulated = 0.0
     }
 
     outputQueue += output
