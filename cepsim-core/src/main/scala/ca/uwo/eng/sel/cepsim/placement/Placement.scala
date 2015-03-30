@@ -1,28 +1,37 @@
 package ca.uwo.eng.sel.cepsim.placement
 
-import ca.uwo.eng.sel.cepsim.Vm
+import java.util.{List => JavaList, Set => JavaSet}
+
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Query, Vertex}
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
-import scala.collection.mutable.Queue
-
-import java.util.{Set => JavaSet}
-import scala.collection.JavaConversions.asScalaSet
 
 /** Companion Placement object */
 object Placement {
-  def withQueries(queries: JavaSet[Query], vmId: Int): Placement = Placement.withQueries(asScalaSet(queries).toSet, vmId)
-  def withQueries(queries: Set[Query], vmId: Int): Placement = new Placement(queries.flatMap(_.vertices), vmId)
+  // for java usage
+
+  def withQueries(queries: JavaSet[Query], vmId: Int, iterationList:JavaList[Vertex]): Placement =
+    Placement.withQueries(asScalaSet(queries).toSet, vmId, iterableAsScalaIterable(iterationList))
+  def withQueries(queries: JavaSet[Query], vmId: Int): Placement =
+    Placement.withQueries(asScalaSet(queries).toSet, vmId)
+  def withQueries(queries: Set[Query], vmId: Int, iterationOrder: Iterable[Vertex] = List.empty): Placement =
+    new Placement(queries.flatMap(_.vertices), vmId, iterationOrder)
+
   def apply(q: Query, vmId: Int): Placement = new Placement(q.vertices, vmId)
-  def apply(vertices: Set[Vertex], vmId: Int): Placement = new Placement(vertices, vmId)
+  def apply(vertices: Set[Vertex], vmId: Int, iterationOrder: Iterable[Vertex] = List.empty): Placement =
+    new Placement(vertices, vmId, iterationOrder)
 }
 
 /** *
   * Represents a placement of query vertices into a virtual machine.
   * @param vertices Set of vertices from this placement.
   * @param vmId Id of the Virtual machine to which the vertices are assigned.
+  * @param iterationOrder Order on which vertices should be traversed. If not specified, vertices
+  *                       are traversed according to a topological sorting of the query graphs.
   */
-class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Vertex] {
+class Placement(val vertices: Set[Vertex], val vmId: Int, iterationOrder: Iterable[Vertex] = List.empty)
+    extends Iterable[Vertex] {
 
   /** Map of queries to all vertices in this placement */
   var queryVerticesMap: Map[Query, Set[Vertex]] = Map.empty withDefaultValue Set.empty
@@ -129,7 +138,9 @@ class Placement(val vertices: Set[Vertex], val vmId: Int) extends Iterable[Verte
         v
       }
     }
-    new VertexIterator
+
+    if (iterationOrder.isEmpty) new VertexIterator
+    else iterationOrder.iterator
   }
 
 

@@ -221,6 +221,21 @@ class PlacementTest extends FlatSpec
 
   }
 
+  it should "follow an user-defined iteration order" in new Fixture {
+    doReturn(Set(q1)).when(prod1).queries
+    doReturn(Set(q1)).when(f1).queries
+    doReturn(Set(q1)).when(f2).queries
+    doReturn(Set(q1)).when(cons1).queries
+    val placement = Placement(Set(prod1, f1, f2, cons1), 1, List(cons1, f1, f2, prod1))
+
+    val it = placement.iterator
+    it.next should be (cons1)
+    it.next should be (f1)
+    it.next should be (f2)
+    it.next should be (prod1)
+    it.hasNext should be (false)
+  }
+
   it should "calculate the correct duration" in new Fixture {
     var p = Placement(Set.empty[Vertex], 1)
 
