@@ -27,11 +27,14 @@ class LatencyMetricTest extends FlatSpec
     doReturn(Map(op1 -> 1.0)).when(prod1).selectivities
 
 
-
     val placement = mock[Placement]
     doReturn(1).when(placement).vmId
   }
 
+   /**
+     * Fixture 1:
+     *  prod1 -> op1 -> op2 -> cons1
+     */
   trait Fixture1 extends CommonFixture {
     doReturn(Map(op2 -> 1.0)).when(op1).selectivities
     doReturn(Map(cons1 -> 1.0)).when(op2).selectivities
@@ -45,12 +48,17 @@ class LatencyMetricTest extends FlatSpec
     doReturn(Set(op2)).when(op1).successors
     doReturn(Set(cons1)).when(op2).successors
 
-
     doReturn(Iterator(prod1, op1, op2, cons1)).when(placement).iterator
     doReturn(Set(prod1)).when(placement).producers
     doReturn(Set(prod1, op1, op2, cons1)).when(placement).vertices
   }
 
+  /**
+    * Fixture 2:
+    *   prod1 -> op1 -\
+    *                  - op3 -> cons1
+    *   prod2 -> op2 -/
+    */
   trait Fixture2 extends CommonFixture {
     val prod2 = mock[EventProducer]("prod2")
     val op3 = mock[Operator]("op3")
@@ -77,8 +85,7 @@ class LatencyMetricTest extends FlatSpec
   }
 
 
-
-  "A LatencyMetricTest" should "calculate the correct latency for an iteration" in new Fixture1 {
+  "A LatencyMetricTest" should "calculate the correct latency for one iteration" in new Fixture1 {
     val latency = LatencyMetric.calculator(placement)
 
     latency.update(Produced (prod1, 10.0, 10.0))
@@ -120,16 +127,16 @@ class LatencyMetricTest extends FlatSpec
     val latency = LatencyMetric.calculator(placement)
 
     latency.update(Produced (prod1,  5.0, 10.0))
-    latency.update(Processed(prod1, 11.0, 5.0))
-    latency.update(Processed(op1,   15.0, 5.0, Map(prod1 -> 5)))
-    latency.update(Processed(op2,   20.0, 5.0, Map(op1  -> 5)))
+    latency.update(Processed(prod1, 11.0,  5.0))
+    latency.update(Processed(op1,   15.0,  5.0, Map(prod1 -> 5)))
+    latency.update(Processed(op2,   20.0,  5.0, Map(op1  -> 5)))
     latency.update(Consumed (cons1, 25.0,  5.0, Map(op2  -> 5)))
 
     // second iteration
     latency.update(Produced (prod1, 20.0, 10.0))
-    latency.update(Processed(prod1, 31.0, 5.0))
-    latency.update(Processed(op1,   35.0, 5.0, Map(prod1 -> 5)))
-    latency.update(Processed(op2,   40.0, 5.0, Map(op1  -> 5)))
+    latency.update(Processed(prod1, 31.0,  5.0))
+    latency.update(Processed(op1,   35.0,  5.0, Map(prod1 -> 5)))
+    latency.update(Processed(op2,   40.0,  5.0, Map(op1  -> 5)))
     latency.update(Consumed (cons1, 45.0,  5.0, Map(op2  -> 5)))
 
     // third iteration
@@ -154,6 +161,7 @@ class LatencyMetricTest extends FlatSpec
     results(3) should be (LatencyMetric(cons1, 85.0, 5.0, 70.0))
   }
 
+
   it should "calculate the correct latency if one output needs more than one iteration" in new Fixture1 {
     val latency = LatencyMetric.calculator(placement)
 
@@ -169,6 +177,25 @@ class LatencyMetricTest extends FlatSpec
 
     results(0) should be (LatencyMetric(cons1, 30.0, 1.0, 20.0))
   }
+
+  it should "calculate the correct latency if an operator does not have input events but it is executed" in new Fixture1 {
+
+    val latency = LatencyMetric.calculator(placement)
+    latency.update(Produced (prod1, 10.0, 10.0))
+    latency.update(Processed(prod1, 11.0, 10.0))
+    latency.update(Processed(op1,   15.0, 10.0, Map(prod1 -> 10.0)))
+
+    latency.update(Processed(op2,   20.0,  0.0, Map(op1 -> 10.0)))
+    latency.update(Processed(op2,   25.0,  0.0, Map(op1 ->  0.0)))
+    latency.update(Processed(op2,   30.0,  1.0, Map(op1 ->  0.0)))
+    latency.update(Consumed (cons1, 40.0,  1.0, Map(op2 ->  1.0)))
+
+
+    val results = latency.results(cons1)
+    results should have size (1)
+    results(0) should be (LatencyMetric(cons1, 40.0, 1.0, 30.0))
+  }
+
 
   it should "correctly handle selectivities larger than one" in new Fixture1 {
     doReturn(Map(op2 -> 5.0)).when(op1).selectivities
@@ -209,16 +236,16 @@ class LatencyMetricTest extends FlatSpec
 
     latency.update(Produced (prod1, 30.0, 10.0))
     latency.update(Processed(prod1, 31.0, 10.0))
-    latency.update(Processed(op1,   35.0, 1.0, Map(prod1 -> 10.0)))
-    latency.update(Processed(op2,   40.0, 1.0, Map(op1  -> 1)))
-    latency.update(Consumed (cons1, 45.0, 1.0, Map(op2  -> 1)))
+    latency.update(Processed(op1,   35.0,  1.0, Map(prod1 -> 10.0)))
+    latency.update(Processed(op2,   40.0,  1.0, Map(op1  -> 1)))
+    latency.update(Consumed (cons1, 45.0,  1.0, Map(op2  -> 1)))
 
     // next window only considers new events
     latency.update(Produced (prod1, 40.0, 10.0))
     latency.update(Processed(prod1, 41.0, 10.0))
     latency.update(Processed(op1,   45.0,  1.0, Map(prod1 -> 10.0)))
     latency.update(Processed(op2,   50.0,  1.0, Map(op1  -> 1)))
-    latency.update(Consumed (cons1, 55.0, 1.0, Map(op2  -> 1)))
+    latency.update(Consumed (cons1, 55.0,  1.0, Map(op2  -> 1)))
 
 
     val results = latency.results(cons1)
@@ -241,7 +268,8 @@ class LatencyMetricTest extends FlatSpec
     latency.update(Processed(prod2, 16.0, 10.0))
     latency.update(Processed(op2,   20.0, 10.0, Map(prod2 -> 10.0))) // latency 8
 
-    latency.update(Processed(op3,   25.0, 20.0, Map(op1 -> 10.0, op2 -> 10.0))) // latency (10 * 15 + 10 * 13) / 20 = 14
+    // latency (10 * (5 + 25 - 15) + 10 * (8 + 25 - 20) / 20 = 14
+    latency.update(Processed(op3,   25.0, 20.0, Map(op1 -> 10.0, op2 -> 10.0)))
     latency.update(Consumed (cons1, 30.0, 20.0, Map(op3   -> 20.0)))
 
     val results = latency.results(cons1)
@@ -249,8 +277,8 @@ class LatencyMetricTest extends FlatSpec
 
     results(0) should be (LatencyMetric(cons1, 30.0, 20.0, 19.0))
   }
-  
-  
+
+
 }
 
 

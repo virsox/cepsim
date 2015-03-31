@@ -50,7 +50,7 @@ object ThroughputMetric {
       * @param selectivity Edge selectivity.
       * @param size   Current size of the queue attached to this edge.
       * @param totals Total number of events from each producer that originated the events currently
-     *                in the queue.
+      *               in the queue.
       */
     class EdgeInfo(val selectivity: Double, var size: Double, var totals: Map[EventProducer, Double]) {
 
@@ -82,6 +82,9 @@ object ThroughputMetric {
         size  += (eventsNo * selectivity)
         totals = totals map((e) => (e._1, e._2 + addToTotal.getOrElse(e._1, 0.0)))
       }
+
+      override def toString(): String =
+        s"(selectivity = $selectivity, size = $size, totals = $totals)"
     }
 
     /** Edges information. */

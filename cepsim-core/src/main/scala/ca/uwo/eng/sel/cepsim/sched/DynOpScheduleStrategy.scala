@@ -13,10 +13,11 @@ object DynOpScheduleStrategy {
   * Schedule strategy that dynamically determines the next vertex to be processed. This strategy operates in
   * two or more rounds: in the first round, all operators receives the minimum between the number of instructions
   * required to process all the input queues AND a maximum allocation value. The maximum allocation value
-  * is determined by dividing the total number of available instructions by the total number of vertices.
-  * In the other rounds, the strategy iterates through the operators and choose the next one which still
-  * has events in the input queue. This process is repeated until all events have been processed OR there are
-  * no more instructions to be allocated.
+  * is determined by the allocation strategy informed as parameter. In the other rounds, the strategy iterates
+  * through the operators and choose the next one which still has events in the input queue. This process is
+  * repeated until all events have been processed OR there are no more instructions to be allocated.
+  *
+  * @param allocStrategy Strategy that determines the maximum number of instructions allocated to each vertex.
   */
 class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
