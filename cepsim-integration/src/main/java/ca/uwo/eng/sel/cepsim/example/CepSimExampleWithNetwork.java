@@ -181,8 +181,10 @@ public class CepSimExampleWithNetwork {
         p2Vertices.add(f2);
         p2Vertices.add(c);
 
-        Placement placement1 = Placement.apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
-        Placement placement2 = Placement.apply(JavaConversions.asScalaSet(p2Vertices).<Vertex>toSet(), 2);
+        Placement placement1 = Placement.apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1,
+				scala.collection.immutable.List.<Vertex>empty());
+        Placement placement2 = Placement.apply(JavaConversions.asScalaSet(p2Vertices).<Vertex>toSet(), 2,
+				scala.collection.immutable.List.<Vertex>empty());
 
         // ------------------  create cloudlets
 		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted(), 1);

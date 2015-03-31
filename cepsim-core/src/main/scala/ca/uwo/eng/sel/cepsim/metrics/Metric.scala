@@ -2,11 +2,15 @@ package ca.uwo.eng.sel.cepsim.metrics
 
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
-/**
- * Created by virso on 15-02-14.
- */
+/** Trait for metrics. */
 trait Metric {
+
+  /** Vertex to which the metric refers. */
   def v: Vertex
+
+  /** Time at which the metric has been generated. */
   def time: Double
+
+  /** Metric value. */
   def value: Double
 }
