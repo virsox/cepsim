@@ -76,7 +76,7 @@ class QueryCloudletTest extends FlatSpec
   it should "correctly invoke the metric calculation" in new Fixture {
 
     val calculator = mock[metrics.MetricCalculator]
-    doReturn("latency").when(calculator).id
+    doReturn(Set("latency")).when(calculator).ids
 
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
     cloudlet.init(0.0, calculator)

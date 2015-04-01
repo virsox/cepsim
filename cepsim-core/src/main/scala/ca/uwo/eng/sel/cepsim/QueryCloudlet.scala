@@ -23,11 +23,13 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
   var calculators =  Map.empty[String, MetricCalculator]
 
-  def registerCalculator(id: String, calculator: MetricCalculator) =
-    calculators = calculators updated (id, calculator)
+  def registerCalculator(calculator: MetricCalculator) =
+    calculator.ids.foreach((id) =>
+      calculators = calculators updated (id, calculator)
+    )
 
-  def metric(id: String, v: Vertex) = calculators(id).consolidate(v)
-  def metricList(id: String, v: Vertex) = calculators(id).results(v)
+  def metric(id: String, v: Vertex) = calculators(id).consolidate(id, v)
+  def metricList(id: String, v: Vertex) = calculators(id).results(id, v)
 
   // ---------------------------------------
 
@@ -43,7 +45,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     * @param startTime Execution start time (in milliseconds).
     */
   @varargs def init(startTime: Double, calculators: MetricCalculator*): Unit = {
-    calculators.foreach((calculator) => registerCalculator(calculator.id, calculator))
+    calculators.foreach((calculator) => registerCalculator(calculator))
     placement.vertices.foreach(_.init(startTime))
   }
 

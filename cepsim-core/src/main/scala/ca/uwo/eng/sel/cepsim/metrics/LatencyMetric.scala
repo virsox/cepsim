@@ -26,7 +26,6 @@ object LatencyMetric {
   def calculator(placement: Placement) = new LatencyMetricCalculator(placement)
 
 
-
   /**
    * Calculator for the latency metric.
    * @param placement Placement of which the metric will be calculated.
@@ -114,7 +113,7 @@ object LatencyMetric {
      * Gets the calculator identifier.
      * @return calculator identifier.
      */
-    override def id: String = LatencyMetric.ID
+    override def ids: Set[String] = Set(LatencyMetric.ID)
 
     /**
      * Method invoked to update the metric calculation with new processing information.
@@ -218,11 +217,19 @@ object LatencyMetric {
     }
 
     /**
-     * Obtains the metric values calculated for a specific vertex.
-     * @param v the specified vertex.
-     * @return A list of metric values calculated for the vertex.
-     */
-    override def results(v: Vertex): List[Metric] = metrics(v).toList
+      * Obtains the values of a specific metric calculated for a specific vertex.
+      * @param id Metric identifier.
+      * @param v the specified vertex.
+      * @return A list of metric values calculated for the vertex.
+      */
+    override def results(id: String, v: Vertex): List[Metric] = metrics(v).toList
+
+    /**
+      * Obtains the latency values calculated for a specific vertex.
+      * @param v the specified vertex.
+      * @return List os latency values calculated for the vertex.
+      */
+    def results(v: Vertex): List[Metric] = results(LatencyMetric.ID, v)
 
 
   }

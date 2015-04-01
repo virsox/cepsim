@@ -130,14 +130,22 @@ object ThroughputMetric {
      * Gets the calculator identifier.
      * @return calculator identifier.
      */
-    override def id: String = ThroughputMetric.ID
+    override def ids: Set[String] = Set(ThroughputMetric.ID)
 
     /**
-     * Obtains the metric values calculated for a specific vertex.
+     * Obtains the values of a specific metric calculated for a specific vertex.
+     * @param id Metric identifier.
      * @param v the specified vertex.
      * @return A list of metric values calculated for the vertex.
      */
-    override def results(v: Vertex): List[Metric] = metrics(v).toList
+    override def results(id: String, v: Vertex): List[Metric] = metrics(v).toList
+
+    /**
+      * Obtains the throughput values calculated for a specific vertex.
+      * @param v the specified vertex.
+      * @return List os latency values calculated for the vertex.
+      */
+    def results(v: Vertex): List[Metric] = results(ThroughputMetric.ID, v)
 
     /**
      * Method invoked to update the metric calculation with new processing information.
@@ -153,10 +161,11 @@ object ThroughputMetric {
     /**
      * Consolidates all the metric values that have been calculated for a specific vertex.
      * This implementation simply sums the totals from each producer.
+     * @param id Metric identifier.
      * @param v the specified vertex.
      * @return A single value that consolidates the metric values.
      */
-    override def consolidate(v: Vertex): Double =
+    override def consolidate(id: String, v: Vertex): Double =
       totalEvents(v.asInstanceOf[EventConsumer]).foldLeft(0.0)((acc, entry) => acc + entry._2)
 
     /**
@@ -236,6 +245,7 @@ object ThroughputMetric {
 
 
   } // end of ThroughputCalculator
+
 
 }
 
