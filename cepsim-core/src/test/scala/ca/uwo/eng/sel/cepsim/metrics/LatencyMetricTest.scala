@@ -1,12 +1,14 @@
 package ca.uwo.eng.sel.cepsim.metrics
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.query.{Query, EventConsumer, Operator, EventProducer}
+import ca.uwo.eng.sel.cepsim.query._
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
+
+import scala.concurrent.duration._
 
 @RunWith(classOf[JUnitRunner])
 class LatencyMetricTest extends FlatSpec
@@ -84,6 +86,26 @@ class LatencyMetricTest extends FlatSpec
     doReturn(Set(prod1, prod2, op1, op2, op3, cons1)).when(placement).vertices
   }
 
+  trait Fixture3 extends CommonFixture {
+    val w1 = mock[WindowedOperator]("w1")
+
+    doReturn(Map(w1 -> 1.0)).when(prod1).selectivities
+    doReturn(Map(op2 -> 1.0)).when(w1).selectivities
+    doReturn(Map(cons1 -> 1.0)).when(op2).selectivities
+
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(w1).predecessors
+    doReturn(Set(w1)).when(op2).predecessors
+    doReturn(Set(op2)).when(cons1).predecessors
+
+    doReturn(Set(w1)).when(prod1).successors
+    doReturn(Set(op2)).when(w1).successors
+    doReturn(Set(cons1)).when(op2).successors
+
+    doReturn(Iterator(prod1, w1, op2, cons1)).when(placement).iterator
+    doReturn(Set(prod1)).when(placement).producers
+    doReturn(Set(prod1, w1, op2, cons1)).when(placement).vertices
+  }
 
   "A LatencyMetricTest" should "calculate the correct latency for one iteration" in new Fixture1 {
     val latency = LatencyMetric.calculator(placement)
@@ -222,40 +244,6 @@ class LatencyMetricTest extends FlatSpec
   }
 
 
-  it should "correctly handle window like operators" in new Fixture1 {
-
-    val latency = LatencyMetric.calculator(placement)
-
-    latency.update(Produced (prod1, 10.0, 10.0))
-    latency.update(Processed(prod1, 11.0, 10.0))
-    latency.update(Processed(op1,   15.0,  0.0, Map(prod1 -> 10.0)))
-
-    latency.update(Produced (prod1, 20.0, 10.0))
-    latency.update(Processed(prod1, 21.0, 10.0))
-    latency.update(Processed(op1,   25.0,  0.0, Map(prod1 -> 10.0)))
-
-    latency.update(Produced (prod1, 30.0, 10.0))
-    latency.update(Processed(prod1, 31.0, 10.0))
-    latency.update(Processed(op1,   35.0,  1.0, Map(prod1 -> 10.0)))
-    latency.update(Processed(op2,   40.0,  1.0, Map(op1  -> 1)))
-    latency.update(Consumed (cons1, 45.0,  1.0, Map(op2  -> 1)))
-
-    // next window only considers new events
-    latency.update(Produced (prod1, 40.0, 10.0))
-    latency.update(Processed(prod1, 41.0, 10.0))
-    latency.update(Processed(op1,   45.0,  1.0, Map(prod1 -> 10.0)))
-    latency.update(Processed(op2,   50.0,  1.0, Map(op1  -> 1)))
-    latency.update(Consumed (cons1, 55.0,  1.0, Map(op2  -> 1)))
-
-
-    val results = latency.results(cons1)
-    results should have size (2)
-
-    results(0) should be (LatencyMetric(cons1, 45.0, 1.0, 25.0))
-    results(1) should be (LatencyMetric(cons1, 55.0, 1.0, 15.0))
-
-  }
-
   it should "calculate the latency when operators receive events at different timing" in new Fixture2 {
     val latency = LatencyMetric.calculator(placement)
 
@@ -278,6 +266,79 @@ class LatencyMetricTest extends FlatSpec
     results(0) should be (LatencyMetric(cons1, 30.0, 20.0, 19.0))
   }
 
+  it should "correctly handle window like operators" in new Fixture3 {
+    doReturn(20 milliseconds).when(w1).size
+    doReturn(20 milliseconds).when(w1).advance
+
+    val latency = LatencyMetric.calculator(placement)
+
+    latency.update(Produced (prod1, 10.0, 10.0))
+    latency.update(Processed(prod1, 11.0, 10.0))
+    latency.update(Processed(w1,    12.0,  0.0, Map(prod1 -> 10.0)))
+
+    latency.update(Produced (prod1, 20.0, 10.0))
+    latency.update(Processed(prod1, 21.0, 10.0))
+    latency.update(Processed(w1,    22.0,  0.0, Map(prod1 -> 10.0)))
+
+    latency.update(Produced (prod1, 30.0, 10.0))
+    latency.update(Processed(prod1, 31.0, 10.0))
+    latency.update(Processed(w1,    32.0,  1.0, Map(prod1 -> 10.0)))
+    latency.update(Processed(op2,   44.0,  1.0, Map(w1  -> 1)))
+    latency.update(Consumed (cons1, 45.0,  1.0, Map(op2  -> 1)))
+
+    // next window only considers new events
+    latency.update(Produced (prod1, 46.0, 10.0))
+    latency.update(Processed(prod1, 47.0, 10.0))
+    latency.update(Processed(w1,   50.0,   1.0, Map(prod1 -> 10.0)))
+    latency.update(Processed(op2,   62.0,  1.0, Map(w1   -> 1)))
+    latency.update(Consumed (cons1, 63.0,  1.0, Map(op2  -> 1)))
+
+
+    val results = latency.results(cons1)
+    results should have size (2)
+
+    results(0) should be (LatencyMetric(cons1, 45.0, 1.0, 25.0))
+    results(1) should be (LatencyMetric(cons1, 63.0, 1.0, 17.0))
+  }
+
+//  it should "correctly handle window like operators that have the advance duration different from size" in new Fixture3 {
+//    doReturn(30 milliseconds).when(w1).size
+//    doReturn(10 milliseconds).when(w1).advance
+//
+//    val latency = LatencyMetric.calculator(placement)
+//
+//    latency.update(Produced (prod1, 10.0, 10.0))
+//    latency.update(Processed(prod1, 11.0, 10.0))
+//    latency.update(Processed(w1,    12.0,  0.0, Map(prod1 -> 10.0)))
+//
+//    latency.update(Produced (prod1, 20.0, 10.0))
+//    latency.update(Processed(prod1, 21.0, 10.0))
+//    latency.update(Processed(w1,    22.0,  0.0, Map(prod1 -> 10.0)))
+//
+//    latency.update(Produced (prod1, 30.0, 10.0))
+//    latency.update(Processed(prod1, 31.0, 10.0))
+//    latency.update(Processed(w1,    32.0,  0.0, Map(prod1 -> 10.0)))
+//
+//    latency.update(Produced (prod1, 40.0, 10.0))
+//    latency.update(Processed(prod1, 41.0, 10.0))
+//    latency.update(Processed(w1,    42.0,  4.0, Map(prod1 -> 10.0)))
+//    latency.update(Processed(op2,   44.0,  4.0, Map(w1  -> 4)))
+//    latency.update(Consumed (cons1, 45.0,  4.0, Map(op2 -> 4)))
+//
+//    // next window only considers new events
+//    latency.update(Produced (prod1, 50.0, 10.0))
+//    latency.update(Processed(prod1, 51.0, 10.0))
+//    latency.update(Processed(w1,    52.0,  4.0, Map(prod1 -> 10.0)))
+//    latency.update(Processed(op2,   54.0,  4.0, Map(w1   -> 4)))
+//    latency.update(Consumed (cons1, 55.0,  4.0, Map(op2  -> 4)))
+//
+//
+//    val results = latency.results(cons1)
+//    results should have size (2)
+//
+//    results(0) should be (LatencyMetric(cons1, 45.0, 4.0, 20.0))
+//    results(1) should be (LatencyMetric(cons1, 55.0, 4.0, 20.0))
+//  }
 
 }
 

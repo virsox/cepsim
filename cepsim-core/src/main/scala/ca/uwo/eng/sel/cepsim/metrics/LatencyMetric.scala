@@ -142,15 +142,12 @@ object LatencyMetric {
       val previous = updatePredecessors(processed, processed.processed)
 
       keys(processed.v).foreach((key) => {
-
         // Window operator - accumulating
         if (processed.quantity == 0) {
           acc(key) enqueue (previous._3, processed.at, previous._2 + (processed.at - previous._1))
 
         } else {
-
           if (acc(key).size > 0) {
-
             val accEntry = acc(key)
 
             // still accumulates for this iteration
