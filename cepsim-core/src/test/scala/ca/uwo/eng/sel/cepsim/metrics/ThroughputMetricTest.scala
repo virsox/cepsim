@@ -118,7 +118,7 @@ class ThroughputMetricTest  extends FlatSpec
 
 
   "A ThroughputMetricCalculator" should "calculate the right throughput for one iteration" in new Fixture1 {
-    val throughput = ThroughputMetric.calculator(placement)
+    val throughput = LatencyThroughputCalculator(placement)
 
     throughput update Produced (prod1, 10.0, 10.0)
     throughput update Processed(prod1, 11.0, 10.0, Map.empty)
@@ -126,7 +126,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Processed(op2,   22.0,  1.0, Map(op1   ->  1.0))
     throughput update Consumed (cons1, 23.0,  1.0, Map(op2   ->  1.0))
 
-    val results = throughput.results(cons1)
+    val results = throughput.results(ThroughputMetric.ID, cons1)
     results should have size (1)
 
     results(0) should be (ThroughputMetric(cons1, 23.0, 10.0))
@@ -134,7 +134,7 @@ class ThroughputMetricTest  extends FlatSpec
   }
 
   it should "calculate the right throughput for two iterations" in new Fixture1 {
-    val throughput = ThroughputMetric.calculator(placement)
+    val throughput = LatencyThroughputCalculator(placement)
 
     throughput update Produced (prod1, 10.0, 30.0)
     throughput update Processed(prod1, 11.0, 30.0, Map.empty)
@@ -148,7 +148,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Processed(op2,   44.0,  1.0, Map(op1   ->  1.0))
     throughput update Consumed (cons1, 47.0,  1.0, Map(op2   ->  1.0))
 
-    val results = throughput.results(cons1)
+    val results = throughput.results(ThroughputMetric.ID, cons1)
     results should have size (2)
 
     results(0) should be (ThroughputMetric(cons1, 27.0, 30.0))
@@ -157,7 +157,7 @@ class ThroughputMetricTest  extends FlatSpec
 
 
   it should "calculate the right throughput when there are two paths for the same producer" in new Fixture2 {
-    val throughput = ThroughputMetric.calculator(placement)
+    val throughput = LatencyThroughputCalculator(placement)
 
     throughput update Produced (prod1, 10.0, 10.0)
     throughput update Processed(prod1, 11.0, 10.0, Map.empty)
@@ -167,14 +167,14 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Consumed(cons1, 42.0,  3.0, Map(op3 -> 3.0))
 
 
-    val results = throughput.results(cons1)
+    val results = throughput.results(ThroughputMetric.ID, cons1)
     results should have size (1)
 
     results(0) should be (ThroughputMetric(cons1, 42.0, 10.0))
   }
 
   it should "calculate the right throughput when there are more than one producer" in new Fixture3 {
-    val throughput = ThroughputMetric.calculator(placement)
+    val throughput = LatencyThroughputCalculator(placement)
 
     throughput update Produced (prod1, 10.0, 10.0)
     throughput update Processed(prod1, 20.0, 10.0, Map.empty)
@@ -187,7 +187,7 @@ class ThroughputMetricTest  extends FlatSpec
     throughput update Consumed(cons1,  60.0,  5.0, Map(op3 -> 5.0))
 
 
-    val results = throughput.results(cons1)
+    val results = throughput.results(ThroughputMetric.ID, cons1)
     results should have size (1)
     results(0) should be (ThroughputMetric(cons1, 60.0, 30.0))
   }

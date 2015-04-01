@@ -28,9 +28,12 @@ class LatencyMetricTest extends FlatSpec
 
     doReturn(Map(op1 -> 1.0)).when(prod1).selectivities
 
-
     val placement = mock[Placement]
     doReturn(1).when(placement).vmId
+
+    val path1 = mock[VertexPath]("path1")
+    doReturn(prod1).when(path1).producer
+
   }
 
    /**
@@ -38,6 +41,8 @@ class LatencyMetricTest extends FlatSpec
      *  prod1 -> op1 -> op2 -> cons1
      */
   trait Fixture1 extends CommonFixture {
+    doReturn(List(path1)).when(q).pathsToProducers(cons1)
+
     doReturn(Map(op2 -> 1.0)).when(op1).selectivities
     doReturn(Map(cons1 -> 1.0)).when(op2).selectivities
 
@@ -52,6 +57,7 @@ class LatencyMetricTest extends FlatSpec
 
     doReturn(Iterator(prod1, op1, op2, cons1)).when(placement).iterator
     doReturn(Set(prod1)).when(placement).producers
+    doReturn(Set(cons1)).when(placement).consumers
     doReturn(Set(prod1, op1, op2, cons1)).when(placement).vertices
   }
 
@@ -62,6 +68,7 @@ class LatencyMetricTest extends FlatSpec
     *   prod2 -> op2 -/
     */
   trait Fixture2 extends CommonFixture {
+
     val prod2 = mock[EventProducer]("prod2")
     val op3 = mock[Operator]("op3")
 
@@ -83,10 +90,17 @@ class LatencyMetricTest extends FlatSpec
 
     doReturn(Iterator(prod1, op1, prod2, op2, op3, cons1)).when(placement).iterator
     doReturn(Set(prod1, prod2)).when(placement).producers
+    doReturn(Set(cons1)).when(placement).consumers
     doReturn(Set(prod1, prod2, op1, op2, op3, cons1)).when(placement).vertices
+
+    val path2 = mock[VertexPath]("path2")
+    doReturn(prod2).when(path2).producer
+    doReturn(List(path1, path2)).when(q).pathsToProducers(cons1)
   }
 
   trait Fixture3 extends CommonFixture {
+    doReturn(List(path1)).when(q).pathsToProducers(cons1)
+
     val w1 = mock[WindowedOperator]("w1")
 
     doReturn(Map(w1 -> 1.0)).when(prod1).selectivities
@@ -104,6 +118,7 @@ class LatencyMetricTest extends FlatSpec
 
     doReturn(Iterator(prod1, w1, op2, cons1)).when(placement).iterator
     doReturn(Set(prod1)).when(placement).producers
+    doReturn(Set(cons1)).when(placement).consumers
     doReturn(Set(prod1, w1, op2, cons1)).when(placement).vertices
   }
 

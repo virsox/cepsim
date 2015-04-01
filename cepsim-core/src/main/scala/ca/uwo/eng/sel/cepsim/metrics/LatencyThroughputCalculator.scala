@@ -5,65 +5,68 @@ import ca.uwo.eng.sel.cepsim.query.{InputVertex, EventConsumer, EventProducer, V
 
 
 
-case class EventSet(quantity: Double, ts: Double, latency: Double, totals: Map[EventProducer, Double])
+object EventSet {
+  def empty(): EventSet = EventSet(0.0, 0.0, 0.0, Map.empty[EventProducer, Double] withDefaultValue(0.0))
+  def withProducers(producers: Set[EventProducer]): EventSet = EventSet(0.0, 0.0, 0.0, producers.map((_, 0.0)).toMap)
+}
+
+case class EventSet(var size: Double, var ts: Double, var latency: Double, var totals: Map[EventProducer, Double]) {
+
+  def add(es: EventSet, selectivity: Double = 1.0): Unit = {
+    val newQuantity = selectivity * es.size
+
+    if (newQuantity > 0) {
+      ts = ((size * ts) + (newQuantity * es.ts)) / (size + newQuantity)
+      latency = ((size * latency) + (newQuantity * es.latency)) / (size + newQuantity)
+      size    = size + newQuantity
+    }
+    totals = totals.map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0))) ++ (es.totals -- totals.keys)
+  }
+
+
+  def extract(quantity: Double): EventSet = {
+    // obtains the number of events from each producer that originated the events
+    // it is simply calculated proportionally to the total number of events previously on the queue
+    val totalFrom = totals.map((e) => (e._1, if (size == 0) 0.0 else (quantity / size) * e._2))
+
+    // update the totals map and size
+    totals = totals.map((e) => (e._1, e._2 - totalFrom(e._1)))
+    size -= quantity
+
+    EventSet(quantity, ts, latency, totalFrom)
+  }
+
+  /** Reset queue attributes.  */
+  def reset() = {
+    size = 0; ts = 0; latency = 0;
+    totals = totals map((e) => (e._1, 0.0))
+  }
+
+  override def toString(): String =
+    s"(size = $size, timestamp=$ts, latency=$latency, totals = $totals)"
+
+}
 
 /**
  * Encapsulates all information of an edge.
  * @param selectivity Edge selectivity.
- * @param size Current size of the queue attached to this edge.
- * @param timestamp Average timestamp at which currently enqueued events have arrived in the queue (ts_q).
- * @param latency Average latency of currently enqueued events (l_q).
- * @param totals Total number of events from each producer that originated the events currently
- *               in the queue (tl_q).
  */
-case class EdgeInfo(var selectivity: Double, var size: Double, var timestamp: Double, var latency: Double,
-               var totals: Map[EventProducer, Double]) {
+case class EdgeInfo(var selectivity: Double, var eventSet: EventSet) {
 
   /**
    * Dequeue events from the queue attached to this edge. It updates the queue size and the totals map.
    * @param quantity Number of events to be dequeued.
    * @return Number of events from each producer that originated the dequeued events.
    */
-  def dequeue(quantity: Double): Map[EventProducer, Double] = {
+  def dequeue(quantity: Double): EventSet = eventSet.extract(quantity)
 
-    // obtains the number of events from each producer that originated the events
-    // it is simply calculated proportionally to the total number of events previously on the queue
-    val totalFrom = totals.map((e) => (e._1, (quantity / size) * e._2))
-
-    // update the totals map and size
-    totals = totals.map((e) => (e._1, e._2 - totalFrom(e._1)))
-    size -= quantity
-
-    totalFrom
-  }
 
   /**
    * Enqueue events to the queue attached to this edge. Updates the timestamp and latency currently
    * associated with the queues (formulas (4) and (5) from the paper), and also the totals map.
    *
-   * @param quantity Number of events being enqueued.
-   * @param newTimestamp Timestamp at which the enqueing is occurring.
-   * @param newLatency Average latency of events being enqueued.
-   * @param addToTotal Number of events to be added to totals for each producer.
    */
-  def enqueue(es: EventSet) = {
-    if (es.quantity > 0) {
-      var newQuantity = selectivity * es.quantity
-      timestamp = ((size * timestamp) + (newQuantity * es.ts))      / (size + newQuantity)
-      latency   = ((size * latency)   + (newQuantity * es.latency)) / (size + newQuantity)
-      size     += newQuantity
-    }
-    totals = totals map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0)))
-  }
-
-  /** Reset queue attributes.  */
-  def reset() = {
-    size = 0; timestamp = 0; latency = 0;
-    totals = totals map((e) => (e._1, 0.0))
-  }
-
-  override def toString(): String =
-    s"(size = $size, timestamp=$timestamp, latency=$latency, totals = $totals)"
+  def enqueue(es: EventSet) = eventSet.add(es, selectivity)
 
 }
 
@@ -110,16 +113,15 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
   placement.iterator.foreach((v) => { v match {
     case prod: EventProducer => {
       val key = (null, prod)
-      edges = edges updated (key, new EdgeInfo(1.0, 0.0, 0.0, 0.0, Map(prod -> 0.0)))
+      edges = edges updated (key, new EdgeInfo(1.0, EventSet.withProducers(Set(prod))))
     }
     case op: InputVertex => {
       op.predecessors.foreach((pred) => {
         val key = (pred, op)
-        val emptyProducersMap = placement.producers.map((_, 0.0)).toMap
 
         keys = keys updated (pred, keys(pred) + key)
-        edges = edges updated (key, new EdgeInfo(pred.selectivities(op), 0.0, 0.0, 0.0, emptyProducersMap))
-        acc = acc updated (key, new EdgeInfo(1.0, 0.0, 0.0, 0.0, emptyProducersMap))
+        edges = edges updated (key, new EdgeInfo(pred.selectivities(op), EventSet.withProducers(placement.producers)))
+        acc = acc updated (key, new EdgeInfo(1.0, EventSet.withProducers(placement.producers)))
       })
     }
   }})
@@ -184,25 +186,23 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
         acc(key) enqueue (es)
 
       } else {
-        if (acc(key).size > 0) {
-          val accEntry = acc(key)
+        if (acc(key).eventSet.size > 0) {
 
           // still accumulates for this iteration
-          accEntry enqueue (es)
+          acc(key) enqueue (es)
+          val accEventSet = acc(key).eventSet
 
           // enqueue
           edges(key) enqueue (EventSet(processed.quantity, processed.at,
-              accEntry.latency + (processed.at - accEntry.timestamp), accEntry.totals))
-          accEntry reset()
+            accEventSet.latency + (processed.at - accEventSet.ts), accEventSet.totals))
+
+          accEventSet reset()
 
         } else {
           edges(key) enqueue (es)
         }
       }
-
-
     })
-
 
   }
 
@@ -248,41 +248,20 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
    */
   private def updatePredecessors(v: Vertex, ts: Double, quantity: Double, predQueues: Map[Vertex, Double]): EventSet = {
 
-    var timestampSum = 0.0
-    var latencySum = 0.0
-    var quantitySum = 0.0
-    var eventsSum = Map.empty[EventProducer, Double]
+    var es: EventSet = EventSet.empty()
 
     // event producer
     if (predQueues.isEmpty) {
       val key = (null, v)
-
-      quantitySum  = quantity
-      timestampSum = edges(key).timestamp * quantity
-      latencySum   = 0.0
-      eventsSum = edges(key).dequeue(quantitySum)
-
+      es = edges(key).dequeue(quantity)
     } else {
       predQueues.foreach((entry) => {
         val key = (entry._1, v)
-
-        quantitySum += entry._2
-        timestampSum += (edges(key).timestamp * entry._2)
-        latencySum += (edges(key).latency * entry._2)
-
-        if (entry._2 > 0) {
-          val totalFromProducers = edges((entry._1, v)).dequeue(entry._2)
-
-          // sum all these totals
-          totalFromProducers.foreach((e) => {
-            eventsSum = eventsSum updated (e._1, eventsSum.getOrElse(e._1, 0.0) + e._2)
-          })
-        }
+        es.add(edges(key).dequeue(entry._2))
       })
     }
-    if (quantitySum == 0) EventSet(0.0, 0.0, 0.0, eventsSum)
-    else EventSet(quantitySum, ts,
-                  (latencySum / quantitySum) + ts - (timestampSum / quantitySum), eventsSum)
+
+    EventSet(es.size, ts, es.latency + ts - es.ts, es.totals)
   }
 
 
