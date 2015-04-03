@@ -30,8 +30,8 @@ object WindowedOperator {
   * @param size         Size of the window. It specifies the period of time from which the events are taken.
   * @param advance      How the window advance. It defines how the window slides when the previous window closes.
   * @param function     The aggregation function. It receives a map from predecessors to the number of events received
-  *                     from it in the last window, and it returns the number of events that must be output by
-  *                     the operator.
+  *                    from it in the last window, and it returns the number of events that must be output by
+  *                    the operator.
   * @param queueMaxSize Maximum size of the input queues, if limited.
   */
 class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance: Duration,
@@ -53,6 +53,9 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
   /** Slot vector. Each position contains a map counting the number of events received from each predecessor. */
   var accumulated: Vector[Map[Vertex, Double]] =  Vector.fill(slots)(Map.empty withDefaultValue(0.0))
 
+  /** Slot on which events have been accumulated on the last operator execution. */
+  var accumulatedSlot = 0
+
   /**
     * Initializes the operator.
     * @param startTime Initialization time (in milliseconds since the simulation start).
@@ -70,32 +73,38 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
     * @return Number of processed events.
     */
   override def run(instructions: Double, timestamp: Double = 0.0): Double = {
-    var processed = false
     var retrievedEvents = Map.empty[Vertex, Double]
 
     // this loop advances the processAt attribute to the next timestamp at which the operator
-    // emit events.
+    // emit events and executes the aggregation function on all windows that have passed
+    // it is not expected that more than one window has passed though - first, because
+    // the windows are usually large (measured in minutes). Second, the default scheduling
+    // strategies will always try to execute operators which have events on their input queues.
     while (timestamp >= processAt) {
-      processAt = processAt + advance.toUnit(MILLISECONDS)
-
-      // it is the last iteration - it should enqueue the events currently waiting
-      if (processAt > timestamp) retrievedEvents = accumulate(instructions)
 
       // a window has passed
-      if (processAt > start + size.toUnit(MILLISECONDS)) {
-        val total = totalAccumulated()
-        if (Vertex.sumOfValues(total) > 0) {
-          sendToAllOutputs(function(total))
-        }
+      val total = totalAccumulated()
+      if (Vertex.sumOfValues(total) > 0) {
+        sendToAllOutputs(function(total))
       }
 
+      processAt = processAt + advance.toUnit(MILLISECONDS)
       currentIndex = (currentIndex + 1) % slots
       reset(currentIndex)
-      processed = true
     }
 
-    // no window has passed - just accumulate events
-    if (!processed) retrievedEvents = accumulate(instructions)
+
+    // In case more than one window has passed and the previous loop is executed more than once,
+    // the accumulation still happens at the current slot only. This is not 100% correct: the input
+    // queue could have events that should be accumulated on previous slots. Nevertheless, the implementation
+    // of this algorithm would require tracking of event timestamps in the queue. Conversely, our approach has
+    // been chosen because it simplifies the simulator implementation and the error it introduces is
+    // small: latency and throughput calculation are not affected, but the number of output events might
+    // be wrong because the number of events on each slot is not correct. However, note that the error
+    // occurs only in case the aggregation function is not a constant.
+    //
+    // accumulate events in current slot
+    retrievedEvents = accumulate(instructions)
     Vertex.sumOfValues(retrievedEvents)
   }
 
@@ -111,6 +120,7 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
       accumulated = accumulated updated (currentIndex,
         accumulated(currentIndex) updated (elem._1, accumulated(currentIndex)(elem._1) + elem._2))
     })
+    accumulatedSlot = currentIndex
     retrievedEvents
   }
 
@@ -131,8 +141,5 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
       elem.map((e) => (e._1, acc.getOrElse(e._1, 0.0) + e._2)) ++ acc.filterKeys(!elem.contains(_))
     })
   }
-
-
-
 
 }

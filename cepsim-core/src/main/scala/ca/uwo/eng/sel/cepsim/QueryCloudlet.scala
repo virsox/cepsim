@@ -101,7 +101,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // events to be consumed
         placement.producers foreach ((prod) => {
           val generated = prod.generate(totalMs(availableInstructions))
-          val event = Produced(prod, startTime, generated)
+          val event = Generated(prod, startTime, generated)
           calculators.values.foreach(_.update(event))
         })
 
@@ -213,11 +213,11 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           // ---------------- Update metrics
           var event: Event = null;
           if (v.isInstanceOf[EventProducer]) {
-            event = Processed(v, time, generatedEvents)
+            event = Produced(v, time, generatedEvents)
           } else if (v.isInstanceOf[EventConsumer]) {
             event = Consumed(v.asInstanceOf[EventConsumer], time, generatedEvents, processedQueues)
           } else {
-            event = Processed(v, time, generatedEvents, processedQueues)
+            event = Produced(v, time, generatedEvents, processedQueues)
           }
           calculators.values.foreach(_.update(event))
           // ------------------------------------------------------------------------------

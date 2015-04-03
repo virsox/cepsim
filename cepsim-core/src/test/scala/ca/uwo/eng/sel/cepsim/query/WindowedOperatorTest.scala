@@ -35,7 +35,7 @@ class WindowedOperatorTest extends FlatSpec
 
 
   "A WindowedOperator" should "generate an output only after the windows has elapsed" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.constant(2), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1000)
     setup(op)
 
     op.init(0.0, 500)
@@ -48,16 +48,17 @@ class WindowedOperatorTest extends FlatSpec
     op.inputQueues (f1) should be (0.0 +- 0.0001)
     op.inputQueues (f2) should be (0.0 +- 0.0001)
     op.outputQueues(f3) should be (0.0 +- 0.0001)
+    op.accumulatedSlot  should be (0)
 
-    // second run - end of the first window
+    // second run - end of the first window - these events shouldn't be considered by the function
     op enqueueIntoInput (f1, 10)
     op enqueueIntoInput (f2, 10)
     op run (200, 1010)
 
     op.inputQueues (f1) should be (0.0 +- 0.0001)
     op.inputQueues (f2) should be (0.0 +- 0.0001)
-    op.outputQueues(f3) should be (2.0 +- 0.0001)
-
+    op.outputQueues(f3) should be (20.0 +- 0.0001)
+    op.accumulatedSlot  should be (0)
   }
 
 
@@ -68,24 +69,22 @@ class WindowedOperatorTest extends FlatSpec
     op.init(0.0, 1000)
 
     // run 10 times until it reaches the 10 second window
-    (1 to 10).foreach((i) => {
+    (0 until 10).foreach((i) => {
       op enqueueIntoInput (f1, 10)
       op enqueueIntoInput (f2, 10)
       op.run(200, i * 1000)
+
+      op.inputQueues (f1) should be (0.0 +- 0.0001)
+      op.inputQueues (f2) should be (0.0 +- 0.0001)
+      op.outputQueues(f3) should be (i * 2.0 +- 0.0001)
+      op.accumulatedSlot  should be (i)
     })
-    op.inputQueues (f1) should be (0.0 +- 0.0001)
-    op.inputQueues (f2) should be (0.0 +- 0.0001)
-    op.outputQueues(f3) should be (2.0 +- 0.0001)
 
-    op.run(200, 11000)
-    op.inputQueues (f1) should be (0.0 +- 0.0001)
-    op.inputQueues (f2) should be (0.0 +- 0.0001)
-    op.outputQueues(f3) should be (4.0 +- 0.0001)
-
-    op.run(200, 12000)
-    op.inputQueues (f1) should be (0.0 +- 0.0001)
-    op.inputQueues (f2) should be (0.0 +- 0.0001)
-    op.outputQueues(f3) should be (6.0 +- 0.0001)
+    op.run(200, 10000)
+    op.inputQueues (f1) should be ( 0.0 +- 0.0001)
+    op.inputQueues (f2) should be ( 0.0 +- 0.0001)
+    op.outputQueues(f3) should be (20.0 +- 0.0001)
+    op.accumulatedSlot  should be (0)
   }
 
 
@@ -111,7 +110,7 @@ class WindowedOperatorTest extends FlatSpec
 
   }
 
-  it should "not emit anything if there is no event accumualted" in new Fixture {
+  it should "not emit anything if there is no event accumulated" in new Fixture {
     val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
     setup(op)
 
@@ -120,11 +119,12 @@ class WindowedOperatorTest extends FlatSpec
     op.run(200, 1000)
     op.outputQueues(f3) should be (0.0)
 
-    op.run(200, 1100)
-    op.outputQueues(f3) should be (0.0)
-
+    // these events are accumulated into a new window
     op enqueueIntoInput (f1, 10)
     op enqueueIntoInput (f2, 10)
+    op.run(200, 1101)
+    op.outputQueues(f3) should be (0.0)
+
     op.run(200, 1200)
     op.outputQueues(f3) should be (20.0 +- 0.001)
 
@@ -136,24 +136,26 @@ class WindowedOperatorTest extends FlatSpec
 
     op.init(0.0, 100)
 
-    // run 10 times until it reaches the 1 second window
-    (1 to 10).foreach((i) => {
+    // run 10 times
+    (0 until 10).foreach((i) => {
       op enqueueIntoInput (f1, 10)
       op enqueueIntoInput (f2, 10)
       op.run(200, i * 100)
-    })
-    op.inputQueues (f1) should be (  0.0 +- 0.0001)
-    op.inputQueues (f2) should be (  0.0 +- 0.0001)
-    op.outputQueues(f3) should be (200.0 +- 0.0001)
-    op.dequeueFromOutput((f3, 200.00))
 
+      op.inputQueues (f1) should be (  0.0 +- 0.0001)
+      op.inputQueues (f2) should be (  0.0 +- 0.0001)
+      op.outputQueues(f3) should be (i * 20.0 +- 0.0001)
+      op.dequeueFromOutput((f3, i * 20.00))
+    })
+
+    // these enqueued events are accumulated in the [1000, 1100[ window
     op enqueueIntoInput (f1, 5)
     op enqueueIntoInput (f2, 5)
-    op.run(200, 1100)
+    op.run(200, 1005)
     op.inputQueues (f1) should be (  0.0 +- 0.0001)
     op.inputQueues (f2) should be (  0.0 +- 0.0001)
 
-    op.outputQueues(f3) should be (190.0 +- 0.0001)
+    op.outputQueues(f3) should be (200.0 +- 0.0001)
   }
 
   it should "skip more than one slot if needed" in new Fixture {
@@ -163,21 +165,23 @@ class WindowedOperatorTest extends FlatSpec
     op.init(0.0, 100)
 
     // run 10 times until it reaches the 1 second window
-    (1 to 10).foreach((i) => {
+    (0 until 10).foreach((i) => {
       op enqueueIntoInput (f1, 10)
       op enqueueIntoInput (f2, 10)
       op.run(200, i * 100)
     })
-    op.outputQueues(f3) should be (200.0 +- 0.0001)
-    op.dequeueFromOutput((f3, 200.00))
 
-    op.run(200, 1400)
+    // 180 + 160 + 140 + 120 + 100 + 80 + 60 + 40 + 20
+    op.outputQueues(f3) should be (900.0 +- 0.0001)
+    op.dequeueFromOutput((f3, 900.00))
 
-    // it should execute 4 windows - (100 -> 1100) = 180, (200 -> 1200) = 160, (300 -> 1300) = 140, (400 -> 1400) = 120
-    op.outputQueues(f3) should be (600.0 +- 0.0001)
+    op.run(200, 1450)
 
+    // it should execute 5 windows -
+    // (0 -> 1000) = 200, (100 -> 1100) = 180, (200 -> 1200) = 160, (300 -> 1300) = 140, (400 -> 1400) = 120,
+    op.outputQueues(f3) should be (800.0 +- 0.0001)
+    op.accumulatedSlot  should be (4)
   }
-
 
 
 }
