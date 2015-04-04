@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.metric
+package ca.uwo.eng.sel.cepsim.history
 
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
@@ -79,7 +79,7 @@ object History {
 
 }
 
-import ca.uwo.eng.sel.cepsim.metric.History._
+import ca.uwo.eng.sel.cepsim.history.History._
 
 
 /**
@@ -208,7 +208,7 @@ class History[T <: Entry] private (es: Vector[T]) extends Seq[T] {
     * @param entry Entry to be added.
     * @return A History with the new entry added in the right place.
     */
-  private[metric] def add(entry: T): History[T] =
+  private[history] def add(entry: T): History[T] =
     new History[T]((this.history :+ entry).sorted[Entry])
 
   /**
@@ -216,7 +216,7 @@ class History[T <: Entry] private (es: Vector[T]) extends Seq[T] {
     * @param entries entries to be removed.
     * @return A new history without the informed entries.
     */
-  private[metric] def remove(entries: T*): History[T] =
+  private[history] def remove(entries: T*): History[T] =
     new History(history.filterNot(entries.contains(_)))
 
 

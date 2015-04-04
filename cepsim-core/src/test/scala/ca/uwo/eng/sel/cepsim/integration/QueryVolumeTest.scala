@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.metric.{LatencyMetric, ThroughputMetric}
+import ca.uwo.eng.sel.cepsim.metric.{ThroughputMetric, LatencyMetric}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
@@ -44,8 +44,9 @@ class QueryVolumeTest extends FlatSpec {
       val h1 = cloudlet run (INTERVAL * 1000000, (i - 1) * INTERVAL, 10) // 10 million instructions ~ 10 milliseconds
 
       val cons = queries(1).consumers.iterator.next
-      val t = ThroughputMetric.calculate(queries(1), (i * INTERVAL).milliseconds)
-      val l = LatencyMetric.calculate(queries(1), h1, cons, (i - 1) * INTERVAL)
+
+      val t = cloudlet.metric(ThroughputMetric.ID, cons)
+      val l = cloudlet.metric(LatencyMetric.ID, cons)
       println(f"Iteration [${i}%d]: Size = ${cons.outputQueue}%d, T = ${t}%.2f, L = ${l}%.4f")
     }
 

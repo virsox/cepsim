@@ -1,12 +1,12 @@
 package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.metric.History.Processed
-import ca.uwo.eng.sel.cepsim.metrics
+import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced, Generated}
+import ca.uwo.eng.sel.cepsim.history.History.Processed
+import ca.uwo.eng.sel.cepsim._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
-import ca.uwo.eng.sel.cepsim.{QueryCloudlet, Vm}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
@@ -41,7 +41,7 @@ class QueryCloudletTest extends FlatSpec
   "A QueryCloudlet" should "send events through the operator graph" in new Fixture {
 
 
-    import ca.uwo.eng.sel.cepsim.metric.History._
+    import ca.uwo.eng.sel.cepsim.history.History._
 
     // cloudlet going to use 10 millions instructions (10 ms)
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted()) //, 0.0)
@@ -75,7 +75,7 @@ class QueryCloudletTest extends FlatSpec
 
   it should "correctly invoke the metric calculation" in new Fixture {
 
-    val calculator = mock[metrics.MetricCalculator]
+    val calculator = mock[metric.MetricCalculator]
     doReturn(Set("latency")).when(calculator).ids
 
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
@@ -83,11 +83,11 @@ class QueryCloudletTest extends FlatSpec
 
     cloudlet run(10000000, 0.0, 1000)
 
-    verify(calculator).update(metrics.Generated (prod1,  0.0,   1000.0))
-    verify(calculator).update(metrics.Produced(prod1,  1.0,   1000.0))
-    verify(calculator).update(metrics.Produced(f1,     5.0,   1000.0, Map(prod1 -> 1000.0)))
-    verify(calculator).update(metrics.Produced(f2,     9.0,   1000.0, Map(f1    -> 1000.0)))
-    verify(calculator).update(metrics.Consumed (cons1, 10.0,    100.0, Map(f2    -> 100.0)))
+    verify(calculator).update(Generated(prod1, 0.0,  0.0,   1000.0))
+    verify(calculator).update(Produced (prod1, 0.0,  1.0,   1000.0))
+    verify(calculator).update(Produced (f1,    1.0,  5.0,   1000.0, Map(prod1 -> 1000.0)))
+    verify(calculator).update(Produced (f2,    5.0,  9.0,   1000.0, Map(f1    -> 1000.0)))
+    verify(calculator).update(Consumed (cons1, 9.0, 10.0,    100.0, Map(f2    -> 100.0)))
 
   }
 

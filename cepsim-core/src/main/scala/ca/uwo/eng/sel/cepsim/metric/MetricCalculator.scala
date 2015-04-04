@@ -1,5 +1,6 @@
-package ca.uwo.eng.sel.cepsim.metrics
+package ca.uwo.eng.sel.cepsim.metric
 
+import ca.uwo.eng.sel.cepsim.history.SimEvent
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
@@ -22,7 +23,7 @@ trait MetricCalculator {
     * Method invoked to update the metrics calculation with new processing information.
     * @param event Object encapsulating some important event happened during the simulation.
     */
-  def update(event: Event)
+  def update(event: SimEvent)
 
   /**
     * Obtains the values of a specific metric calculated for a specific vertex.

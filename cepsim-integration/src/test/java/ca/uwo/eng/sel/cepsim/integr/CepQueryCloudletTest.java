@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
-import ca.uwo.eng.sel.cepsim.metric.History;
+import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.placement.Placement;

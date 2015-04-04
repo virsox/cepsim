@@ -1,8 +1,8 @@
 package ca.uwo.eng.sel.cepsim
 
-import ca.uwo.eng.sel.cepsim.metric.History
-import ca.uwo.eng.sel.cepsim.metric.History.Entry
-import ca.uwo.eng.sel.cepsim.metrics._
+import ca.uwo.eng.sel.cepsim.history._
+import ca.uwo.eng.sel.cepsim.history.History.Entry
+import ca.uwo.eng.sel.cepsim.metric._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
@@ -101,7 +101,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // events to be consumed
         placement.producers foreach ((prod) => {
           val generated = prod.generate(totalMs(availableInstructions))
-          val event = Generated(prod, startTime, generated)
+          val event = Generated(prod, startTime, startTime, generated)
           calculators.values.foreach(_.update(event))
         })
 
@@ -208,16 +208,17 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
           }
 
+          val startTime = time
           time += totalMs(elem._2)
 
           // ---------------- Update metrics
-          var event: Event = null;
+          var event: SimEvent = null;
           if (v.isInstanceOf[EventProducer]) {
-            event = Produced(v, time, generatedEvents)
+            event = Produced(v, startTime, time, generatedEvents)
           } else if (v.isInstanceOf[EventConsumer]) {
-            event = Consumed(v.asInstanceOf[EventConsumer], time, generatedEvents, processedQueues)
+            event = Consumed(v.asInstanceOf[EventConsumer], startTime, time, generatedEvents, processedQueues)
           } else {
-            event = Produced(v, time, generatedEvents, processedQueues)
+            event = Produced(v, startTime, time, generatedEvents, processedQueues)
           }
           calculators.values.foreach(_.update(event))
           // ------------------------------------------------------------------------------

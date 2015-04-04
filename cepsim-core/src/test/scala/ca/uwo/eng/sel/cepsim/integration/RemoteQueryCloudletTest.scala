@@ -2,7 +2,7 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.metric.History.{Processed, Sent}
+import ca.uwo.eng.sel.cepsim.history.History.{Processed, Sent}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy

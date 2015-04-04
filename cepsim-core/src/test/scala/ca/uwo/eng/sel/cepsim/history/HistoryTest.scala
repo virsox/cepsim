@@ -1,6 +1,6 @@
-package ca.uwo.eng.sel.cepsim.metric
+package ca.uwo.eng.sel.cepsim.history
 
-import ca.uwo.eng.sel.cepsim.metric.History.{Received, Processed, Sent}
+import ca.uwo.eng.sel.cepsim.history.History.{Received, Processed, Sent}
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._

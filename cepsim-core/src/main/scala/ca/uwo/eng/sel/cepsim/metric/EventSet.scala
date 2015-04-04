@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.metrics
+package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.query.EventProducer
 

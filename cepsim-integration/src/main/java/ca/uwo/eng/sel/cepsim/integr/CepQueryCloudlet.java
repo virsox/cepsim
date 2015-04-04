@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
-import ca.uwo.eng.sel.cepsim.metrics.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.metrics.ThroughputMetric;
+import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
+import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.query.InputVertex;
@@ -12,7 +12,7 @@ import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
-import ca.uwo.eng.sel.cepsim.metric.History;
+import ca.uwo.eng.sel.cepsim.history.History;
 import scala.Option;
 import scala.collection.JavaConversions;
 

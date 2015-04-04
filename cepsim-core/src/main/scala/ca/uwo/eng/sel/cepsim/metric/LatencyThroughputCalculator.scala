@@ -1,5 +1,6 @@
-package ca.uwo.eng.sel.cepsim.metrics
+package ca.uwo.eng.sel.cepsim.metric
 
+import ca.uwo.eng.sel.cepsim.history._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
 
@@ -124,7 +125,7 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
    * Method invoked to update the metrics calculation with new processing information.
    * @param event Object encapsulating some important event happened during the simulation.
    */
-  override def update(event: Event): Unit = { event match {
+  override def update(event: SimEvent): Unit = { event match {
     case p: Generated => updateWithGenerated(p)
     case p: Produced => updateWithProduced(p)
     case p: WindowProduced => updateWithWindowProduced(p)
