@@ -1,6 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
+import ca.uwo.eng.sel.cepsim.history.{Produced, Generated}
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -29,18 +30,20 @@ class EventProducerTest extends FlatSpec
   }
 
   "An EventProducer" should "generate events and put in the input queue" in new Fixture {
-    val result = prod.generate(1000)
-    result should be (100)
+    val result = prod.generate(0, 1000)
+    result should be (Generated(prod, 0, 1000, 100))
 
     verify(generator).generate(org.mockito.Matchers.eq(1000.0), anyInt())
     prod.inputQueue should be (100)
   }
 
   it should "process events and put them in the output queue" in new Fixture {
-    val result = prod.generate(1000)
-    result should be (100)
+    val result1 = prod.generate(0, 1000)
+    result1 should be (Generated(prod, 0, 1000, 100))
 
-    prod.run(100)
+    val result2 = prod.run(100, 1000, 1100)
+    result2    should have size (1)
+    result2(0) should be (Produced(prod, 1000, 1100, 100))
 
     verify(generator).generate(org.mockito.Matchers.eq(1000.0), anyInt())
     prod.inputQueue should be (0)
@@ -48,10 +51,12 @@ class EventProducerTest extends FlatSpec
   }
 
   it should "generate events and put half of them in the output queue" in new Fixture {
-    val result = prod.generate(500)
-    result should be (100)
+    val result1 = prod.generate(0, 500)
+    result1 should be (Generated(prod, 0, 500, 100))
 
-    prod.run(50)
+    val result2 = prod.run(50, 500, 550)
+    result2    should have size (1)
+    result2(0) should be (Produced(prod, 500, 550, 50))
 
     verify(generator).generate(org.mockito.Matchers.eq(500.0), anyInt())
     prod.inputQueue should be (50)
@@ -62,10 +67,12 @@ class EventProducerTest extends FlatSpec
     val prod2 = EventProducer("p2", 3, generator)
     prod2.addOutputQueue(n1)
 
-    val result = prod2.generate(100.0)
-    result should be (100)
+    val result = prod2.generate(0, 100)
+    result should be (Generated(prod2, 0, 100, 100))
 
-    prod2.run(100)
+    val result2 = prod2.run(100, 100, 200)
+    result2    should have size (1)
+    result2(0).quantity should be (33.333 +- 0.001)
 
     prod2.inputQueue should be (66.666 +- 0.001)
     prod2.outputQueues(n1) should be (33.333 +- 0.001)

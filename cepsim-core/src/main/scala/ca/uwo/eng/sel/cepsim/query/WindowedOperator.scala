@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.{WindowAccumulated, WindowProduced, SimEvent}
+
 import scala.concurrent.duration._
 
 
@@ -69,10 +71,11 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
   /**
     * Executes the operator.
     * @param instructions Number of allocated instructions.
-    * @param timestamp
+    * @param startTime
     * @return Number of processed events.
     */
-  override def run(instructions: Double, timestamp: Double = 0.0): Double = {
+  override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
+    var events = List.empty[SimEvent]
     var retrievedEvents = Map.empty[Vertex, Double]
 
     // this loop advances the processAt attribute to the next timestamp at which the operator
@@ -80,17 +83,21 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
     // it is not expected that more than one window has passed though - first, because
     // the windows are usually large (measured in minutes). Second, the default scheduling
     // strategies will always try to execute operators which have events on their input queues.
-    while (timestamp >= processAt) {
+    while (startTime >= processAt) {
 
       // a window has passed
       val total = totalAccumulated()
       if (Vertex.sumOfValues(total) > 0) {
-        sendToAllOutputs(function(total))
+        val outputTotal = function(total)
+        sendToAllOutputs(outputTotal)
+
+        events = events :+ WindowProduced(this, startTime, endTime, outputTotal, currentIndex)
       }
 
       processAt = processAt + advance.toUnit(MILLISECONDS)
       currentIndex = (currentIndex + 1) % slots
       reset(currentIndex)
+
     }
 
 
@@ -103,9 +110,13 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
     // be wrong because the number of events on each slot is not correct. However, note that the error
     // occurs only in case the aggregation function is not a constant.
     //
+
     // accumulate events in current slot
     retrievedEvents = accumulate(instructions)
-    Vertex.sumOfValues(retrievedEvents)
+    if (Vertex.sumOfValues(retrievedEvents) > 0)
+      events = events :+ WindowAccumulated(this, startTime, endTime, currentIndex, retrievedEvents)
+
+    events
   }
 
   /**

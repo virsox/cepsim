@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.{Produced, SimEvent}
+
 import scala.concurrent.duration._
 
 object JoinOperator {
@@ -51,17 +53,16 @@ class JoinOperator(id: String, ipe: Double, val reduction: Double, val window: D
     proportion.map((elem) => (elem._1, value * elem._2))
   }
 
-  override def run(instructions: Double, startTime: Double = 0.0): Double = {
+  override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
 
     val events = retrieveFromInput(instructions, Vertex.sumOfValues(estimation()))
 
-    // calculate the cartesian product among all input events
-    val total = events.foldLeft(1.0)((accum, elem) => accum * elem._2)
+    // calculate the cartesian product among all input events and multiply by the reduction factor
+    // the reduction parameter represents how much the join condition reduces the number of joined elements
+    val total = events.foldLeft(1.0)((accum, elem) => accum * elem._2) * reductionFactor
+    sendToAllOutputs(total)
 
-    // the reduction parameter represents how much the join condition reduces
-    // the number of joined elements
-    sendToAllOutputs(total * reductionFactor)
-    Vertex.sumOfValues(events)
+    List(Produced(this, startTime, endTime, total, events))
   }
 
 }

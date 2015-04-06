@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.Produced
+import ca.uwo.eng.sel.cepsim.util.SimEventBaseTest
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
@@ -13,7 +15,8 @@ import scala.concurrent.duration._
 @RunWith(classOf[JUnitRunner])
 class JoinOperatorTest extends FlatSpec
   with Matchers
-  with MockitoSugar {
+  with MockitoSugar
+  with SimEventBaseTest {
 
   trait Fixture {
     val p1 = Operator("p1", 1.0)
@@ -47,8 +50,9 @@ class JoinOperatorTest extends FlatSpec
     join enqueueIntoInput(p1, 10)
     join enqueueIntoInput(p2, 10)
 
+    val simEvent = join run(20, 0, 20)
+    simEvent should be (List(Produced(join, 0, 20, 100, Map(p1 -> 10.0, p2 -> 10.0))))
 
-    join run(20)
     join inputQueues(p1) should be (0)
     join inputQueues(p2) should be (0)
     join outputQueues(c1) should be (100)
@@ -67,13 +71,14 @@ class JoinOperatorTest extends FlatSpec
     join addInputQueue(p1)
     join addInputQueue(p2)
     join addInputQueue(p3)
-
     join addOutputQueue(c1)
 
     join enqueueIntoInput(p1, 10)
     join enqueueIntoInput(p2, 10)
     join enqueueIntoInput(p3, 10)
-    join run(30)
+
+    val simEvent = join run(30, 0, 30)
+    simEvent should be (List(Produced(join, 0, 30, 100, Map(p1 -> 10.0, p2 -> 10.0, p3 -> 10.0))))
 
     join.inputQueues should contain theSameElementsAs Set((p1, 0), (p2, 0) ,(p3, 0))
     join outputQueues c1 should be (100)
@@ -109,11 +114,13 @@ class JoinOperatorTest extends FlatSpec
     join setLimit(c1, 50)
     join setLimit(c2, 60)
 
-    // the output limit is 50, which means 5000 pairs
+    // the output limit is 50, which means 5000 pairs * 0.01 (the reduction factor)
     // the square root of 5000 is 70.71
     join enqueueIntoInput(p1, 100)
     join enqueueIntoInput(p2, 100)
-    join run (200)
+
+    val simEvent = join.run(200, 0, 200)(0).asInstanceOf[Produced]
+    simEvent should equal (Produced(join, 0, 200, 50.00, Map(p1 -> 70.71, p2 -> 70.71)))
 
     join.inputQueues(p1)  should be (29.29 +- 0.01)
     join.inputQueues(p1)  should be (29.29 +- 0.01)

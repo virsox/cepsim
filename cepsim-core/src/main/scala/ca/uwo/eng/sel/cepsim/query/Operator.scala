@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.{Produced, SimEvent}
+
 
 object Operator {
   def apply(id: String, ipe: Double, queueMaxSize: Int = 0) =
@@ -31,13 +33,16 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
     toProcess
   }
 
-  override def run(instructions: Double, startTime: Double = 0.0): Double = {
+  override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
 
     // number of processed events
-    val events = Vertex.sumOfValues(retrieveFromInput(instructions, maximumNumberOfEvents))
+    val fromInput = retrieveFromInput(instructions, maximumNumberOfEvents)
+    val events = Vertex.sumOfValues(fromInput)
 
     sendToAllOutputs(events)
-    events
+
+    if (events == 0) List.empty
+    else List(Produced(this, startTime, endTime, events, fromInput))
   }
 
 

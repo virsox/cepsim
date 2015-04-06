@@ -78,9 +78,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    */
   def run(instructions: Double, startTime: Double, capacity: Double): History[Entry] = {
     var history = History()
+    var simEvents = List.empty[SimEvent]
 
     if (instructions > 0) {
-
 
       // auxiliary function
       val instructionsPerMs = (capacity * 1000)
@@ -100,9 +100,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // in theory this enables more complex strategies that consider the number of
         // events to be consumed
         placement.producers foreach ((prod) => {
-          val generated = prod.generate(totalMs(availableInstructions))
-          val event = Generated(prod, startTime, startTime, generated)
+          val event = prod.generate(time, time + totalMs(availableInstructions))
           calculators.values.foreach(_.update(event))
+
+          simEvents = simEvents :+ event
         })
 
 
@@ -112,68 +113,28 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         verticesList.foreach { (elem) =>
 
           val v: Vertex = elem._1
+          val startTime = time
+          val endTime = startTime + totalMs(elem._2)
 
-          var processedEvents = 0.0
-          var generatedEvents = 0.0
-          var processedQueues = Map.empty[Vertex, Double]
+          val iterationSimEvents = v.run(elem._2, startTime, endTime)
 
           if (v.isInstanceOf[InputVertex]) {
-
             val iv = v.asInstanceOf[InputVertex]
-
-
-            // ------------------ queues status before running vertex -----------------------
-            // predecessors from all queries
-             //queries.flatMap(_.predecessors(v))
-            var outputBefore: Double = 0.0
-            var inputBefore = Map.empty[Vertex, Double]
-
-            if (!calculators.isEmpty) {
-              inputBefore = iv.inputQueues
-              if (iv.isInstanceOf[OutputVertex])
-                outputBefore = iv.asInstanceOf[OutputVertex].outputQueues.head._2
-            }
-           // ------------------------------------------------------------------------------
-
-
-            processedEvents = iv.run(elem._2, time)
-
-
-            // ------------------ queue status after running vertex ----------------------------
-            inputBefore.foreach((entry) => {
-              processedQueues = processedQueues updated (entry._1, entry._2 - iv.inputQueues(entry._1))
-            })
-
-            if (!calculators.isEmpty) {
-              // operators
-              if (iv.isInstanceOf[OutputVertex]) {
-                val ov = iv.asInstanceOf[OutputVertex]
-                generatedEvents = (ov.outputQueues.head._2 - outputBefore) / ov.selectivities(ov.outputQueues.head._1)
-
-              // consumer
-              } else {
-                generatedEvents = processedEvents
-              }
-            }
-            // ---------------------------------------------------------------------------------
-
             if (iv.isBounded()) {
               iv.predecessors.foreach { (pred) =>
                 pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
               }
             }
+          }
 
-
-          } else {
-            processedEvents = v.run(elem._2, time)
-
-            // TODO remove this
-            // its a producer, so the number of processed events is the same as the number of generated
-            generatedEvents = processedEvents
+          var processedEvents = 0.0
+          if (iterationSimEvents.length > 0) {
+            val lastSimEvent = iterationSimEvents(iterationSimEvents.length - 1)
+            processedEvents = lastSimEvent.quantity
           }
 
           if (processedEvents > 0)
-            history = history.logProcessed(id, time, v, processedEvents)
+            history = history.logProcessed(id, startTime, v, processedEvents)
 
           // check if there are events to be sent to remote vertices
           if (v.isInstanceOf[OutputVertex]) {
@@ -193,7 +154,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
               val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
               if (sentMessages > 0) {
-                history = history.logSent(id, time, v, dest, sentMessages)
+                history = history.logSent(id, startTime, v, dest, sentMessages)
                 ov.dequeueFromOutput((dest, sentMessages))
               }
             }
@@ -204,32 +165,16 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
               dest.enqueueIntoInput(ov, events)
 
             }
-
-
           }
 
-          val startTime = time
-          time += totalMs(elem._2)
+          time = endTime
 
-          // ---------------- Update metrics
-          var event: SimEvent = null;
-          if (v.isInstanceOf[EventProducer]) {
-            event = Produced(v, startTime, time, generatedEvents)
-          } else if (v.isInstanceOf[EventConsumer]) {
-            event = Consumed(v.asInstanceOf[EventConsumer], startTime, time, generatedEvents, processedQueues)
-          } else {
-            event = Produced(v, startTime, time, generatedEvents, processedQueues)
-          }
-          calculators.values.foreach(_.update(event))
-          // ------------------------------------------------------------------------------
-
+          iterationSimEvents.foreach((simEvent) =>
+            calculators.values.foreach(_.update(simEvent))
+          )
+          simEvents = simEvents ++ iterationSimEvents
         }
-
-
       })
-
-
-
 
    }
 

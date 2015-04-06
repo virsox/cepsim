@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.{Consumed, SimEvent}
+
 
 object EventConsumer {
   def apply(id: String, ipe: Double, queueMaxSize: Int = 0) = new EventConsumer(id, ipe, queueMaxSize)
@@ -33,8 +35,9 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     toProcess
   }
 
-  override def run(instructions: Double, startTime: Double = 0.0): Double = {
-    val processed = Vertex.sumOfValues(retrieveFromInput(instructions))
+  override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
+    val fromInput = retrieveFromInput(instructions)
+    val processed = Vertex.sumOfValues(fromInput)
 
     var output = Math.floor(processed).toInt
 
@@ -49,9 +52,10 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
       output += 1
       accumulated = 0.0
     }
-
     outputQueue += output
-    output
+
+    if ((output == 0) && (processed == 0)) List()
+    else List(Consumed(this, startTime, endTime, output, fromInput))
   }
 
 

@@ -1,6 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
+import ca.uwo.eng.sel.cepsim.history.{Produced, Generated, SimEvent}
 
 object EventProducer {
   def apply(id: String, ipe: Double, gen: Generator, limitProducer: Boolean = false) =
@@ -12,16 +13,17 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
 
   var inputQueue = 0.0
 
-  def generate(interval: Double): Double = {
+  def generate(from: Double, to: Double): SimEvent = {
 
+    val interval = to - from
     val generated = (if (limitProducer) generator.generate(interval, Math.floor(maximumNumberOfEvents).toInt)
                      else generator.generate(interval))
 
     inputQueue += generated
-    generated
+    Generated(this, from, to, generated)
   }
 
-  def run(instructions: Double, startTime: Double = 0.0): Double = {
+  def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
 
     val maxOutput = (instructions / ipe)
 
@@ -30,7 +32,7 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
     inputQueue -= processed
     sendToAllOutputs(processed)
 
-    processed
+    List(Produced(this, startTime, endTime, processed))
   }
 
 

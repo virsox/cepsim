@@ -1,5 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.history.SimEvent
+
 /** Trait for vertices of query graphs. */
 trait Vertex {
 
@@ -23,7 +25,7 @@ trait Vertex {
     * @param startTime Time at which the method run has been invoked (in milliseconds since the simulation start).
     * @return Number of processed events.
     */
-  def run(instructions: Double, startTime: Double = 0.0): Double
+  def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent]
 
 
   override def toString: String = s"[id: $id]"
