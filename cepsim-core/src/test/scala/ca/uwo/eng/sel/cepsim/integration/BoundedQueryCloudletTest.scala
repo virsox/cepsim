@@ -42,7 +42,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     // 10 millions instructions ~ 10 milliseconds
     // 1000 events will be generated per simulation tick
     // each operator will use 2.5 millions instructions
-    val h = cloudlet.run(10000000, 0.0, 1000)
+    val h = cloudlet.run(10000000, 10.0, 1000)
 
 
     prod1.outputQueues(f1) should be(0)
@@ -56,15 +56,15 @@ class BoundedQueryCloudletTest extends FlatSpec
     // check if history is being correctly logged
     h should have size (4)
     h.toList should contain theSameElementsInOrderAs (
-      List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 2.5, f1, 1000),
-      Processed("c1", 5.0, f2, 312.5), Processed("c1", 7.5, cons1, 31)))
+      List(Processed("c1", 10.0, prod1, 1000), Processed("c1", 12.5, f1, 1000),
+      Processed("c1", 15.0, f2, 312.5), Processed("c1", 17.5, cons1, 31)))
 
     // --------------------------------------------------------------------------
     // SECOND ITERATION
     // --------------------------------------------------------------------------
 
     //var cloudlet2 = QueryCloudlet("c2", placement, schedStrategy, 10.0)
-    cloudlet.run(10000000, 10.0, 1000)
+    cloudlet.run(10000000, 20.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -80,7 +80,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     // THIRD ITERATION
     // --------------------------------------------------------------------------
     //var cloudlet3 = QueryCloudlet("c3", placement, schedStrategy, 20.0)
-    cloudlet.run(10000000, 20.0, 1000)
+    cloudlet.run(10000000, 30.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -96,7 +96,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     // FOURTH ITERATION
     // --------------------------------------------------------------------------
     //var cloudlet4 = QueryCloudlet("c4", placement, schedStrategy, 30.0)
-    cloudlet.run(10000000, 30.0, 1000)
+    cloudlet.run(10000000, 40.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
 
@@ -115,7 +115,7 @@ class BoundedQueryCloudletTest extends FlatSpec
     // FIFTH ITERATION
     // --------------------------------------------------------------------------
     //var cloudlet5 = QueryCloudlet("c5", placement, schedStrategy, 30.0)
-    cloudlet.run(10000000, 40.0, 1000)
+    cloudlet.run(10000000, 50.0, 1000)
 
     prod1.outputQueues(f1) should be(0) // f1 buffer can only store more 875 events
     prod1.inputQueue       should be(0)

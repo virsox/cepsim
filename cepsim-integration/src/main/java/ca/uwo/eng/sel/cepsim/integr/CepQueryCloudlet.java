@@ -1,9 +1,12 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
 import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
+import ca.uwo.eng.sel.cepsim.metric.LatencyThroughputCalculator;
+import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
 import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
+import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.InputVertex;
 import ca.uwo.eng.sel.cepsim.query.OutputVertex;
 import ca.uwo.eng.sel.cepsim.query.Query;
@@ -112,8 +115,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
         // it is the first time this method has been invoked
         if (this.executionTime == 0) {
-            this.cloudlet.init(previousTimeInMs,
-                    LatencyMetric.calculator(this.cloudlet.placement()));
+            this.cloudlet.init(previousTimeInMs, getMetricCalculator(this.cloudlet.placement()));
         }
         this.executionTime += (currentTime - previousTime);
 
@@ -174,4 +176,22 @@ public class CepQueryCloudlet extends Cloudlet {
     public double getThroughput(Vertex consumer) {
         return this.cloudlet.metric(ThroughputMetric.ID(), consumer);
     }
+
+
+    // ------------ for testing only - mock injection
+    private MetricCalculator calculator;
+
+    private MetricCalculator getMetricCalculator(Placement placement) {
+        if (calculator == null) {
+            this.calculator = LatencyThroughputCalculator.apply(placement);
+        }
+        return calculator;
+    }
+
+    void setMetricCalculator(MetricCalculator calculator) {
+        this.calculator = calculator;
+    }
+
+
+
 }

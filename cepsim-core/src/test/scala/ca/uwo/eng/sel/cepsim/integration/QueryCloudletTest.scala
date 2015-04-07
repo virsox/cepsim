@@ -47,7 +47,7 @@ class QueryCloudletTest extends FlatSpec
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted()) //, 0.0)
     cloudlet.init(0.0)
 
-    val h = cloudlet run (10000000, 0.0, 1000)
+    val h = cloudlet run (10000000, 10.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
@@ -56,16 +56,16 @@ class QueryCloudletTest extends FlatSpec
 
     // check if history is being correctly logged
     h should have size (4)
-    h.toList should contain theSameElementsInOrderAs (List(Processed("c1", 0.0, prod1, 1000), Processed("c1", 1.0, f1, 1000),
-      Processed("c1", 5.0, f2, 1000), Processed("c1", 9.0, cons1, 100)))
+    h.toList should contain theSameElementsInOrderAs (List(Processed("c1", 10.0, prod1, 1000), Processed("c1", 11.0, f1, 1000),
+      Processed("c1", 15.0, f2, 1000), Processed("c1", 19.0, cons1, 100)))
   }
 
   it should "accumulate the number of produced events" in new Fixture {
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
     cloudlet.init(0.0)
 
-    cloudlet run (10000000, 0.0, 1000)
     cloudlet run (10000000, 10.0, 1000)
+    cloudlet run (10000000, 20.0, 1000)
 
     prod1.outputQueues(f1) should be (0)
     f1.outputQueues(f2) should be (0)
@@ -81,13 +81,13 @@ class QueryCloudletTest extends FlatSpec
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
     cloudlet.init(0.0, calculator)
 
-    cloudlet run(10000000, 0.0, 1000)
+    cloudlet run(10000000, 10.0, 1000)
 
-    verify(calculator).update(Generated(prod1, 0.0, 10.0, 1000.0))
-    verify(calculator).update(Produced (prod1, 0.0,  1.0, 1000.0))
-    verify(calculator).update(Produced (f1,    1.0,  5.0, 1000.0, Map(prod1 -> 1000.0)))
-    verify(calculator).update(Produced (f2,    5.0,  9.0, 1000.0, Map(f1    -> 1000.0)))
-    verify(calculator).update(Consumed (cons1, 9.0, 10.0,  100.0, Map(f2    -> 100.0)))
+    verify(calculator).update(Generated(prod1,  0.0, 10.0, 1000.0))
+    verify(calculator).update(Produced (prod1, 10.0, 11.0, 1000.0))
+    verify(calculator).update(Produced (f1,    11.0, 15.0, 1000.0, Map(prod1 -> 1000.0)))
+    verify(calculator).update(Produced (f2,    15.0, 19.0, 1000.0, Map(f1    -> 1000.0)))
+    verify(calculator).update(Consumed (cons1, 19.0, 20.0,  100.0, Map(f2    -> 100.0)))
 
   }
 
@@ -102,7 +102,7 @@ class QueryCloudletTest extends FlatSpec
     val cloudlet = QueryCloudlet("c1", placement, DefaultOpScheduleStrategy.weighted()) //, 0.0)
     cloudlet.init(0.0)
 
-    val h = cloudlet run (10000000, 0.0, 1000)
+    val h = cloudlet run (10000000, 10.0, 1000)
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
     f2.outputQueues(cons1) should be(0)
@@ -115,14 +115,14 @@ class QueryCloudletTest extends FlatSpec
 
     h should have size (8)
     h.toList should contain theSameElementsInOrderAs (List(
-      Processed("c1", 0.0, prod1, 500),
-      Processed("c1", 0.5, prod2, 500),
-      Processed("c1", 1.0, f1, 500),
-      Processed("c1", 3.0, f3, 500),
-      Processed("c1", 5.0, f2, 500),
-      Processed("c1", 7.0, f4, 500),
-      Processed("c1", 9.0, cons1, 50),
-      Processed("c1", 9.5, cons2, 50)
+      Processed("c1", 10.0, prod1, 500),
+      Processed("c1", 10.5, prod2, 500),
+      Processed("c1", 11.0, f1, 500),
+      Processed("c1", 13.0, f3, 500),
+      Processed("c1", 15.0, f2, 500),
+      Processed("c1", 17.0, f4, 500),
+      Processed("c1", 19.0, cons1, 50),
+      Processed("c1", 19.5, cons2, 50)
     ))
   }
 

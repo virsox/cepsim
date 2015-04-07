@@ -49,10 +49,10 @@ class QueryCloudletTest extends FlatSpec
   trait Fixture1 extends Fixture {
     doReturn(Generated(prod, 0.0, 1000, 100.0)).when(prod).generate(0.0, 1000)
 
-    doReturn(List(Produced(prod,   0.0,  100.0, 100.0))).when(prod).run(100000, 0.0, 100.0)
-    doReturn(List(Produced(f1,   100.0,  500.0, 100.0, Map(prod -> 100.0)))).when(f1  ).run(400000, 100.0, 500.0)
-    doReturn(List(Produced(f2,   500.0,  900.0, 100.0, Map(f1   -> 100.0)))).when(f2  ).run(400000, 500.0, 900.0)
-    doReturn(List(Consumed(cons, 900.0, 1000.0, 100.0, Map(f2   -> 100.0)))).when(cons).run(100000, 900.0, 1000.0)
+    doReturn(List(Produced(prod, 1000.0, 1100.0, 100.0))).when(prod).run(100000, 1000.0, 1100.0)
+    doReturn(List(Produced(f1,   1100.0, 1500.0, 100.0, Map(prod -> 100.0)))).when(f1  ).run(400000, 1100.0, 1500.0)
+    doReturn(List(Produced(f2,   1500.0, 1900.0, 100.0, Map(f1   -> 100.0)))).when(f2  ).run(400000, 1500.0, 1900.0)
+    doReturn(List(Consumed(cons, 1900.0, 2000.0, 100.0, Map(f2   -> 100.0)))).when(cons).run(100000, 1900.0, 2000.0)
   }
 
   "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
@@ -86,18 +86,19 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Map(cons -> 100.0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
-    cloudlet run(1000000, 0.0, 1)
+    cloudlet run(1000000, 1000.0, 1)
 
-    verify(prod).generate(0.0, 1000)
-    verify(prod).run(100000,   0.0,  100.0)
-    verify(f1  ).run(400000, 100.0,  500.0)
-    verify(f2  ).run(400000, 500.0,  900.0)
-    verify(cons).run(100000, 900.0, 1000.0)
+    verify(prod).generate(0.0, 1000.0)
+    verify(prod).run(100000, 1000.0, 1100.0)
+    verify(f1  ).run(400000, 1100.0, 1500.0)
+    verify(f2  ).run(400000, 1500.0, 1900.0)
+    verify(cons).run(100000, 1900.0, 2000.0)
   }
 
 
   it should "not run operators that are in a different Placement" in new Fixture1 {
     val cloudlet = QueryCloudlet("c1", placement, opSchedule)
+    cloudlet.init(0.0)
 
     // create new operators
     val f3 = mock[Operator]
@@ -115,13 +116,13 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Map(cons -> 100.0, f3 -> 100.0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
-    val history = cloudlet run(1000000, 0.0, 1)
+    val history = cloudlet run(1000000, 1000.0, 1)
 
-    verify(prod).generate(0.0, 1000)
-    verify(prod).run(100000,   0.0,  100.0)
-    verify(f1  ).run(400000, 100.0,  500.0)
-    verify(f2  ).run(400000, 500.0,  900.0)
-    verify(cons).run(100000, 900.0, 1000.0)
+    verify(prod).generate(0.0, 1000.0)
+    verify(prod).run(100000, 1000.0, 1100.0)
+    verify(f1  ).run(400000, 1100.0, 1500.0)
+    verify(f2  ).run(400000, 1500.0, 1900.0)
+    verify(cons).run(100000, 1900.0, 2000.0)
 
     // these operators shouldn't run
     verify(f3, never()).run(anyDouble(), anyDouble(), anyDouble())
@@ -129,7 +130,7 @@ class QueryCloudletTest extends FlatSpec
 
     val entries = history.from(f2)
     entries should have size (2)
-    entries should be (List(Processed("c1", 500.0, f2, 100), Sent("c1", 500.0, f2, f3, 100)))
+    entries should be (List(Processed("c1", 1500.0, f2, 100), Sent("c1", 1500.0, f2, f3, 100)))
   }
 
   // -------------------------------------------------
@@ -147,16 +148,16 @@ class QueryCloudletTest extends FlatSpec
 
 
     // 1st iteration
-    doReturn(List(Produced(prod,   0.0,  50.0, 50.0))).when(prod).run(50000, 0.0, 50.0)
-    doReturn(List(Produced(f1,    50.0, 250.0, 50.0, Map(prod -> 50.0)))).when(f1  ).run(200000,  50.0, 250.0)
-    doReturn(List(Produced(f2,   250.0, 450.0, 50.0, Map(f1   -> 50.0)))).when(f2  ).run(200000, 250.0, 450.0)
-    doReturn(List(Consumed(cons, 450.0, 500.0, 50.0, Map(f2   -> 50.0)))).when(cons).run(50000, 450.0, 500.0)
+    doReturn(List(Produced(prod, 500.0,  550.0, 50.0))).when(prod).run(50000, 500.0, 550.0)
+    doReturn(List(Produced(f1,   550.0,  750.0, 50.0, Map(prod -> 50.0)))).when(f1  ).run(200000, 550.0,  750.0)
+    doReturn(List(Produced(f2,   750.0,  950.0, 50.0, Map(f1   -> 50.0)))).when(f2  ).run(200000, 750.0,  950.0)
+    doReturn(List(Consumed(cons, 950.0, 1000.0, 50.0, Map(f2   -> 50.0)))).when(cons).run( 50000, 950.0, 1000.0)
 
     // 2nd iteration
-    doReturn(List(Produced(prod, 500.0,  550.0, 50.0))).when(prod).run(50000, 500.0, 550.0)
-    doReturn(List(Produced(f1,   550.0,  750.0, 50.0, Map(prod -> 50.0)))).when(f1  ).run(200000, 550.0, 750.0)
-    doReturn(List(Produced(f2,   750.0,  950.0, 50.0, Map(f1   -> 50.0)))).when(f2  ).run(200000, 750.0, 950.0)
-    doReturn(List(Consumed(cons, 950.0, 1000.0, 50.0, Map(f2   -> 50.0)))).when(cons).run(50000,  950.0, 1000.0)
+    doReturn(List(Produced(prod, 1000.0, 1050.0, 50.0))).when(prod).run(50000, 1000.0, 1050.0)
+    doReturn(List(Produced(f1,   1050.0, 1250.0, 50.0, Map(prod -> 50.0)))).when(f1  ).run(200000, 1050.0, 1250.0)
+    doReturn(List(Produced(f2,   1250.0, 1450.0, 50.0, Map(f1   -> 50.0)))).when(f2  ).run(200000, 1250.0, 1450.0)
+    doReturn(List(Consumed(cons, 1450.0, 1500.0, 50.0, Map(f2   -> 50.0)))).when(cons).run(50000,  1450.0, 1500.0)
 
     // 2 iterations
     val cloudlet = QueryCloudlet.apply("c1", placement, opSchedule, 2)
@@ -167,21 +168,21 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Map.empty withDefaultValue(50.0)).when(f2).outputQueues
 
     // the cloudlet should run all operators
-    cloudlet run(1000000, 0.0, 1)  // 1 million instructions @ 1 MIPS = 1 second
+    cloudlet run(1000000, 500.0, 1)  // 1 million instructions @ 1 MIPS = 1 second
 
     // two iterations of 500,000 instructions each
 
-    verify(prod).generate( 0,   500)
-    verify(prod).generate(500, 1000)
+    verify(prod).generate(  0.0,  500.0)
+    verify(prod).generate(500.0, 1000.0)
 
-    verify(prod).run( 50000,   0.0,  50.0)
-    verify(prod).run( 50000, 500.0, 550.0)
-    verify(f1  ).run(200000,  50.0, 250.0)
-    verify(f1  ).run(200000, 550.0, 750.0)
-    verify(f2  ).run(200000, 250.0, 450.0)
-    verify(f2  ).run(200000, 750.0, 950.0)
-    verify(cons).run( 50000, 450.0, 500.0)
-    verify(cons).run( 50000, 950.0, 1000.0)
+    verify(prod).run( 50000,  500.0,  550.0)
+    verify(prod).run( 50000, 1000.0, 1050.0)
+    verify(f1  ).run(200000,  550.0,  750.0)
+    verify(f1  ).run(200000, 1050.0, 1250.0)
+    verify(f2  ).run(200000,  750.0,  950.0)
+    verify(f2  ).run(200000, 1250.0, 1450.0)
+    verify(cons).run( 50000,  950.0, 1000.0)
+    verify(cons).run( 50000, 1450.0, 1500.0)
   }
 
 }

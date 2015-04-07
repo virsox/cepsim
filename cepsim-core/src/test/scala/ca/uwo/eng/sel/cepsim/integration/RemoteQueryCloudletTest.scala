@@ -40,7 +40,7 @@ class RemoteQueryCloudletTest extends FlatSpec
     val cloudlet = QueryCloudlet("c1", placement, DefaultOpScheduleStrategy.weighted())
     cloudlet.init(0.0)
 
-    val h = cloudlet run (10000000, 0.0, 1000)
+    val h = cloudlet run (10000000, 10.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
@@ -51,11 +51,11 @@ class RemoteQueryCloudletTest extends FlatSpec
     // check if history is being correctly logged
     h should have size (5)
     h.toList should be (List(
-      Processed("c1", 0.0, prod1, 1000),
-      Processed("c1", 1.0, f1, 1000),
-      Processed("c1", 5.0, f2, 1000),
-           Sent("c1", 5.0, f2, f3, 100),
-      Processed("c1", 9.0, cons1, 100)))
+      Processed("c1", 10.0, prod1, 1000),
+      Processed("c1", 11.0, f1, 1000),
+      Processed("c1", 15.0, f2, 1000),
+           Sent("c1", 15.0, f2, f3, 100),
+      Processed("c1", 19.0, cons1, 100)))
   }
 
 }

@@ -175,8 +175,6 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           )
           simEvents = simEvents ++ iterationSimEvents
         }
-
-
       })
    }
 
