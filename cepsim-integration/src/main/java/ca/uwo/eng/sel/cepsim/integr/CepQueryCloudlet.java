@@ -113,8 +113,7 @@ public class CepQueryCloudlet extends Cloudlet {
         // it is the first time this method has been invoked
         if (this.executionTime == 0) {
             this.cloudlet.init(previousTimeInMs,
-                    LatencyMetric.calculator(this.cloudlet.placement()),
-                    ThroughputMetric.calculator(this.cloudlet.placement()));
+                    LatencyMetric.calculator(this.cloudlet.placement()));
         }
         this.executionTime += (currentTime - previousTime);
 

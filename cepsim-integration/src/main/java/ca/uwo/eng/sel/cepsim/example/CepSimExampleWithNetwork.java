@@ -8,8 +8,6 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.history.History;
-import ca.uwo.eng.sel.cepsim.history.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.history.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.network.FixedDelayNetworkInterface;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
@@ -124,10 +122,16 @@ public class CepSimExampleWithNetwork {
                 queries.addAll(cepCl.getQueries());
 			}
 
-            for (Query q : queries) {
-                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-                System.out.println("Latency   : " + LatencyMetric.calculate(q, fullHistory));
-            }
+//            for (Query q : queries) {
+//				Vertex consumer = q.consumers().head();
+//
+//				System.out.println("Latency: " + cepCl.getLatency(consumer));
+//				System.out.println("Throughput: " + cepCl.getThroughput(consumer));
+//
+//
+//				System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
+//                System.out.println("Latency   : " + LatencyMetric.calculate(q, fullHistory));
+//            }
 
 
             Log.printLine("CloudSimExample1 finished!");

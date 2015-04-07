@@ -7,8 +7,6 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.history.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.history.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;

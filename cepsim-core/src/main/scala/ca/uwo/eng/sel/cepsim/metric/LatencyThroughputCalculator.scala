@@ -121,6 +121,19 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
   override def results(id: String, v: Vertex): List[Metric] =
     if (id == LatencyMetric.ID) latencies(v).toList else throughputs(v).toList
 
+
+  /**
+   * Consolidates all the metric values that have been calculated for a specific vertex.
+   * It calculates the average for latency, and simply select the last metric for throughput.
+   * @param id Metric identifier.
+   * @param v the specified vertex.
+   * @return A single value that consolidates latency or throughput
+   */
+  override def consolidate(id: String, v: Vertex): Double = {
+    if (id == LatencyMetric.ID) super.consolidate(id, v)
+    else throughputs(v).last.value
+  }
+
   /**
    * Method invoked to update the metrics calculation with new processing information.
    * @param event Object encapsulating some important event happened during the simulation.

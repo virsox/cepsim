@@ -21,24 +21,23 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
   // --------------- Metric manipulation
 
-  var calculators =  Map.empty[String, MetricCalculator]
+  var calculatorsMap =  Map.empty[String, MetricCalculator]
+  var calculators = Set.empty[MetricCalculator]
 
-  def registerCalculator(calculator: MetricCalculator) =
+  def registerCalculator(calculator: MetricCalculator) = {
     calculator.ids.foreach((id) =>
-      calculators = calculators updated (id, calculator)
+      calculatorsMap = calculatorsMap updated (id, calculator)
     )
+    calculators = calculators + calculator
+  }
 
-  def metric(id: String, v: Vertex) = calculators(id).consolidate(id, v)
-  def metricList(id: String, v: Vertex) = calculators(id).results(id, v)
+  def metric(id: String, v: Vertex) = calculatorsMap(id).consolidate(id, v)
+  def metricList(id: String, v: Vertex) = calculatorsMap(id).results(id, v)
 
   // ---------------------------------------
 
 
-
-
-
-  // a cloudlet should be  stateless. for each interval, a cloudlet will represent the execution of
-  // all queries allocated to a VM.
+  var lastExecution = 0.0
 
   /**
     * Initialize all vertices from the cloudlet's placement.
@@ -47,6 +46,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   @varargs def init(startTime: Double, calculators: MetricCalculator*): Unit = {
     calculators.foreach((calculator) => registerCalculator(calculator))
     placement.vertices.foreach(_.init(startTime))
+
+    lastExecution = startTime
   }
 
   /**
@@ -100,12 +101,12 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // in theory this enables more complex strategies that consider the number of
         // events to be consumed
         placement.producers foreach ((prod) => {
-          val event = prod.generate(time, time + totalMs(availableInstructions))
-          calculators.values.foreach(_.update(event))
-
+          //val event = prod.generate(time, time + totalMs(availableInstructions))
+          val event = prod.generate(lastExecution, time)
+          calculators.foreach(_.update(event))
           simEvents = simEvents :+ event
         })
-
+        lastExecution = time
 
         // Vertices execution
 
@@ -170,12 +171,13 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           time = endTime
 
           iterationSimEvents.foreach((simEvent) =>
-            calculators.values.foreach(_.update(simEvent))
+            calculators.foreach(_.update(simEvent))
           )
           simEvents = simEvents ++ iterationSimEvents
         }
-      })
 
+
+      })
    }
 
     history

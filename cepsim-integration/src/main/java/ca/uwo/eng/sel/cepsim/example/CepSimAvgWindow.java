@@ -119,21 +119,8 @@ public class CepSimAvgWindow {
 
                 History history = cepCl.getExecutionHistory().from(consumer);
 
-
-
                 System.out.println("Latency: " + cepCl.getLatency(consumer));
                 System.out.println("Throughput: " + cepCl.getThroughput(consumer));
-
-
-
-
-
-
-
-//
-//                if (cepCl.getCloudletId() == 1) {
-//                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
-//                }
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -150,7 +137,7 @@ public class CepSimAvgWindow {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1000;
+        final int NUM_SENSORS = 1750;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();

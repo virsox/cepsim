@@ -7,7 +7,6 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.history.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
@@ -115,14 +114,9 @@ public class CepSimTopWords {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
                 Query q = cepCl.getQueries().iterator().next();
                 Vertex consumer = q.consumers().head();
-                System.out.println("Latency: " + cepCl.getLatency(consumer));
-                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
 
-
-
-
-
-
+				System.out.println("Latency: " + cepCl.getLatency(consumer));
+				System.out.println("Throughput: " + cepCl.getThroughput(consumer));
 
 //
 //                if (cepCl.getCloudletId() == 1) {

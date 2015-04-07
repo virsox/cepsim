@@ -14,7 +14,9 @@ trait SimEvent {
   def at: Double = to
 }
 
-case class Generated (val v: EventProducer, val from: Double, val to: Double, val quantity: Double) extends SimEvent
+case class Generated (val v: EventProducer, val from: Double, val to: Double, val quantity: Double) extends SimEvent {
+  //override def at: Double = from
+}
 
 case class Produced(val v: Vertex, val from: Double, val to: Double, val quantity: Double,
                      val processed: Map[Vertex, Double] = Map.empty) extends SimEvent
