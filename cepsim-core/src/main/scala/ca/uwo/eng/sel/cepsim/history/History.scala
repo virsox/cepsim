@@ -2,6 +2,8 @@ package ca.uwo.eng.sel.cepsim.history
 
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
+import scala.collection.mutable.ListBuffer
+
 /** Companion object. */
 object History {
 
@@ -9,7 +11,7 @@ object History {
     * Create a new empty History object.
     * @return empty History object.
     */
-  def apply() = new History[Entry](List.empty[Entry])
+  def apply() = new History[SimEvent](List.empty[SimEvent])
 
   /**
     * Create a new History object from a sequence of entries.
@@ -17,57 +19,8 @@ object History {
     * @tparam T Type of entries.
     * @return History object from the sequence.
     */
-  def apply[T <: Entry](entries: Seq[T]) = new History[T](entries.sorted[Entry].toVector)
+  def apply[T <: SimEvent](entries: Seq[T]) = new History[T](entries.sorted[SimEvent].toVector)
 
-  /** An entry in the cloudlet execution history. */
-  trait Entry extends Ordered[Entry] {
-    /** Cloudlet to which the entry belongs. */
-    def cloudlet: String
-
-    /** Timestamp of the entry. */
-    def time: Double
-
-    /** Vertex. */
-    def v: Vertex
-
-    /** Processed events. */
-    //def quantity: Double
-
-    def compare(that: Entry): Int = {
-      val timeComp = this.time.compare(that.time)
-      if (timeComp == 0) this.cloudlet.compare(that.cloudlet)
-      else timeComp
-    }
-  }
-
-  /**
-    * A history entry representing events processed.
-    * @param cloudlet Cloudlet to which the entry belongs.
-    * @param time Timestamp of the entry.
-    * @param v Vertex.
-    * @param quantity Quantity of events processed by the vertex.
-    */
-  case class Processed(cloudlet: String, time: Double, v: Vertex, quantity: Double) extends Entry
-
-  /**
-    * * A history entry representing events sent to a remote vertex.
-    * @param cloudlet Cloudlet to which the entry belongs.
-    * @param time Timestamp of the entry.
-    * @param v Vertex.
-    * @param dest Destination vertex.
-    * @param quantity Quantity of events sent from v to dest.
-    */
-  case class Sent(cloudlet: String, time: Double, v: Vertex, dest: Vertex, quantity: Int) extends Entry
-
-  /**
-    * A history entry representing events received from a remote vertex.
-    * @param cloudlet Cloudlet to which the entry belongs.
-    * @param time Timestamp of the entry.
-    * @param v Vertex.
-    * @param orig Origin vertex.
-    * @param quantity Quantity of events received from orig.
-    */
-  case class Received(cloudlet: String, time: Double, v: Vertex, orig: Vertex, quantity: Int) extends Entry
 
   /**
     * Implicit conversion from a sequence to a History.
@@ -75,11 +28,9 @@ object History {
     * @tparam T Type of sequence elements.
     * @return History created from the sequence.
     */
-  implicit def canBuildFrom[T <: Entry](v: Seq[T]) = new History[T](v.toList)
+  implicit def canBuildFrom[T <: SimEvent](v: Seq[T]) = new History[T](v)
 
 }
-
-import ca.uwo.eng.sel.cepsim.history.History._
 
 
 /**
@@ -88,141 +39,57 @@ import ca.uwo.eng.sel.cepsim.history.History._
   * @param es Initial entries that are part of the History.
   * @tparam T Type of history entries.
   */
-class History[T <: Entry] private (es: Vector[T]) extends Seq[T] {
+class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
 
 
-  /**
-    * Construct a History from a list.
-    * @param list List of initial entries.
-    * @return History constructed from the list.
-    */
-  def this(list: List[T]) = this(Vector.empty ++ list)
+  /** Contain the history entries. */
+  private val buffer = ListBuffer.empty[T]
+
+  // initialize buffer
+  buffer ++= es
 
   /**
     * Construct an empty History.
     * @return Empty history.
     */
-  def this() = this(Vector.empty)
+  def this() = this(List.empty)
 
 
-  /** vector of entries */
-  var history: Vector[T] = Vector.empty ++ es
-
-  /**
-    * Obtain the last entry from a specific vertex.
-    * @return Optional last entry of a vertex.  
-    */
-  def lastFrom(v: Vertex): Option[T] = from(v) toList match {
-  	case Nil => None
-	  case list => Option(list.last)
-  }
-  
   /**
    * Obtain the first entry from a specific vertex which occurs at (or after) the specified time.
    * @param v Vertex.
    * @param time Lower bound for the time when the entry occurred.
    * @return (Optional) Entry that satisfy the specified filters.
    */
-  def from(v: Vertex, time: Double): Option[T] = from(v).find(_.time >= time)
+  def from(v: Vertex, time: Double): History[T] = from(v).filter(_.from >= time)
 
   /**
     * Obtain entries from a specific vertex.
     * @param v Vertex of the entries.
     * @return History with entries from a specific vertex.
     */
-  def from(v: Vertex): History[T] = history.filter(_.v == v)
-
-  /**
-   * Obtain the first processing entry from a specific vertex which occurs at (or after) the specified time.
-   * @param v Vertex.
-   * @param time Lower bound for the time when the entry occurred.
-   * @return (Optional) Processing entry that satisfy the specified filters.
-   */
-  def processedEntriesFrom(v: Vertex, time: Double): Option[Processed] = processedEntriesFrom(v).find(_.time >= time)
-
-  /**
-   * Obtain all processing entries from a specific vertex.
-   * @param v Vertex of the entries.
-   * @return History with processing entries from a specific vertex.
-   */
-  def processedEntriesFrom(v: Vertex): History[Processed] = from(v).collect{ case e: Processed => e }
+  def from(v: Vertex): History[T] = buffer.filter(_.v == v)
 
 
-  /** *
-    * Obtain the entry from the same cloudlet succeeding the informed one.
-    * @param entry History entry that the successor is being looked for.
-    * @return Optional entry succeeding the informed one.
-    */
-  def successor(entry: Entry): Option[T] = {
-    val index = history.indexOf(entry)
-    if ((index == -1) || (index == history.length - 1)) None
-    else history.drop(index + 1).find(_.cloudlet == entry.cloudlet)
-  }
 
-  /**
-    * Log a new Processed entry in the history.
-    * @param cloudlet Cloudlet to which this entry belongs.
-    * @param time Timestamp of the entry.
-    * @param v Vertex.
-    * @param quantity Quantity of events processed by the vertex.
-    * @return History appended with the entry.
-    */
-  def logProcessed(cloudlet: String, time: Double, v: Vertex, quantity: Double) =
-    new History[Entry](history :+ Processed(cloudlet, time, v, quantity))
-
-  /**
-    * Log a new Received entry in the history.
-    * @param cloudlet Cloudlet to which this entry belongs.
-    * @param time Timestamp of the entry.
-    * @param v Vertex.
-    * @param orig Origin vertex.
-    * @param quantity Quantity of events received from the origin vertex.
-    * @return History appended with the entry.
-    */
-  def logReceived(cloudlet: String, time: Double, v: Vertex, orig: Vertex, quantity: Int) =
-    new History[Entry](history :+ Received(cloudlet, time, v, orig, quantity))
+  def log(simEvent: T) = buffer += simEvent
+    //new History[Entry](history :+ Processed(cloudlet, time, v, quantity))
 
 
-  /**
-   * Log a new Sent entry in the history.
-   * @param cloudlet Cloudlet to which this entry belongs.
-   * @param time Timestamp of the entry.
-   * @param v Vertex.
-   * @param dest Destination vertex.
-   * @param quantity Quantity of events sent to the destination vertex.
-   * @return History appended with the entry.
-   */
-  def logSent(cloudlet: String, time: Double, v: Vertex, dest: Vertex, quantity: Int) =
-    new History[Entry](history :+ Sent(cloudlet, time, v, dest, quantity))
 
   /**
    * Merge the current history with the informed one.
    * @param other The history to be merged with.
    * @return a new history containing entries from both histories.
    */
-  def merge(other: History[Entry]) =
-    new History((this.history ++ other.history).sorted.toList)
+  def merge(other: History[SimEvent]) =
+    new History((this.buffer ++ other.buffer).sorted.toList)
 
-  /**
-    * Add a new entry to the history. It is used by the LatencyMetric calculation only.
-    * @param entry Entry to be added.
-    * @return A History with the new entry added in the right place.
-    */
-  private[history] def add(entry: T): History[T] =
-    new History[T]((this.history :+ entry).sorted[Entry])
-
-  /**
-    * Remove entries from the History. It is used by the LatencyMetric calculation only.
-    * @param entries entries to be removed.
-    * @return A new history without the informed entries.
-    */
-  private[history] def remove(entries: T*): History[T] =
-    new History(history.filterNot(entries.contains(_)))
 
 
   // -------------- Methods from the Seq interface
-  override def length: Int = history.length
-  override def apply(idx: Int): T = history.apply(idx)
-  override def iterator: Iterator[T] = history.iterator
+  override def length: Int = buffer.length
+  override def apply(idx: Int): T = buffer.apply(idx)
+  override def iterator: Iterator[T] = buffer.iterator
 
 }

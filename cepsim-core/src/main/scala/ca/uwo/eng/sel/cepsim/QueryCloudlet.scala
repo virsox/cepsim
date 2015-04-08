@@ -1,7 +1,6 @@
 package ca.uwo.eng.sel.cepsim
 
 import ca.uwo.eng.sel.cepsim.history._
-import ca.uwo.eng.sel.cepsim.history.History.Entry
 import ca.uwo.eng.sel.cepsim.metric._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._

@@ -1,21 +1,13 @@
 package ca.uwo.eng.sel.cepsim.history
 
-import ca.uwo.eng.sel.cepsim.history.History.{Received, Processed, Sent}
-import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
+import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
-import org.scalatest.enablers.Sequencing
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.words.ArrayWrapper
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalautils.Equality
 
-import scala.collection.GenTraversable
 
-/**
- * Created by virso on 2014-08-01.
- */
 @RunWith(classOf[JUnitRunner])
 class HistoryTest extends FlatSpec
   with Matchers
@@ -29,73 +21,40 @@ class HistoryTest extends FlatSpec
     doReturn("f1").when(f1).id
     doReturn("c1").when(c1).id    
 
-    var history = History()
-    history = history.logProcessed("c1", 0.0,  p1, 500)
-    history = history.logProcessed("c1", 10.0, f1, 100)
-    history = history.logProcessed("c1", 30.0, c1, 100)
+    val history = History()
+    val e1 = Generated(p1,  0.0, 10.0, 500)
+    val e2 = Produced (p1, 10.0, 20.0, 100)
+    val e3 = Produced (f1, 20.0, 30.0,  50, Map(p1 -> 50.0))
+    val e4 = Produced (f1, 30.0, 40.0,  50, Map(p1 -> 50.0))
+    val e5 = Consumed (c1, 40.0, 50.0, 100, Map(f1 -> 100.0))
+
+    history.log(e1)
+    history.log(e2)
+    history.log(e3)
+    history.log(e4)
+    history.log(e5)
 
   }
   
   "A History" should "log all events sent to it" in new Fixture {
 
-    history = history.logSent("c2", 50.0, p1, f1, 500)
-    history = history.logReceived("c2", 51.0, f1, p1, 500)
-    history = history.logProcessed("c2", 55.0, f1, 500)
-
     history.from(p1) should have size (2)
-    history.from(p1) should be (List(Processed("c1", 0.0, p1, 500), Sent("c2", 50.0, p1, f1, 500)))
+    history.from(p1) should contain theSameElementsInOrderAs (List(e1, e2))
 
-    history.from(f1) should have size (3)
-    history.from(f1) should be (List(Processed("c1", 10.0, f1, 100), Received("c2", 51.0, f1, p1, 500),
-                                     Processed("c2", 55.0, f1, 500)))
+    history.from(f1) should have size (2)
+    history.from(f1) should contain theSameElementsInOrderAs (List(e3, e4))
 
     history.from(c1) should have size (1)
-    history.from(c1) should be (List(Processed("c1", 30.0, c1, 100)))
-  }
-
-
-  it should "find processing entries only" in new Fixture {
-    history = history.logSent("c2", 50.0, p1, f1, 500)
-    history = history.logSent("c3", 60.0, p1, f1, 500)
-    history = history.logReceived("c3", 62.0, p1, f1, 500)
-
-    history.processedEntriesFrom(p1) should have size (1)
-    history.processedEntriesFrom(p1) should be (List(Processed("c1", 0.0, p1, 500)))
+    history.from(c1) should contain theSameElementsInOrderAs (List(e5))
   }
 
   it should "find the correct entry when using filters" in new Fixture {
-    history = history.logProcessed("c1", 31.0, f1, 100)
-    history = history.logProcessed("c1", 40.0, c1, 10)
-    
-    history.from(c1, 15.0) should be (Some(Processed("c1", 30.0, c1, 100)))
-    history.from(c1, 40.0) should be (Some(Processed("c1", 40.0, c1, 10 )))
-    history.from(c1, 50.0) should be (None)
-  }
-  
-  it should "find the last entry" in new Fixture {
-    history = history.logProcessed("c1", 31.0, c1, 100)
-    history = history.logProcessed("c1", 35.0, f1, 100)
-    
-    history.lastFrom(c1) should be (Some(Processed("c1", 31.0, c1, 100)))
-    history.lastFrom(p1) should be (Some(Processed("c1", 0.0,  p1, 500)))
-  }
-  
-  it should "find the right successor" in new Fixture {    
-  	val successor = history.successor(Processed("c1", 10.0, f1, 100))
-	  successor should be (Some(Processed("c1", 30.0, c1, 100)))
-  }  
-  
-  it should "find the right successor when there are many cloudlets in the history" in new Fixture {
-    history = history.logProcessed("c1", 31.0, p1, 500)
-    history = history.logProcessed("c2", 32.0, p1, 100)
-    history = history.logProcessed("c1", 35.0, f1, 100)
-    
-	  val successor = history.successor(Processed("c1", 31.0, p1, 500))
 
-	  successor should be (Some(Processed("c1", 35.0, f1, 100)))
-    history.successor(Processed("c1", 35.0, f1, 100)) should be (None)
+    history.from(f1, 20.0) should contain theSameElementsInOrderAs (List(e3, e4))
+    history.from(c1, 30.0) should contain theSameElementsInOrderAs (List(e4))
+    history.from(c1, 50.0) should have size (0)
   }
-    
+
   
   it should "merge with other histories" in new Fixture {
     
@@ -104,38 +63,27 @@ class HistoryTest extends FlatSpec
     val c2 = mock[EventConsumer]
     
     var history2 = History()
-    history2 = history2.logSent("c2", 5.0,  p2, f2, 50)
-    history2 = history2.logProcessed("c2", 10.0, f2, 10)
-    history2 = history2.logProcessed("c2", 20.0, c2, 10)
-    
-    val result = history.merge(history2)
+
+    val e6 = Generated(p2,  5.0, 15.0, 500)
+    val e7 = Produced (p2, 25.0, 27.0, 500)
+    val e8 = Produced (f2, 29.0, 35.0, 500, Map(p2 -> 500.0))
+    val e9 = Consumed (c2, 45.0, 50.0, 500, Map(f2 -> 500.0))
+
+    history2.log(e6)
+    history2.log(e7)
+    history2.log(e8)
+    history2.log(e9)
+
+    history.merge(history2)
     
     // check history elements
-    result should have size (6)
-    result should be (List(
-      Processed("c1", 0.0,  p1, 500),
-      Sent     ("c2", 5.0,  p2, f2, 50),
-      Processed("c1", 10.0, f1, 100),
-      Processed("c2", 10.0, f2, 10),
-      Processed("c2", 20.0, c2, 10),
-      Processed("c1", 30.0, c1, 100)
-    ))
-    
-    val opposite = history2.merge(history)   
-    assert(result === opposite)
-    
-  }
-
-
-  it should "correctly remove entries" in new Fixture {
-    val e1 = Processed("c1", 0.0,  p1, 500)
-    val e3 = Processed("c1", 30.0, c1, 100)
-
-    history = history.remove(e1, e3)
-
-    history should have size (1)
-    history should be (List(Processed("c1", 10.0, f1, 100)))
+    history should have size (8)
+    history should contain theSameElementsInOrderAs (List(e1, e6, e2, e3, e7, e8, e4, e5, e9))
 
   }
+
   
 }
+
+
+

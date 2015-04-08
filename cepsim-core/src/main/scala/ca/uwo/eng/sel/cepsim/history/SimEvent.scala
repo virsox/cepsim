@@ -7,7 +7,7 @@ import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Vertex, Window
   * execution history and as input to metrics calculation. A simulation event is different from a CEP event,
   * as it is an internal class used to represent what happened during a simulation.
   */
-trait SimEvent {
+trait SimEvent extends Ordered[SimEvent] {
 
   /** Vertex that originated the event. */
   def v: Vertex
@@ -23,6 +23,16 @@ trait SimEvent {
 
   /** Timestamp of the event. By default, the end timestamp is considered as the simulation event timestamp. */
   def at: Double = to
+
+
+  def compare(that: SimEvent): Int = {
+    var comp = this.from.compare(that.from)
+    if (comp == 0) comp = this.to.compare(that.to)
+    if (comp == 0) comp = this.v.compare(that.v)
+
+    comp
+  }
+
 }
 
 /**
