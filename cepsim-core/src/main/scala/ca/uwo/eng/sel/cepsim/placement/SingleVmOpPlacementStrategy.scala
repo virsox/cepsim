@@ -1,6 +1,5 @@
 package ca.uwo.eng.sel.cepsim.placement
 
-import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query.Query
 
 /***

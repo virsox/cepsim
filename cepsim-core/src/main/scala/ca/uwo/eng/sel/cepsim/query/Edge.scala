@@ -1,13 +1,11 @@
 package ca.uwo.eng.sel.cepsim.query
 
-/**
- * Created by virso on 2014-07-23.
- */
-
+/** Edge companion object. */
 object Edge {
   def apply(from: OutputVertex, to: InputVertex, selectivity: Double = 1.0) =
     new Edge(from, to, selectivity)
 
+  /** Ordering of edge objects. */
   implicit object EdgeVertexOrdering extends Ordering[Edge] {
     override def compare(x: Edge, y: Edge): Int = {
       val ret = x.from.compare(y.from)
@@ -15,9 +13,14 @@ object Edge {
       else ret
     }
   }
-
 }
 
+/**
+  * Directed edge connecting two vertices in the query graph.
+  * @param from Origin vertex.
+  * @param to Destination vertex.
+  * @param selectivity Selectivity of the edge.
+  */
 class Edge(val from: OutputVertex, val to: InputVertex, val selectivity: Double = 1.0) {
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[Edge]

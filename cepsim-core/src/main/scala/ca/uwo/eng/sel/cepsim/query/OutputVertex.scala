@@ -2,32 +2,48 @@ package ca.uwo.eng.sel.cepsim.query
 
 import scala.collection.immutable.TreeMap
 
-/**
- * Created by virso on 2014-07-24.
- */
-trait OutputVertex extends Vertex { //this: Vertex =>
+/** Trait that represent vertices that have outgoing edges. */
+trait OutputVertex extends Vertex {
 
+  /** Map representing the vertex output queues. */
   var outputQueues: Map[Vertex, Double] = TreeMap[Vertex, Double]()(Vertex.VertexIdOrdering)
-  var selectivities: Map[Vertex, Double] = Map.empty
-  var accumulators: Map[Vertex, Double] = Map.empty
 
+  /** Map with the selectivity associated with each successor vertex. */
+  var selectivities: Map[Vertex, Double] = Map.empty
+
+  /** Map with the limit size of each output queue. */
   var limits: Map[Vertex, Double] = Map.empty
 
-
+  /**
+    * Set containing all successors of this vertex.
+    * @return Set containing all successors of this vertex.
+    */
   override def successors: Set[InputVertex] = queries.flatMap(_.successors(this))
 
-
+  /**
+   * Initializes the output queues with a set of successors (assumes selectivity of 1.0 for all successors).
+   * @param successors Set containing the vertex successors.
+   */
   def initOutputQueues(successors: Set[Vertex]) = {
     successors.foreach(addOutputQueue(_))
   }
 
+  /**
+    * Adds a new output queue for a new successor.
+    * @param v New successor vertex.
+    * @param selectivity Edge selectivity.
+    */
   def addOutputQueue(v: Vertex, selectivity: Double = 1.0) = {
     outputQueues = outputQueues + (v -> 0)
     selectivities = selectivities + (v -> selectivity)
-    accumulators = accumulators + (v -> 0)
     limits = limits + (v -> Int.MaxValue)
   }
 
+  /**
+    * Sets the limit of a specific output queue.
+    * @param v Successor vertex that identifies the output queue.
+    * @param limit The size limit.
+    */
   def setLimit(v: Vertex, limit: Double) = {
     limits = limits updated (v, limit)
   }
@@ -42,38 +58,34 @@ trait OutputVertex extends Vertex { //this: Vertex =>
                       foldLeft(Double.MaxValue)((acc, elem) => acc.min(elem._2))
   }
 
-
+  /**
+    * Remove events from the output queues.
+    * @param pairs Pairs of vertex (that identifies an output queue) and the number of events to be dequeued.
+    */
   def dequeueFromOutput(pairs: (Vertex, Double)*) =
     pairs.foreach {(pair) =>
       outputQueues = outputQueues updated(pair._1, outputQueues(pair._1) - pair._2)
     }
 
-
-  def sendToAllOutputs(x: Double): Map[Vertex, Double] = {
-    sendToOutputs(selectivities.mapValues((elem) => x))
+  /**
+    * Send a number of events to all output queues.
+    * @param quantity Number of events to be sent.
+    * @return Map from successors to the number of events inserted into its corresponding queue.
+    */
+  def sendToAllOutputs(quantity: Double): Map[Vertex, Double] = {
+    sendToOutputs(selectivities.mapValues((elem) => quantity))
   }
 
+  /**
+    * Send events to the output queues.
+    * @param outputs Map from successors to the number of events to be sent.
+    * @return Map from successors to the number of events inserted into its corresponding queue.
+    */
   def sendToOutputs(outputs: Map[Vertex, Double]): Map[Vertex, Double] = {
-//    var withSelectivity = outputs.map{(elem) =>
-//      (elem._1, Math.floor(elem._2 * selectivities(elem._1)).toInt)
-//    }
+
     val withSelectivity = outputs.map{(elem) =>
       (elem._1, elem._2 * selectivities(elem._1))
     }
-
-//    val decimal = outputs.map{(elem) =>
-//      (elem._1, elem._2 * selectivities(elem._1) - withSelectivity(elem._1))
-//    }
-//
-//    decimal.foreach{(elem) =>
-//      if (elem._2 > 0.01) {
-//        accumulators = accumulators updated (elem._1, accumulators(elem._1) + elem._2)
-//        if (accumulators(elem._1) >= 1) {
-//          accumulators = accumulators updated (elem._1, accumulators(elem._1) - 1)
-//          withSelectivity = withSelectivity updated (elem._1, withSelectivity(elem._1) + 1)
-//        }
-//      }
-//    }
 
     outputQueues = outputQueues.map{(elem) =>
       (elem._1, elem._2 + withSelectivity.getOrElse(elem._1, 0.0))

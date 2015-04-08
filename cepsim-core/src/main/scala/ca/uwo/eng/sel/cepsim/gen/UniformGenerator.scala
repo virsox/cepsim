@@ -1,7 +1,5 @@
 package ca.uwo.eng.sel.cepsim.gen
 
-import scala.concurrent.duration._
-
 /** UniformGenerator companion object. */
 object UniformGenerator {
   def apply(rate: Double) = new UniformGenerator(rate)

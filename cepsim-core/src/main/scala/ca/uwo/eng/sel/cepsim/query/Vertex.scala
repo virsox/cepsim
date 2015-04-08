@@ -12,6 +12,20 @@ trait Vertex {
   def id: String
   def ipe: Double
 
+  // the next two methods are overriden in the InputVertex / OutputVertex traits.
+
+  /**
+   * Gets the set of successors of a vertex.
+   * @return set of successors of a vertex.
+   */
+  def successors: Set[InputVertex] = Set.empty[InputVertex]
+
+  /**
+   * Gets the set of predecessors of a vertex.
+   * @return set of predecessors of a vertex.
+   */
+  def predecessors: Set[OutputVertex] = Set.empty[OutputVertex]
+
   /**
     * Initializes the vertex.
     * @param startTime Initialization time (in milliseconds since the simulation start).
@@ -20,10 +34,11 @@ trait Vertex {
   def init(startTime: Double = 0.0, simInterval: Double = 10.0): Unit = { }
 
   /**
-    * Executes the vertex.
+    * Executes the vertex logic.
     * @param instructions Number of allocated instructions.
-    * @param startTime Time at which the method run has been invoked (in milliseconds since the simulation start).
-    * @return Number of processed events.
+    * @param startTime Time at which the simulation of this vertex has started (in ms since the simulation start).
+    * @param endTime Time at which the simulation of this vertex will end (in ms since the simulation start).
+    * @return A sequence of simulation events happened during the vertex simulation.
     */
   def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent]
 
@@ -32,9 +47,9 @@ trait Vertex {
 
   def compare(that: Vertex) = id.compare(that.id)
 
-  // must be overriden
-  def successors: Set[InputVertex] = Set.empty[InputVertex]
-  def predecessors: Set[OutputVertex] = Set.empty[OutputVertex]
+
+
+
 
 
 

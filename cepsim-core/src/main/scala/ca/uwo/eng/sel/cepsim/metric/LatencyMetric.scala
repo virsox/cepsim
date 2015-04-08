@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.query.{InputVertex, EventProducer, Vertex}
+import ca.uwo.eng.sel.cepsim.query.Vertex
 
 /** *
   * Latency metric class.

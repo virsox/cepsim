@@ -2,17 +2,29 @@ package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.history.{Produced, SimEvent}
 
-
+/** Operator companion object. */
 object Operator {
   def apply(id: String, ipe: Double, queueMaxSize: Int = 0) =
     new Operator(id, ipe, queueMaxSize)//, selectivity: Double = 1.0) =
 }
 
+/**
+ * Vertex that represents an operator. An operator is an InputVertex and an OuputVertex at the same time.
+ * @param id Vertex identifier.
+ * @param ipe Number of instructions needed to process one event.
+ * @param queueMaxSize Maximum size of the input queues.
+ */
 class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends Vertex
   with InputVertex
   with OutputVertex {
 
-  def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Double= Double.MaxValue): Map[Vertex, Double] = {
+  /** *
+    * Retrieve events from the input queues.
+    * @param instructions Number of instructions that can be used.
+    * @param maximumNumberOfEvents Maximum number of events that can be sent to the output queues.
+    * @return Map from the predecessors to the number of events retrieved.
+    */
+  def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Double = Double.MaxValue): Map[Vertex, Double] = {
 
     // total number of input events
     val total = totalInputEvents
@@ -33,6 +45,13 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
     toProcess
   }
 
+  /**
+    * Executes the operator logic.
+    * @param instructions Number of allocated instructions.
+    * @param startTime Time at which the simulation of this vertex has started (in ms since the simulation start).
+    * @param endTime Time at which the simulation of this vertex will end (in ms since the simulation start).
+    * @return A list with a single Produced simulation event, or an empty list if no events has been produced.
+    */
   override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
 
     // number of processed events

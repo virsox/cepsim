@@ -1,7 +1,5 @@
 package ca.uwo.eng.sel.cepsim.gen
 
-import scala.concurrent.duration._
-
 /**
   * Event generators.
   */
