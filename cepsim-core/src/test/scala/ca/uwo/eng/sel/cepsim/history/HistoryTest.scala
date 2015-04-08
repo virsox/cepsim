@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.history
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
+import org.scalatest.enablers.Sequencing
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -35,24 +36,29 @@ class HistoryTest extends FlatSpec
     history.log(e5)
 
   }
-  
+
+
+
   "A History" should "log all events sent to it" in new Fixture {
 
-    history.from(p1) should have size (2)
-    history.from(p1) should contain theSameElementsInOrderAs (List(e1, e2))
+    var result = history.from(p1).toList
+    result should have size (2)
+    result should contain theSameElementsInOrderAs (List(e1, e2))
 
-    history.from(f1) should have size (2)
-    history.from(f1) should contain theSameElementsInOrderAs (List(e3, e4))
+    result = history.from(f1).toList
+    result should have size (2)
+    result should contain theSameElementsInOrderAs (List(e3, e4))
 
-    history.from(c1) should have size (1)
-    history.from(c1) should contain theSameElementsInOrderAs (List(e5))
+    result = history.from(c1).toList
+    result should have size (1)
+    result should contain theSameElementsInOrderAs (List(e5))
   }
 
   it should "find the correct entry when using filters" in new Fixture {
 
-    history.from(f1, 20.0) should contain theSameElementsInOrderAs (List(e3, e4))
-    history.from(c1, 30.0) should contain theSameElementsInOrderAs (List(e4))
-    history.from(c1, 50.0) should have size (0)
+    history.from(f1, 20.0).toList should contain theSameElementsInOrderAs (List(e3, e4))
+    history.from(c1, 30.0).toList should contain theSameElementsInOrderAs (List(e5))
+    history.from(c1, 50.0).toList should have size (0)
   }
 
   
@@ -77,8 +83,9 @@ class HistoryTest extends FlatSpec
     history.merge(history2)
     
     // check history elements
-    history should have size (8)
-    history should contain theSameElementsInOrderAs (List(e1, e6, e2, e3, e7, e8, e4, e5, e9))
+    val result = history.toList
+    result should have size (9)
+    result should contain theSameElementsInOrderAs (List(e1, e6, e2, e3, e7, e8, e4, e5, e9))
 
   }
 

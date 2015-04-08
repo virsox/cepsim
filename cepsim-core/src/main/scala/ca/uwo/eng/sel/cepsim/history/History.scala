@@ -4,7 +4,7 @@ import ca.uwo.eng.sel.cepsim.query.Vertex
 
 import scala.collection.mutable.ListBuffer
 
-/** Companion object. */
+/** History companion object. */
 object History {
 
   /**
@@ -14,16 +14,16 @@ object History {
   def apply() = new History[SimEvent](List.empty[SimEvent])
 
   /**
-    * Create a new History object from a sequence of entries.
-    * @param entries Entries to be included in the History.
-    * @tparam T Type of entries.
+    * Create a new History object from a sequence of simulation events.
+    * @param entries Simulation events to be included in the History.
+    * @tparam T Type of simulation events.
     * @return History object from the sequence.
     */
   def apply[T <: SimEvent](entries: Seq[T]) = new History[T](entries.sorted[SimEvent].toVector)
 
 
   /**
-    * Implicit conversion from a sequence to a History.
+    * Implicit conversion from a Scala sequence to a History.
     * @param v Sequence being converted.
     * @tparam T Type of sequence elements.
     * @return History created from the sequence.
@@ -35,15 +35,15 @@ object History {
 
 /**
   * Represent execution history of one or more cloudlets. Entries should be logged in order,
-  * and a vertex belong to a single cloudlet.
+  * and a vertex can only belong to a single cloudlet.
   * @param es Initial entries that are part of the History.
   * @tparam T Type of history entries.
   */
 class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
 
 
-  /** Contain the history entries. */
-  private val buffer = ListBuffer.empty[T]
+  /** Contain the history simulation events. */
+  private var buffer = ListBuffer.empty[T]
 
   // initialize buffer
   buffer ++= es
@@ -56,34 +56,47 @@ class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
 
 
   /**
-   * Obtain the first entry from a specific vertex which occurs at (or after) the specified time.
+   * Obtain simulation events from a specific vertex which occurs at (or after) the specified time.
    * @param v Vertex.
-   * @param time Lower bound for the time when the entry occurred.
-   * @return (Optional) Entry that satisfy the specified filters.
+   * @param time Lower bound for the time when the events have occurred.
+   * @return History containing all events that satisfy the specified filters.
    */
   def from(v: Vertex, time: Double): History[T] = from(v).filter(_.from >= time)
 
   /**
-    * Obtain entries from a specific vertex.
-    * @param v Vertex of the entries.
-    * @return History with entries from a specific vertex.
+    * Obtain all simulation events from a specific vertex.
+    * @param v Vertex.
+    * @return History containing all events from a specific vertex.
     */
   def from(v: Vertex): History[T] = buffer.filter(_.v == v)
 
+  /**
+    * Log a sequence of simulation events.
+    * @param simEvents Simulation events to be logged.
+    * @return Reference to the history itself.
+    */
+  def log(simEvents: Seq[T]): History[T] = {
+    simEvents.foreach(log(_))
+    this
+  }
 
-
-  def log(simEvent: T) = buffer += simEvent
-    //new History[Entry](history :+ Processed(cloudlet, time, v, quantity))
-
-
+  /**
+   * Log a simulation event.
+   * @param simEvent Simulation event to be logged.
+   * @return Reference to the history itself.
+   */
+  def log(simEvent: T): History[T] = {
+    buffer += simEvent
+    this
+  }
 
   /**
    * Merge the current history with the informed one.
    * @param other The history to be merged with.
    * @return a new history containing entries from both histories.
    */
-  def merge(other: History[SimEvent]) =
-    new History((this.buffer ++ other.buffer).sorted.toList)
+  def merge(other: History[T]) =
+    this.buffer = (this.buffer ++ other.buffer).sorted[SimEvent]
 
 
 

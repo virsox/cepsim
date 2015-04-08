@@ -2,15 +2,13 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.history.History.Processed
+import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced, Generated}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
-import ca.uwo.eng.sel.cepsim.sched.{DefaultOpScheduleStrategy}
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.concurrent.duration._
 
 /**
  * Created by virso on 2014-08-13.
@@ -54,10 +52,13 @@ class BoundedQueryCloudletTest extends FlatSpec
     cons1.outputQueue      should be(31)
 
     // check if history is being correctly logged
-    h should have size (4)
-    h.toList should contain theSameElementsInOrderAs (
-      List(Processed("c1", 10.0, prod1, 1000), Processed("c1", 12.5, f1, 1000),
-      Processed("c1", 15.0, f2, 312.5), Processed("c1", 17.5, cons1, 31)))
+    h should have size (5)
+    h.toList should contain theSameElementsInOrderAs (List(
+      Generated(prod1,  0.0, 10.0, 1000.0),
+      Produced (prod1, 10.0, 12.5, 1000.0),
+      Produced (f1,    12.5, 15.0, 1000.0, Map(prod1 -> 1000.00)),
+      Produced (f2,    15.0, 17.5,  312.5, Map(f1    ->  312.50)),
+      Consumed (cons1, 17.5, 20.0,   31.0, Map(f2    ->   31.25))))
 
     // --------------------------------------------------------------------------
     // SECOND ITERATION

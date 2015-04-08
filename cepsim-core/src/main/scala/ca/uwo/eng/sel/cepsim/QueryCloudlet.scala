@@ -7,6 +7,7 @@ import ca.uwo.eng.sel.cepsim.query._
 import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
 
 import scala.annotation.varargs
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 
 
@@ -58,14 +59,15 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    * @param events Number of events that has been received.
    * @return History containing the received event logged.
    */
-  def enqueue(receivedTime: Double, v: InputVertex, orig: OutputVertex, events: Int): History[Entry] = {
+  def enqueue(receivedTime: Double, v: InputVertex, orig: OutputVertex, events: Int): History[SimEvent] = {
     if (!placement.vertices.contains(v))
       throw new IllegalStateException("This cloudlet does not contain the target vertex")
 
     var history = History()
     v.enqueueIntoInput(orig, events)
 
-    history = history.logReceived(id, receivedTime, v, orig, events)
+    // TODO do we need a received type of event?
+    //history = history.logReceived(id, receivedTime, v, orig, events)
     history
   }
 
@@ -76,9 +78,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    * @param capacity The total processor capacity (in MIPS) that is allocated to this cloudlet.
    * @return History containing all logged events.
    */
-  def run(instructions: Double, startTime: Double, capacity: Double): History[Entry] = {
-    var history = History()
-    var simEvents = List.empty[SimEvent]
+  def run(instructions: Double, startTime: Double, capacity: Double): History[SimEvent] = {
+    val history = History()
+    var simEvents = ListBuffer.empty[SimEvent]
 
     if (instructions > 0) {
 
@@ -91,6 +93,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
       (1 to iterations).foreach((i) => {
 
+        val iterationSimEvents = ListBuffer.empty[SimEvent]
+
         // last iteration uses all remaining instructions
         val availableInstructions = if (i == iterations) instructions - ((i - 1) * instructionsPerIteration)
                                     else instructionsPerIteration
@@ -102,8 +106,9 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         placement.producers foreach ((prod) => {
           //val event = prod.generate(time, time + totalMs(availableInstructions))
           val event = prod.generate(lastExecution, time)
-          calculators.foreach(_.update(event))
-          simEvents = simEvents :+ event
+          //calculators.foreach(_.update(event))
+
+          iterationSimEvents += event
         })
         lastExecution = time
 
@@ -116,7 +121,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           val startTime = time
           val endTime = startTime + totalMs(elem._2)
 
-          val iterationSimEvents = v.run(elem._2, startTime, endTime)
+          iterationSimEvents ++= v.run(elem._2, startTime, endTime)
 
           if (v.isInstanceOf[InputVertex]) {
             val iv = v.asInstanceOf[InputVertex]
@@ -127,14 +132,16 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
             }
           }
 
-          var processedEvents = 0.0
-          if (iterationSimEvents.length > 0) {
-            val lastSimEvent = iterationSimEvents(iterationSimEvents.length - 1)
-            processedEvents = lastSimEvent.quantity
-          }
+//          var processedEvents = 0.0
+//          if (iterationSimEvents.length > 0) {
+//            val lastSimEvent = iterationSimEvents(iterationSimEvents.length - 1)
+//            processedEvents = lastSimEvent.quantity
+//          }
 
-          if (processedEvents > 0)
-            history = history.logProcessed(id, startTime, v, processedEvents)
+//          if (processedEvents > 0)
+//            history = history.logProcessed(id, startTime, v, processedEvents)
+          //history.log(iterationSimEvents)
+
 
           // check if there are events to be sent to remote vertices
           if (v.isInstanceOf[OutputVertex]) {
@@ -154,7 +161,8 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
               val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
               if (sentMessages > 0) {
-                history = history.logSent(id, startTime, v, dest, sentMessages)
+                // TODO think about how to model remote communication
+//                history = history.logSent(id, startTime, v, dest, sentMessages)
                 ov.dequeueFromOutput((dest, sentMessages))
               }
             }
@@ -168,12 +176,13 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
           }
 
           time = endTime
-
-          iterationSimEvents.foreach((simEvent) =>
-            calculators.foreach(_.update(simEvent))
-          )
-          simEvents = simEvents ++ iterationSimEvents
         }
+
+        iterationSimEvents.foreach((simEvent) =>
+          calculators.foreach(_.update(simEvent))
+        )
+        history.log(iterationSimEvents)
+        simEvents = simEvents ++ iterationSimEvents
       })
    }
 

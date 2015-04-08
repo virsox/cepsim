@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.example;
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
+import ca.uwo.eng.sel.cepsim.history.SimEvent;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
@@ -115,11 +116,11 @@ public class CepSimExperiment1 {
 
 
             // get all queries and history from all cloudlets
-            History<History.Entry> fullHistory = new History<>();
+            History<SimEvent> fullHistory = new History<>();
             Set<Query> queries = new HashSet<>();
 			for (Cloudlet cl : newList) {
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-                fullHistory = fullHistory.merge(cepCl.getExecutionHistory());
+                fullHistory.merge(cepCl.getExecutionHistory());
                 queries.addAll(cepCl.getQueries());
 			}
 

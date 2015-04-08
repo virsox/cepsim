@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
+import ca.uwo.eng.sel.cepsim.history.SimEvent;
 import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
 import ca.uwo.eng.sel.cepsim.metric.LatencyThroughputCalculator;
 import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
@@ -34,7 +35,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
 
     private QueryCloudlet cloudlet;
-    private History<History.Entry> history;
+    private History<SimEvent> history;
     private Queue<CepNetworkEvent> networkEvents;
 
     private double  executionTime;
@@ -107,8 +108,7 @@ public class CepQueryCloudlet extends Cloudlet {
 	
 	public void updateQuery(long instructions, double currentTime, double previousTime, double capacity) {
 
-        // TODO CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
-        // This difference has been generating all sorts of bugs! Careful!
+        // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
 
         long instructionsToExecute = instructions;
         double previousTimeInMs = previousTime * 1000;
@@ -128,7 +128,7 @@ public class CepQueryCloudlet extends Cloudlet {
                     netEvent.getDestTimestamp() * 1000, (InputVertex) netEvent.getDest(),
                     (OutputVertex) netEvent.getOrig(), netEvent.getQuantity());
 
-            history = history.merge(receivedHistory);
+            history.merge(receivedHistory);
         }
 
         // this means the cepCloudlet has finished between previousTime and the currentTime
@@ -140,15 +140,17 @@ public class CepQueryCloudlet extends Cloudlet {
         }
 
         // need to transform from seconds to milliseconds
-        History<History.Entry> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
-        for (History.Entry entry : asJavaList(execHistory)) {
-            if (entry instanceof History.Sent) {
-                History.Sent sentEntry = (History.Sent) entry;
-                this.networkInterface.sendMessage(sentEntry.time() / 1000, sentEntry.v(), sentEntry.dest(), sentEntry.quantity());
-            }
-        }
+        History<SimEvent> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
 
-        history = history.merge(execHistory);
+        // TODO rethink networked queries
+//        for (History.Entry entry : asJavaList(execHistory)) {
+//            if (entry instanceof History.Sent) {
+//                History.Sent sentEntry = (History.Sent) entry;
+//                this.networkInterface.sendMessage(sentEntry.time() / 1000, sentEntry.v(), sentEntry.dest(), sentEntry.quantity());
+//            }
+//        }
+
+        history.merge(execHistory);
 	}
 
     public Set<Vertex> getVertices() {

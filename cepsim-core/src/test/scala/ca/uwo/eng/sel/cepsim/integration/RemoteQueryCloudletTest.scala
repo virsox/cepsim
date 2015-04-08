@@ -2,15 +2,13 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.history.History.{Processed, Sent}
+import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.concurrent.duration._
 
 
 /**
@@ -49,13 +47,15 @@ class RemoteQueryCloudletTest extends FlatSpec
     cons1.outputQueue should be(100)
 
     // check if history is being correctly logged
+    // TODO revisit this test after network refactoring
     h should have size (5)
     h.toList should be (List(
-      Processed("c1", 10.0, prod1, 1000),
-      Processed("c1", 11.0, f1, 1000),
-      Processed("c1", 15.0, f2, 1000),
-           Sent("c1", 15.0, f2, f3, 100),
-      Processed("c1", 19.0, cons1, 100)))
+      Generated(prod1,  0.0, 10.0, 1000),
+      Produced (prod1, 10.0, 11.0, 1000),
+      Produced (f1,    11.0, 15.0, 1000, Map(prod1 -> 1000)),
+      Produced (f2,    15.0, 19.0, 1000, Map(f1    -> 1000)),
+      Consumed (cons1, 19.0, 20.0,  100, Map(f2    ->  100))
+    ))
   }
 
 }

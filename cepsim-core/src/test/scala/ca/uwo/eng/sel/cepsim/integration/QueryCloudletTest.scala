@@ -2,7 +2,6 @@ package ca.uwo.eng.sel.cepsim.integration
 
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced, Generated}
-import ca.uwo.eng.sel.cepsim.history.History.Processed
 import ca.uwo.eng.sel.cepsim._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
@@ -55,9 +54,14 @@ class QueryCloudletTest extends FlatSpec
     cons1.outputQueue should be(100)
 
     // check if history is being correctly logged
-    h should have size (4)
-    h.toList should contain theSameElementsInOrderAs (List(Processed("c1", 10.0, prod1, 1000), Processed("c1", 11.0, f1, 1000),
-      Processed("c1", 15.0, f2, 1000), Processed("c1", 19.0, cons1, 100)))
+    h should have size (5)
+    h.toList should contain theSameElementsInOrderAs (List(
+      Generated(prod1,  0.0, 10.0, 1000),
+      Produced (prod1, 10.0, 11.0, 1000),
+      Produced (f1,    11.0, 15.0, 1000, Map(prod1 -> 1000)),
+      Produced (f2,    15.0, 19.0, 1000, Map(f1    -> 1000)),
+      Consumed (cons1, 19.0, 20.0,  100, Map(f2    ->  100))
+    ))
   }
 
   it should "accumulate the number of produced events" in new Fixture {
@@ -113,16 +117,18 @@ class QueryCloudletTest extends FlatSpec
     f4.outputQueues(cons2) should be(0)
     cons2.outputQueue should be(50)
 
-    h should have size (8)
+    h should have size (10)
     h.toList should contain theSameElementsInOrderAs (List(
-      Processed("c1", 10.0, prod1, 500),
-      Processed("c1", 10.5, prod2, 500),
-      Processed("c1", 11.0, f1, 500),
-      Processed("c1", 13.0, f3, 500),
-      Processed("c1", 15.0, f2, 500),
-      Processed("c1", 17.0, f4, 500),
-      Processed("c1", 19.0, cons1, 50),
-      Processed("c1", 19.5, cons2, 50)
+      Generated(prod2,  0.0, 10.0, 1000),
+      Generated(prod1,  0.0, 10.0, 1000),
+      Produced (prod1, 10.0, 10.5,  500),
+      Produced (prod2, 10.5, 11.0,  500),
+      Produced (f1,    11.0, 13.0,  500, Map(prod1 -> 500)),
+      Produced (f3,    13.0, 15.0,  500, Map(prod2 -> 500)),
+      Produced (f2,    15.0, 17.0,  500, Map(f1    -> 500)),
+      Produced (f4,    17.0, 19.0,  500, Map(f3    -> 500)),
+      Consumed (cons1, 19.0, 19.5,   50, Map(f2    ->  50)),
+      Consumed (cons2, 19.5, 20.0,   50, Map(f4    ->  50))
     ))
   }
 
