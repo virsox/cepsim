@@ -9,11 +9,13 @@ trait Vertex {
   private[query] def addQuery(q: Query) = queries += q
   private[query] def removeQuery(q: Query) = queries -= q
 
+  /** Vertex unique identifier. */
   def id: String
+
+  /** Number of instructions needed to process one event. */
   def ipe: Double
 
   // the next two methods are overriden in the InputVertex / OutputVertex traits.
-
   /**
    * Gets the set of successors of a vertex.
    * @return set of successors of a vertex.
@@ -46,16 +48,12 @@ trait Vertex {
   override def toString: String = s"[id: $id]"
 
   def compare(that: Vertex) = id.compare(that.id)
-
-
-
-
-
-
-
 }
 
+/** Vertex companion object. */
 object Vertex {
+
+  /** Vertex ordering definition. */
   implicit object VertexIdOrdering extends Ordering[Vertex] {
     override def compare(x: Vertex, y: Vertex): Int = {
       x.id.compare(y.id)

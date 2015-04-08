@@ -7,6 +7,7 @@ import java.util.{Map => JavaMap}
 
 import scala.collection.JavaConversions
 
+/** WeightedAllocationStrategy companion object. */
 object WeightedAllocationStrategy {
   def apply() = new WeightedAllocationStrategy(Map.empty.withDefaultValue(1.0))
   def apply(weights: Map[Vertex, Double]) = new WeightedAllocationStrategy(weights)
@@ -16,11 +17,14 @@ object WeightedAllocationStrategy {
 
 
 /**
- * Created by virso on 15-02-04.
- */
+  * Allocation strategy that distributes the available instructions according to a weights map.
+  * @param weights Map from vertices to the weight assigned to each one.
+  */
 class WeightedAllocationStrategy(weights: Map[Vertex, Double]) extends AllocationStrategy {
   /**
-   * Calculate the number os instructions to be allocated for each operator.
+   * Calculate the number os instructions to be allocated for each operator. First, the instructions are
+   * equally divided among all queries from the placement. Then, these instructions are distributed
+   * according to the weights vector.
    *
    * @param instructions Number of instructions to be allocated.
    * @param placement Placement object encapsulating the vertices.
@@ -44,4 +48,5 @@ class WeightedAllocationStrategy(weights: Map[Vertex, Double]) extends Allocatio
     }
     instrPerOperator
   }
+
 }
