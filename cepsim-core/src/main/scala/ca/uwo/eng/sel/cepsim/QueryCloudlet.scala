@@ -71,6 +71,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     history
   }
 
+
   /**
    * Run the cloudlet for the specified number of instructions.
    * @param instructions Number of instructions that can be used in this simulation tick.
@@ -104,10 +105,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // in theory this enables more complex strategies that consider the number of
         // events to be consumed
         placement.producers foreach ((prod) => {
-          //val event = prod.generate(time, time + totalMs(availableInstructions))
           val event = prod.generate(lastExecution, time)
-          //calculators.foreach(_.update(event))
-
           iterationSimEvents += event
         })
         lastExecution = time
@@ -132,23 +130,12 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
             }
           }
 
-//          var processedEvents = 0.0
-//          if (iterationSimEvents.length > 0) {
-//            val lastSimEvent = iterationSimEvents(iterationSimEvents.length - 1)
-//            processedEvents = lastSimEvent.quantity
-//          }
-
-//          if (processedEvents > 0)
-//            history = history.logProcessed(id, startTime, v, processedEvents)
-          //history.log(iterationSimEvents)
-
-
           // check if there are events to be sent to remote vertices
           if (v.isInstanceOf[OutputVertex]) {
 
             val ov = v.asInstanceOf[OutputVertex]
 
-            val successors: Set[InputVertex] = ov.successors //queries.flatMap(_.successors(ov))
+            val successors: Set[InputVertex] = ov.successors
             val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
 
             val inPlacement = successors.intersect(placementInputVertices)

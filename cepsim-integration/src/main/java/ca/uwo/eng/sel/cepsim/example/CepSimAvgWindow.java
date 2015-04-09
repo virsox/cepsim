@@ -40,7 +40,10 @@ public class CepSimAvgWindow {
 	public static void main(String[] args) {
 		Log.printLine("Starting CepSimAvgWindow...");
 
+
 		try {
+			System.in.read();
+
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.

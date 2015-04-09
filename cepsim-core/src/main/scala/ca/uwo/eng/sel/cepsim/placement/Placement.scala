@@ -27,10 +27,10 @@ object Placement {
   * Represents a placement of query vertices into a virtual machine.
   * @param vertices Set of vertices from this placement.
   * @param vmId Id of the Virtual machine to which the vertices are assigned.
-  * @param iterationOrder Order on which vertices should be traversed. If not specified, vertices
+  * @param itOrder Order on which vertices should be traversed. If not specified, vertices
   *                       are traversed according to a topological sorting of the query graphs.
   */
-class Placement(val vertices: Set[Vertex], val vmId: Int, iterationOrder: Iterable[Vertex] = List.empty)
+class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vertex] = List.empty)
     extends Iterable[Vertex] {
 
   /** Map of queries to all vertices in this placement */
@@ -104,6 +104,39 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, iterationOrder: Iterab
     }
   }
 
+
+  private def buildOrder: Iterable[Vertex] = {
+
+    var index = 0
+
+    var iterationOrder = Vector.empty[Vertex]
+    var toProcess: Vector[Vertex] = Vector(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
+    var neighbours: mutable.Set[Vertex] = mutable.LinkedHashSet[Vertex]()
+
+    while (index < toProcess.length) {
+      val v = toProcess(index)
+      iterationOrder = iterationOrder :+ v
+
+      // processing neighbours
+      v.queries.foreach {(q) =>
+        q.successors(v).foreach { (successor) =>
+          if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
+        }
+      }
+
+      val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
+        (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
+      )
+      neighbours = neighbours -- toBeMoved
+      toProcess = toProcess ++ toBeMoved
+      index += 1
+    }
+    iterationOrder
+  }
+
+
+  val iterationOrder = if (!itOrder.isEmpty) itOrder else buildOrder
+
   /**
     * An iterator for this placement that traverse the vertices from the producers to consumers
     * in breadth-first manner.
@@ -112,35 +145,14 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, iterationOrder: Iterab
   override def iterator: Iterator[Vertex] = {
     class VertexIterator extends Iterator[Vertex] {
 
-      /** FIFO queue */
-      var index = 0
-      var toProcess: Vector[Vertex] = Vector(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
-      var neighbours: mutable.Set[Vertex] = mutable.LinkedHashSet[Vertex]()
+      val it = iterationOrder.iterator
 
-      def hasNext(): Boolean = index < toProcess.length
-      def next(): Vertex = {
-        val v = toProcess(index)
 
-        // processing neighbours
-        v.queries.foreach {(q) =>
-          q.successors(v).foreach { (successor) =>
-            if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
-          }
-        }
-
-        val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
-          (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
-        )
-        neighbours = neighbours -- toBeMoved
-        toProcess = toProcess ++ toBeMoved
-        index += 1
-
-        v
-      }
+      def hasNext(): Boolean = it.hasNext
+      def next(): Vertex = it.next
     }
 
-    if (iterationOrder.isEmpty) new VertexIterator
-    else iterationOrder.iterator
+    new VertexIterator
   }
 
 

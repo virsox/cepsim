@@ -93,11 +93,14 @@ class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
   /**
    * Merge the current history with the informed one.
    * @param other The history to be merged with.
-   * @return a new history containing entries from both histories.
    */
   def merge(other: History[T]) =
-    this.buffer = (this.buffer ++ other.buffer).sorted[SimEvent]
-
+    if (!other.buffer.isEmpty) {
+      if ((this.buffer.isEmpty) || (other.buffer.head.from >= this.buffer.last.from))
+        this.buffer ++= other.buffer
+      else
+        this.buffer = (this.buffer ++ other.buffer).sorted[SimEvent]
+    }
 
 
   // -------------- Methods from the Seq interface
