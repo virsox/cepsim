@@ -27,11 +27,23 @@ object DefaultOpScheduleStrategy {
   */
 class DefaultOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
+  var cachedResults: Map[(Double, Placement), Map[Vertex, Double]] = Map.empty
+
+
   override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] =  {
-    val instrPerOperator = allocStrategy.instructionsPerOperator(instructions, placement)
+
+    val instrPerOperator = cachedResults.get((instructions, placement)) match {
+      case Some(result) => result
+      case None         => {
+        val result = allocStrategy.instructionsPerOperator(instructions, placement)
+        cachedResults = cachedResults updated ((instructions, placement), result)
+        result
+      }
+    }
 
     // build the return list
     placement.iterator.map((v) => (v, instrPerOperator(v)))
   }
 
 }
+

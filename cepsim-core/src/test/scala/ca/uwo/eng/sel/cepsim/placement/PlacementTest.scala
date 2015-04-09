@@ -51,6 +51,24 @@ class PlacementTest extends FlatSpec
     doReturn(Set(q2)).when(prod2).queries
     doReturn(Set(q2)).when(cons2).queries
 
+    // query 1
+    doReturn(Set.empty).when(q1).predecessors(prod1)
+    doReturn(Set(prod1)).when(q1).predecessors(f1)
+    doReturn(Set(f1)).when(q1).predecessors(cons1)
+
+    doReturn(Set(f1)).when(q1).successors(prod1)
+    doReturn(Set(cons1)).when(q1).successors(f1)
+    doReturn(Set.empty).when(q1).successors(cons1)
+
+    // query 2
+    doReturn(Set.empty).when(q2).predecessors(prod2)
+    doReturn(Set(prod2)).when(q2).predecessors(f1)
+    doReturn(Set(f1)).when(q2).predecessors(cons2)
+
+    doReturn(Set(f1)).when(q2).successors(prod2)
+    doReturn(Set(cons2)).when(q2).successors(f1)
+    doReturn(Set.empty).when(q2).successors(cons2)
+
     p = p addVertex prod1
     p = p addVertex f1
     p = p addVertex cons1
@@ -66,7 +84,26 @@ class PlacementTest extends FlatSpec
     p.queries      should be (Set(q1, q2))
   }
 
-  
+  it should "calculate the correct duration" in new Fixture {
+    var p = Placement(Set.empty[Vertex], 1)
+
+    // adding only the producers
+    doReturn(Set(q1)).when(prod1).queries
+    doReturn(Set(q2)).when(prod2).queries
+
+    doReturn(Set.empty).when(q1).predecessors(prod1)
+    doReturn(Set.empty).when(q2).predecessors(prod2)
+    doReturn(Set.empty).when(q1).successors(prod1)
+    doReturn(Set.empty).when(q2).successors(prod2)
+
+
+    p = p addVertex prod1
+    p = p addVertex prod2
+
+    p.duration should be (200L)
+  }
+
+
   it should "return an iterator that iterates through the vertices" in new Fixture {
     doReturn(Set(q1)).when(prod1).queries
     doReturn(Set(q1)).when(f1).queries
@@ -236,17 +273,6 @@ class PlacementTest extends FlatSpec
     it.hasNext should be (false)
   }
 
-  it should "calculate the correct duration" in new Fixture {
-    var p = Placement(Set.empty[Vertex], 1)
 
-    // adding only the producers
-    doReturn(Set(q1)).when(prod1).queries
-    doReturn(Set(q2)).when(prod2).queries
-
-    p = p addVertex prod1
-    p = p addVertex prod2
-
-    p.duration should be (200L)
-  }
 
 }

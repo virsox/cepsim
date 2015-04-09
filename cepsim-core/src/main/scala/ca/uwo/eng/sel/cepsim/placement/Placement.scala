@@ -42,6 +42,16 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
   }
 
   /**
+   * Get the execution duration of this placement (in seconds). It is calculated
+   * as the maximum duration of all queries that belong to this placement.
+   * @return Execution duration of this placement
+   */
+  val duration: Long = queries.foldLeft(0L){(max, query) =>
+    (query.duration.max(max))
+  }
+
+
+  /**
     * Add a new vertex to the placement.
     * @param v Vertex to be added.
     * @return New placement with the vertex added.
@@ -68,15 +78,6 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     */
   def vertices(q: Query): Set[Vertex] = queryVerticesMap(q)
 
-  /**
-    * Get the execution duration of this placement (in seconds). It is calculated
-    * as the maximum duration of all queries that belong to this placement.
-    * @return Execution duration of this placement
-    */
-  def duration: Long = queries.foldLeft(0L){(max, query) =>
-    (query.duration.max(max))
-  }
-  
   /**
     * Get all event producers in this placement.
     * @return all event producers in this placement.
@@ -108,28 +109,31 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
   private def buildOrder: Iterable[Vertex] = {
 
     var index = 0
-
     var iterationOrder = Vector.empty[Vertex]
-    var toProcess: Vector[Vertex] = Vector(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
-    var neighbours: mutable.Set[Vertex] = mutable.LinkedHashSet[Vertex]()
 
-    while (index < toProcess.length) {
-      val v = toProcess(index)
-      iterationOrder = iterationOrder :+ v
+    if (!vertices.isEmpty) {
 
-      // processing neighbours
-      v.queries.foreach {(q) =>
-        q.successors(v).foreach { (successor) =>
-          if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
+      var toProcess: Vector[Vertex] = Vector(findStartVertices().toSeq.sorted(Vertex.VertexIdOrdering):_*)
+      var neighbours: mutable.Set[Vertex] = mutable.LinkedHashSet[Vertex]()
+
+      while (index < toProcess.length) {
+        val v = toProcess(index)
+        iterationOrder = iterationOrder :+ v
+
+        // processing neighbours
+        v.queries.foreach {(q) =>
+          q.successors(v).foreach { (successor) =>
+            if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
+          }
         }
-      }
 
-      val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
-        (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
-      )
-      neighbours = neighbours -- toBeMoved
-      toProcess = toProcess ++ toBeMoved
-      index += 1
+        val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
+          (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
+        )
+        neighbours = neighbours -- toBeMoved
+        toProcess = toProcess ++ toBeMoved
+        index += 1
+      }
     }
     iterationOrder
   }

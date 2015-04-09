@@ -150,7 +150,7 @@ public class CepQueryCloudlet extends Cloudlet {
 //            }
 //        }
 
-        history.merge(execHistory);
+        history.append(execHistory);
 	}
 
     public Set<Vertex> getVertices() {
