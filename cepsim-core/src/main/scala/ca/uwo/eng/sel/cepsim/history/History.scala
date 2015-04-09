@@ -81,16 +81,21 @@ class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
   }
 
   /**
-   * Log a simulation event.
-   * @param simEvent Simulation event to be logged.
-   * @return Reference to the history itself.
-   */
+    * Log a simulation event.
+    * @param simEvent Simulation event to be logged.
+    * @return Reference to the history itself.
+    */
   def log(simEvent: T): History[T] = {
     buffer += simEvent
     this
   }
 
-  def append(other: History[T]) =
+  /**
+    * Append a history to the end of this history.
+    * @param other History to be appended.
+    * @return Reference to the history itself.
+    */
+  def append(other: History[T]): History[T] =
     this.buffer ++= other.buffer
 
   /**
@@ -98,12 +103,16 @@ class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
    * @param other The history to be merged with.
    */
   def merge(other: History[T]) =
-    if (!other.buffer.isEmpty) {
-      if ((this.buffer.isEmpty) || (other.buffer.head.from >= this.buffer.last.from))
-        this.buffer ++= other.buffer
-      else
-        this.buffer = (this.buffer ++ other.buffer).sorted[SimEvent]
-    }
+    if (this.buffer.isEmpty)
+      this.buffer ++= other.buffer
+    else
+      other.buffer.foreach((elem) => {
+          var index = this.buffer.indexWhere((currElem) => currElem.from > elem.from)
+          if (index == -1) index = this.buffer.length
+          this.buffer.insert(index, elem)
+      })
+
+
 
 
   // -------------- Methods from the Seq interface

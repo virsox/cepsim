@@ -61,6 +61,23 @@ class HistoryTest extends FlatSpec
     history.from(c1, 50.0).toList should have size (0)
   }
 
+  it should "append other histories" in new Fixture {
+    val history2 = History()
+
+    val e6 = Produced (p1, 50.0, 60.0, 500)
+    val e7 = Produced (f1, 60.0, 70.0, 500, Map(p1 -> 500.0))
+    val e8 = Consumed (c1, 70.0, 80.0, 500, Map(f1 -> 500.0))
+
+    history2.log(e6)
+    history2.log(e7)
+    history2.log(e8)
+
+    history.append(history2)
+
+    val result = history.toList
+    result should have size (8)
+    result should contain theSameElementsInOrderAs (List(e1, e2, e3, e4, e5, e6, e7, e8))
+  }
   
   it should "merge with other histories" in new Fixture {
     
