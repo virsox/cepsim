@@ -224,5 +224,28 @@ class WindowedOperatorTest extends FlatSpec
     op.accumulatedSlot  should be (4)
   }
 
+  it should "respect the bounds of the successor buffer" in new Fixture {
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1024)
+    setup(op)
+
+    op.init(0.0, 1000)
+
+    // first run - process the events and accumulate
+    op enqueueIntoInput (f1, 1000)
+    op enqueueIntoInput (f2, 1000)
+    var simEvent = op run (20000, 10.0, 1000.0)
+    op setLimit (f3, 1000)
+
+    // second run - it can generate only 1000 ouputs, because f3 has a full buffer
+    simEvent = op.run(20000, 1000, 1100)
+    op.outputQueues(f3) should be (1000.0 +- 0.0001)
+    op.dequeueFromOutput((f3, 1000.0))
+
+    // third run - still generate outpu, even though there is no input
+    simEvent = op.run(20000, 1100, 1200)
+    op.outputQueues(f3) should be (1000.0 +- 0.0001)
+    op.dequeueFromOutput((f3, 1000.0))
+  }
+
 
 }

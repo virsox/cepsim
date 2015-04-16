@@ -9,7 +9,11 @@ import scala.concurrent.duration._
 object WindowedOperator {
 
   def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double) =
-    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, 1000)
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, 1024)
+
+  def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double,
+            queueMaxSize: Int) =
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, queueMaxSize)
 
   /** Returns an identify function to be used with WindowedOperators. */
   def identity(): (Map[Vertex, Double]) => Double = ((x) => Vertex.sumOfValues(x))

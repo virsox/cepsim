@@ -24,8 +24,8 @@ import java.util.*;
 
 public class CepSimAvgWindow {
 
-    private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 121L;
+    private static final Double SIM_INTERVAL = 0.1;
+    private static final Long DURATION = 61L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -42,8 +42,6 @@ public class CepSimAvgWindow {
 
 
 		try {
-			System.in.read();
-
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
@@ -103,9 +101,12 @@ public class CepSimAvgWindow {
 			broker.submitCloudletList(cloudletList);
 
 			// Sixth step: Starts the simulation
+			long start = System.nanoTime();
 			CloudSim.startSimulation();
-
 			CloudSim.stopSimulation();
+			double time = (System.nanoTime() - start) / (1E6);
+
+			System.out.println("Time [" + time + "]");
 
 			//Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
@@ -149,14 +150,14 @@ public class CepSimAvgWindow {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
+            EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
 
-            Operator outlierDetector = new Operator("outlierDetector" + i, 30000, 100000);
+            Operator outlierDetector = new Operator("outlierDetector" + i, 30000, 1024);
             Operator average = WindowedOperator.apply("average" + i, 32500, 15000, 15000,
                     WindowedOperator.constant(NUM_SENSORS));
-            Operator db = new Operator("db" + i, 12500000, 1000000);
+            Operator db = new Operator("db" + i, 12500000, 1024);
 
-            EventConsumer c = new EventConsumer("end" + i, 1000, 1000000);
+            EventConsumer c = new EventConsumer("end" + i, 1000, 1024);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -195,7 +196,7 @@ public class CepSimAvgWindow {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights), 1);
+                DefaultOpScheduleStrategy.weighted(weights), 10);
                 //DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
