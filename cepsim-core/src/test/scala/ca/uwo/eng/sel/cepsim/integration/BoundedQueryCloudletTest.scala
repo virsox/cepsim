@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.integration
 import ca.uwo.eng.sel.cepsim.QueryCloudlet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced, Generated}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
@@ -54,11 +55,11 @@ class BoundedQueryCloudletTest extends FlatSpec
     // check if history is being correctly logged
     h should have size (5)
     h.toList should contain theSameElementsInOrderAs (List(
-      Generated(prod1,  0.0, 10.0, 1000.0),
-      Produced (prod1, 10.0, 12.5, 1000.0),
-      Produced (f1,    12.5, 15.0, 1000.0, Map(prod1 -> 1000.00)),
-      Produced (f2,    15.0, 17.5,  312.5, Map(f1    ->  312.50)),
-      Consumed (cons1, 17.5, 20.0,   31.0, Map(f2    ->   31.25))))
+      Generated(prod1,  0.0, 10.0, EventSet(1000.0, 10.0,  0.0, prod1 -> 1000.00)),
+      Produced (prod1, 10.0, 12.5, EventSet(1000.0, 12.5,  2.5, prod1 -> 1000.00)),
+      Produced (f1,    12.5, 15.0, EventSet(1000.0, 15.0,  5.0, prod1 -> 1000.00)),
+      Produced (f2,    15.0, 17.5, EventSet( 312.5, 17.5,  7.5, prod1 ->  625.00)),
+      Consumed (cons1, 17.5, 20.0, EventSet(  31.0, 20.0, 10.0, prod1 ->  620.00))))
 
     // --------------------------------------------------------------------------
     // SECOND ITERATION

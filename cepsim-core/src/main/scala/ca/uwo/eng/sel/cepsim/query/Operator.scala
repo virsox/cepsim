@@ -1,6 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.history.{Produced, SimEvent}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** Operator companion object. */
 object Operator {
@@ -18,32 +19,6 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
   with InputVertex
   with OutputVertex {
 
-  /** *
-    * Retrieve events from the input queues.
-    * @param instructions Number of instructions that can be used.
-    * @param maximumNumberOfEvents Maximum number of events that can be sent to the output queues.
-    * @return Map from the predecessors to the number of events retrieved.
-    */
-  def retrieveFromInput(instructions: Double, maximumNumberOfEvents: Double = Double.MaxValue): Map[Vertex, Double] = {
-
-    // total number of input events
-    val total = totalInputEvents
-
-    // number of events that can be processed
-    val events = total.min(instructions / ipe).min(maximumNumberOfEvents)
-
-    // number of events processed from each queue
-    // current implementation distribute processing according to the queue size
-    val toProcess = inputQueues.map(elem =>
-      (elem._1 -> (if (total == 0) 0.0 else (elem._2.toDouble / total) * events))
-    )
-
-    // update the input queues
-    dequeueFromInput(toProcess.toList:_*)
-
-    // return the number of elements per input
-    toProcess
-  }
 
   /**
     * Executes the operator logic.
@@ -56,12 +31,13 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
 
     // number of processed events
     val fromInput = retrieveFromInput(instructions, maximumNumberOfEvents)
-    val events = Vertex.sumOfValues(fromInput)
 
+    val events = EventSet.addAll(fromInput.values)
+    events.updateTimestamp(endTime)
     sendToAllOutputs(events)
 
-    if (events == 0) List.empty
-    else List(Produced(this, startTime, endTime, events, fromInput))
+    if (events.size == 0) List.empty
+    else List(Produced(this, startTime, endTime, events))
   }
 
 

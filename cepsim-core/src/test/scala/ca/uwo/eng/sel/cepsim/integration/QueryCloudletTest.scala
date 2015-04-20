@@ -1,8 +1,9 @@
 package ca.uwo.eng.sel.cepsim.integration
 
-import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
-import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced, Generated}
 import ca.uwo.eng.sel.cepsim._
+import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
+import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
@@ -11,8 +12,6 @@ import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.concurrent.duration._
 
 
 /**
@@ -39,9 +38,6 @@ class QueryCloudletTest extends FlatSpec
 
   "A QueryCloudlet" should "send events through the operator graph" in new Fixture {
 
-
-    import ca.uwo.eng.sel.cepsim.history.History._
-
     // cloudlet going to use 10 millions instructions (10 ms)
     val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted()) //, 0.0)
     cloudlet.init(0.0)
@@ -56,11 +52,11 @@ class QueryCloudletTest extends FlatSpec
     // check if history is being correctly logged
     h should have size (5)
     h.toList should contain theSameElementsInOrderAs (List(
-      Generated(prod1,  0.0, 10.0, 1000),
-      Produced (prod1, 10.0, 11.0, 1000),
-      Produced (f1,    11.0, 15.0, 1000, Map(prod1 -> 1000)),
-      Produced (f2,    15.0, 19.0, 1000, Map(f1    -> 1000)),
-      Consumed (cons1, 19.0, 20.0,  100, Map(f2    ->  100))
+      Generated(prod1,  0.0, 10.0, EventSet(1000.0, 10.0,  0.0, prod1 -> 1000.0)),
+      Produced (prod1, 10.0, 11.0, EventSet(1000.0, 11.0,  1.0, prod1 -> 1000.0)),
+      Produced (f1,    11.0, 15.0, EventSet(1000.0, 15.0,  5.0, prod1 -> 1000.0)),
+      Produced (f2,    15.0, 19.0, EventSet(1000.0, 19.0,  9.0, prod1 -> 1000.0)),
+      Consumed (cons1, 19.0, 20.0, EventSet( 100.0, 20.0, 10.0, prod1 -> 1000.0))
     ))
   }
 
@@ -87,11 +83,11 @@ class QueryCloudletTest extends FlatSpec
 
     cloudlet run(10000000, 10.0, 1000)
 
-    verify(calculator).update(Generated(prod1,  0.0, 10.0, 1000.0))
-    verify(calculator).update(Produced (prod1, 10.0, 11.0, 1000.0))
-    verify(calculator).update(Produced (f1,    11.0, 15.0, 1000.0, Map(prod1 -> 1000.0)))
-    verify(calculator).update(Produced (f2,    15.0, 19.0, 1000.0, Map(f1    -> 1000.0)))
-    verify(calculator).update(Consumed (cons1, 19.0, 20.0,  100.0, Map(f2    -> 100.0)))
+    verify(calculator).update(Generated(prod1,  0.0, 10.0, EventSet(1000.0, 10.0,  0.0, prod1 -> 1000.0)))
+    verify(calculator).update(Produced (prod1, 10.0, 11.0, EventSet(1000.0, 11.0,  1.0, prod1 -> 1000.0)))
+    verify(calculator).update(Produced (f1,    11.0, 15.0, EventSet(1000.0, 15.0,  5.0, prod1 -> 1000.0)))
+    verify(calculator).update(Produced (f2,    15.0, 19.0, EventSet(1000.0, 19.0,  9.0, prod1 -> 1000.0)))
+    verify(calculator).update(Consumed (cons1, 19.0, 20.0, EventSet( 100.0, 20.0, 10.0, prod1 -> 1000.0)))
 
   }
 
@@ -119,16 +115,16 @@ class QueryCloudletTest extends FlatSpec
 
     h should have size (10)
     h.toList should contain theSameElementsInOrderAs (List(
-      Generated(prod2,  0.0, 10.0, 1000),
-      Generated(prod1,  0.0, 10.0, 1000),
-      Produced (prod1, 10.0, 10.5,  500),
-      Produced (prod2, 10.5, 11.0,  500),
-      Produced (f1,    11.0, 13.0,  500, Map(prod1 -> 500)),
-      Produced (f3,    13.0, 15.0,  500, Map(prod2 -> 500)),
-      Produced (f2,    15.0, 17.0,  500, Map(f1    -> 500)),
-      Produced (f4,    17.0, 19.0,  500, Map(f3    -> 500)),
-      Consumed (cons1, 19.0, 19.5,   50, Map(f2    ->  50)),
-      Consumed (cons2, 19.5, 20.0,   50, Map(f4    ->  50))
+      Generated(prod2,  0.0, 10.0, EventSet(1000, 10.0,  0.0, prod2 -> 1000.0)),
+      Generated(prod1,  0.0, 10.0, EventSet(1000, 10.0,  0.0, prod1 -> 1000.0)),
+      Produced (prod1, 10.0, 10.5, EventSet( 500, 10.5,  0.5, prod1 ->  500.0)),
+      Produced (prod2, 10.5, 11.0, EventSet( 500, 11.0,  1.0, prod2 ->  500.0)),
+      Produced (f1,    11.0, 13.0, EventSet( 500, 13.0,  3.0, prod1 ->  500.0)),
+      Produced (f3,    13.0, 15.0, EventSet( 500, 15.0,  5.0, prod2 ->  500.0)),
+      Produced (f2,    15.0, 17.0, EventSet( 500, 17.0,  7.0, prod1 ->  500.0)),
+      Produced (f4,    17.0, 19.0, EventSet( 500, 19.0,  9.0, prod2 ->  500.0)),
+      Consumed (cons1, 19.0, 19.5, EventSet(  50, 19.5,  9.5, prod1 ->  500.0)),
+      Consumed (cons2, 19.5, 20.0, EventSet(  50, 20.0, 10.0, prod2 ->  500.0))
     ))
   }
 

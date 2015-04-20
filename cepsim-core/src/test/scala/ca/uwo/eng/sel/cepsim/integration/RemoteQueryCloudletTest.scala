@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.integration
 import ca.uwo.eng.sel.cepsim.QueryCloudlet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
@@ -50,11 +51,11 @@ class RemoteQueryCloudletTest extends FlatSpec
     // TODO revisit this test after network refactoring
     h should have size (5)
     h.toList should be (List(
-      Generated(prod1,  0.0, 10.0, 1000),
-      Produced (prod1, 10.0, 11.0, 1000),
-      Produced (f1,    11.0, 15.0, 1000, Map(prod1 -> 1000)),
-      Produced (f2,    15.0, 19.0, 1000, Map(f1    -> 1000)),
-      Consumed (cons1, 19.0, 20.0,  100, Map(f2    ->  100))
+      Generated(prod1,  0.0, 10.0, EventSet(1000, 10.0,  0.0, prod1 -> 1000.0)),
+      Produced (prod1, 10.0, 11.0, EventSet(1000, 11.0,  1.0, prod1 -> 1000.0)),
+      Produced (f1,    11.0, 15.0, EventSet(1000, 15.0,  5.0, prod1 -> 1000.0)),
+      Produced (f2,    15.0, 19.0, EventSet(1000, 19.0,  9.0, prod1 -> 1000.0)),
+      Consumed (cons1, 19.0, 20.0, EventSet( 100, 20.0, 10.0, prod1 -> 1000.0))
     ))
   }
 

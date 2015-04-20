@@ -162,8 +162,7 @@ public class CepSimExampleWithNetwork {
 		vertices.add(f1);
 		vertices.add(f2);
 		vertices.add(c);
-			
-		// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
+
 		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f1, 1.0);
 		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f1, f2, 0.5);
 		Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(f2, c, 0.1);

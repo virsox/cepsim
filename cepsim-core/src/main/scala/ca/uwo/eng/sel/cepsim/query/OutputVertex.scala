@@ -1,12 +1,12 @@
 package ca.uwo.eng.sel.cepsim.query
 
-import scala.collection.immutable.TreeMap
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** Trait that represent vertices that have outgoing edges. */
 trait OutputVertex extends Vertex {
 
-  /** Map representing the vertex output queues. */
-  var outputQueues: Map[Vertex, Double] = TreeMap[Vertex, Double]()(Vertex.VertexIdOrdering)
+  /** Event sets that represent the output queues. */
+  var outputEventSets: Map[Vertex, EventSet] = Map.empty[Vertex, EventSet]
 
   /** Map with the selectivity associated with each successor vertex. */
   var selectivities: Map[Vertex, Double] = Map.empty
@@ -18,7 +18,7 @@ trait OutputVertex extends Vertex {
     * Set containing all successors of this vertex.
     * @return Set containing all successors of this vertex.
     */
-  override def successors: Set[InputVertex] = queries.flatMap(_.successors(this))
+  override def successors: Set[InputVertex] = outputEventSets.keySet.collect { case iv: InputVertex => iv }
 
   /**
    * Initializes the output queues with a set of successors (assumes selectivity of 1.0 for all successors).
@@ -34,10 +34,17 @@ trait OutputVertex extends Vertex {
     * @param selectivity Edge selectivity.
     */
   def addOutputQueue(v: Vertex, selectivity: Double = 1.0) = {
-    outputQueues = outputQueues + (v -> 0)
+    outputEventSets = outputEventSets + (v -> EventSet.empty())
     selectivities = selectivities + (v -> selectivity)
     limits = limits + (v -> Int.MaxValue)
   }
+
+  /**
+    * Obtains the number of events in a output queue.
+    * @param v Successor vertex to which the output queue is associated.
+    * @return Number of events on the informed queueu.
+    */
+  def outputQueues(v: Vertex): Double = outputEventSets(v).size
 
   /**
     * Sets the limit of a specific output queue.
@@ -59,38 +66,19 @@ trait OutputVertex extends Vertex {
   }
 
   /**
-    * Remove events from the output queues.
-    * @param pairs Pairs of vertex (that identifies an output queue) and the number of events to be dequeued.
+    * Dequeue a number of events from an output queue.
+    *
+    * @param v Vertex used to located the output queue.
+    * @param quantity Number of events to be dequeued.
+    * @return EventSet encapsulating the dequeued events.
     */
-  def dequeueFromOutput(pairs: (Vertex, Double)*) =
-    pairs.foreach {(pair) =>
-      outputQueues = outputQueues updated(pair._1, outputQueues(pair._1) - pair._2)
-    }
+  def dequeueFromOutput(v: Vertex, quantity: Double): EventSet = outputEventSets(v).extract(quantity)
 
   /**
-    * Send a number of events to all output queues.
-    * @param quantity Number of events to be sent.
-    * @return Map from successors to the number of events inserted into its corresponding queue.
+    * Send an event set to all output queues.
+    * @param es Event set to be sent.
     */
-  def sendToAllOutputs(quantity: Double): Map[Vertex, Double] = {
-    sendToOutputs(selectivities.mapValues((elem) => quantity))
-  }
-
-  /**
-    * Send events to the output queues.
-    * @param outputs Map from successors to the number of events to be sent.
-    * @return Map from successors to the number of events inserted into its corresponding queue.
-    */
-  def sendToOutputs(outputs: Map[Vertex, Double]): Map[Vertex, Double] = {
-
-    val withSelectivity = outputs.map{(elem) =>
-      (elem._1, elem._2 * selectivities(elem._1))
-    }
-
-    outputQueues = outputQueues.map{(elem) =>
-      (elem._1, elem._2 + withSelectivity.getOrElse(elem._1, 0.0))
-    }
-    withSelectivity
-  }
+  def sendToAllOutputs(es: EventSet): Unit =
+    outputEventSets.foreach((elem) => elem._2.add(es, selectivities(elem._1)))
 
 }

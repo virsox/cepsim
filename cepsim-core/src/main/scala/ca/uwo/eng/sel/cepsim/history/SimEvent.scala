@@ -1,10 +1,11 @@
 package ca.uwo.eng.sel.cepsim.history
 
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Vertex, WindowedOperator}
 
 /**
-  * Trait that represents an important simulation event. These events are used to compose the
-  * execution history and as input to metrics calculation. A simulation event is different from a CEP event,
+  * Trait that represents an important simulation event. These events composes the execution history
+  * and are used as input to metrics calculation. A simulation event is different from a CEP event,
   * as it is an internal class used to represent what happened during a simulation.
   */
 trait SimEvent extends Ordered[SimEvent] {
@@ -12,17 +13,20 @@ trait SimEvent extends Ordered[SimEvent] {
   /** Vertex that originated the event. */
   def v: Vertex
 
-  /** Number of events. The specific meaning of this number depends on the type of event. */
-  def quantity: Double
-
   /** Start timestamp. */
   def from: Double
 
   /** End timestamp. */
   def to: Double
 
+  /** EventSet of the simulation event. The specific meaning of this set depends on the type of simulation event. */
+  def es: EventSet
+
   /** Timestamp of the event. By default, the end timestamp is considered as the simulation event timestamp. */
   def at: Double = to
+
+  /** Number of events. The specific meaning of this number depends on the type of event. */
+  def quantity: Double = es.size
 
 
   def compare(that: SimEvent): Int = {
@@ -32,7 +36,6 @@ trait SimEvent extends Ordered[SimEvent] {
 
     comp
   }
-
 }
 
 /**
@@ -41,9 +44,9 @@ trait SimEvent extends Ordered[SimEvent] {
   * @param v Event Producer.
   * @param from Start timestamp.
   * @param to Final timestamp.
-  * @param quantity Number of events generated.
+  * @param es Event set generated.
   */
-case class Generated (val v: EventProducer, val from: Double, val to: Double, val quantity: Double) extends SimEvent
+case class Generated (val v: EventProducer, val from: Double, val to: Double, val es: EventSet) extends SimEvent
 
 
 /**
@@ -52,29 +55,9 @@ case class Generated (val v: EventProducer, val from: Double, val to: Double, va
   * @param v Vertex emitting the events.
   * @param from Start timestamp.
   * @param to Final timestamp.
-  * @param quantity Number of produced events.
-  * @param processed Number of events consumed from each vertex predecessor in order to emit the events. If
-  *                  the vertex is an EventProducer, then it does not have predecessors and this map is empty.
+  * @param es Event set that has been emit.
   */
-case class Produced(val v: Vertex, val from: Double, val to: Double, val quantity: Double,
-                     val processed: Map[Vertex, Double] = Map.empty) extends SimEvent
-
-
-/**
-  * Represents events produced by a WindowedOperator. It is a different class than Produced because it has an
-  * extra attribute containing the window slot on which the production has happened. Additionally, this class
-  * does not have the <code>processed</code> attribute because we assume that all events coming from
-  * the operator predecessors have been accumulated before (and therefore, it had been considered by the
-  * corresponding WindowAccumulated simulation event).
-  *
-  * @param v WindowedOperator emitting the events.
-  * @param from Start timestamp.
-  * @param to Final timestamp.
-  * @param quantity Number of produced events.
-  * @param slot Window slot number.
-  */
-case class WindowProduced(val v: WindowedOperator, val from: Double, val to: Double,
-                          val quantity: Double, val slot: Int) extends SimEvent
+case class Produced(val v: Vertex, val from: Double, val to: Double, val es: EventSet) extends SimEvent
 
 /**
   * Represents events accumulated by a WindowedOperator.
@@ -83,17 +66,10 @@ case class WindowProduced(val v: WindowedOperator, val from: Double, val to: Dou
   * @param from Start timestamp.
   * @param to Final timestamp.
   * @param slot Slot number on which events have been accumulated.
-  * @param processed Number of events consumed from each vertex predecessor and accumulated by the operator.
+  * @param es Event set that has been accumulated.
   */
 case class WindowAccumulated(val v: WindowedOperator, val from: Double, val to: Double, val slot: Int,
-                             val processed: Map[Vertex, Double] = Map.empty) extends SimEvent {
-
-  /**
-    * Quantity represents the number of accumulated events. It does not need to be informed when creating
-    * an object because it is assumed that all events consumed from predecessors are accumulated.
-    */
-  val quantity: Double = Vertex.sumOfValues(processed)
-}
+                             val es: EventSet) extends SimEvent
 
 /**
   * Represents events consumed by an EventConsumer.
@@ -101,9 +77,6 @@ case class WindowAccumulated(val v: WindowedOperator, val from: Double, val to: 
   * @param v EventConsumer consuming the events.
   * @param from Start timestamp.
   * @param to Final timestamp.
-  * @param quantity Number of events consumed.
-  * @param processed Number of events consumed from each vertex predecessor in order to emit the events.
+  * @param es Event set that has been consumed.
   */
-case class Consumed (val v: EventConsumer, val from: Double, val to: Double, val quantity: Double,
-                     val processed: Map[Vertex, Double]) extends SimEvent
-
+case class Consumed (val v: EventConsumer, val from: Double, val to: Double, val es: EventSet) extends SimEvent

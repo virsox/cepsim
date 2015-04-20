@@ -161,8 +161,7 @@ public class CepSimExample {
 			vertices.add(p);
 			vertices.add(f);
 			vertices.add(c);
-			
-			// TODO can't be Tuple3<OutputVertex, InputVertex, Object> - why?
+
 			Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, f, 1.0);
 			Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(f, c, 0.1);
 			Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();

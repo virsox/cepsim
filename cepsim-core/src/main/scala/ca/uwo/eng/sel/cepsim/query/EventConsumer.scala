@@ -1,6 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.history.{Consumed, SimEvent}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** EventConsumer companion object. */
 object EventConsumer {
@@ -16,40 +17,17 @@ object EventConsumer {
 class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) extends Vertex
   with InputVertex {
 
+  /** EventSet containing all events consumed in the simulation so far. */
+  val outputEventSet = EventSet.empty
+
   /** Total number of consumed events. */
-  var outputQueue = 0L
+  def outputQueue: Int = Math.floor(outputEventSet.size).toInt
 
   /**
-    * Because event consumers only consumes full events (does not consume partial events), this variable
-    * stores the decimal parts that haven't been consumed.
+    * Because event consumers only consumes full events (does not consume partial events), this set
+    * accumulates the decimal parts that haven't been consumed.
     */
-  var accumulated = 0.0
-
-  /**
-    * Retrieve events from the input queues.
-    * @param instructions Number of instructions that can be used.
-    * @return Map from the predecessors to the number of events retrieved.
-    */
-  def retrieveFromInput(instructions: Double): Map[Vertex, Double] = {
-
-    // total number of input events
-    val total = totalInputEvents
-
-    // number of events that will be processed
-    val events = total.min(instructions / ipe)
-
-    // number of events processed from each queue
-    // current implementation distribute processing according to the queue size
-    var toProcess = inputQueues.map(elem =>
-      (elem._1 -> (if (total == 0) 0.0 else (elem._2.toDouble / total) * events ))
-    )
-
-    // update the input queues
-    dequeueFromInput(toProcess.toList:_*)
-
-    // return the number of elements per input
-    toProcess
-  }
+  var accumulated = EventSet.empty()
 
   /**
     * Consumes events from the input queues.
@@ -60,28 +38,35 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     */
   override def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
     val fromInput = retrieveFromInput(instructions)
-    val processed = Vertex.sumOfValues(fromInput)
 
-    var output = Math.floor(processed).toInt
+    val processed = EventSet.addAll(fromInput.values)
+    processed.updateTimestamp(endTime)
+
+    val diff = processed.size -  Math.floor(processed.size)
 
     // accumulates the decimal part
-    accumulated += processed - output
+    if (diff > 0) {
+      accumulated.add(processed.extract(diff))
+    }
 
     // if it larger than one, then it is possible to emit more events
-    while (accumulated > 1.0) {
-      output += 1
-      accumulated -= 1.0
+    while (accumulated.size > 1.0) {
+      val es = accumulated.extract(1.0)
+      es.updateTimestamp(endTime)
+      processed.add(es)
     }
 
     // consider this is true if there were double rounding errors
-    if (Math.abs(accumulated - 1.0) < 0.01) {
-      output += 1
-      accumulated = 0.0
+    if (Math.abs(accumulated.size - 1.0) < 0.001) {
+      accumulated.size = 1.0
+      accumulated.updateTimestamp(endTime)
+      processed.add(accumulated)
+      accumulated.reset()
     }
-    outputQueue += output
 
-    if ((output == 0) && (processed == 0)) List()
-    else List(Consumed(this, startTime, endTime, output, fromInput))
+    outputEventSet.add(processed)
+    if (processed.size == 0) List()
+    else List(Consumed(this, startTime, endTime, processed))
   }
 
 

@@ -1,13 +1,12 @@
 package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.history.Produced
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.util.SimEventBaseTest
 import org.junit.runner.RunWith
-import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalautils.Equality
 
 /**
  * Created by virso on 2014-07-21.
@@ -20,23 +19,24 @@ class OperatorTest extends FlatSpec
 
   trait Fixture {
     val query = mock[Query]
-    val p1 = Operator("p1", 10)
-    val p2 = Operator("p2", 10)
-    val p3 = Operator("p3", 10)
-    val p4 = Operator("p4", 10)
+
+    val p1 = mock[EventProducer]("p1")
+    val p2 = mock[EventProducer]("p2")
+    val p3 = mock[EventProducer]("p3")
+    val p4 = mock[EventProducer]("p4")
     val n1 = Operator("n1", 10)
 
 
-    def setup(op: Operator, outputSelectivity: Double, predecessors: Operator*) = {
+    def setup(op: Operator, outputSelectivity: Double, predecessors: Vertex*) = {
       predecessors.foreach(op.addInputQueue(_))
       op.addOutputQueue(n1, outputSelectivity)
     }
 
     def enqueue(op: Operator, sizes: Double*) = {
-      op.enqueueIntoInput(p1, sizes(0))
-      if (sizes.length > 1) op.enqueueIntoInput(p2, sizes(1))
-      if (sizes.length > 2) op.enqueueIntoInput(p3, sizes(2))
-      if (sizes.length > 3) op.enqueueIntoInput(p4, sizes(3))
+      op.enqueueIntoInput(p1, EventSet(sizes(0), 0, 0, Map(p1 -> sizes(0))))
+      if (sizes.length > 1) op.enqueueIntoInput(p2, EventSet(sizes(1), 0, 0, Map(p2 -> sizes(1))))
+      if (sizes.length > 2) op.enqueueIntoInput(p3, EventSet(sizes(2), 0, 0, Map(p3 -> sizes(2))))
+      if (sizes.length > 3) op.enqueueIntoInput(p4, EventSet(sizes(3), 0, 0, Map(p4 -> sizes(3))))
     }
 
     def assertInput(op: Operator, sizes: Double*) = {
@@ -55,7 +55,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10)
 
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 10.0, Map(p1 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(10.0, 10.0, 10.0, p1 -> 10.0))))
 
     assertInput(op, 0)
     op.outputQueues(n1) should be (10)
@@ -67,7 +67,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10)
 
     val simEvent = op.run(50, 0, 5)
-    simEvent should be (List(Produced(op, 0, 5, 5.0, Map(p1 -> 5.0))))
+    simEvent should be (List(Produced(op, 0, 5, EventSet(5.0, 5.0, 5.0, p1 -> 5.0))))
 
     assertInput(op, 5)
     op.outputQueues(n1) should be (5)
@@ -79,7 +79,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10)
 
     val simEvent = op.run(1000, 0, 100)
-    simEvent should be (List(Produced(op, 0, 100, 10.0, Map(p1 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 100, EventSet(10.0, 100.0, 100.0, p1 -> 10.0))))
 
     assertInput(op, 0)
     op.outputQueues(n1) should be (10)
@@ -97,6 +97,35 @@ class OperatorTest extends FlatSpec
     op.outputQueues(n1) should be (0)
   }
 
+  it should "calculate the correct latency / throughput in one iteration" in new Fixture {
+    val op = Operator("f1", 10)
+    op addInputQueue (p1)
+    op addOutputQueue(n1, 1.0)
+
+    op.enqueueIntoInput(p1, EventSet(10.0, 200.0, 50.0, p1 -> 1000.0))
+    val outputEs = op.run(100.0, 300.0, 500.0)(0).es
+
+    outputEs.size    should be( 10.0)
+    outputEs.ts      should be(500.0)
+    outputEs.latency should be(350.0)
+    outputEs.totals  should be(Map(p1 -> 1000.0))
+  }
+
+  it should "correctly enqueue incoming event sets" in new Fixture {
+    val op = Operator("f1", 10)
+    setup(op, 1.0, p1)
+    enqueue(op, 10.0)   // currently in the queue EventSet(10, 0, 0, Map(p1 -> 10))
+
+    op enqueueIntoInput(p1, EventSet(10, 20, 10, p1 -> 10.0)) // queue is now EventSet(20, 10, 5, p1 -> 20)
+    var outputEs = op.run(100.0, 30, 40)(0).es
+    outputEs should be (EventSet(10.0, 40.0, 35.0, p1 -> 10.0))
+
+    outputEs = op.run(100.0, 40, 50)(0).es
+    outputEs should be (EventSet(10.0, 50.0, 45.0, p1 -> 10.0))
+  }
+
+  // -----------------------------------------------------------------------------------
+
 
   "A filter operator" should "correctly apply selectivity" in new Fixture {
     val op = Operator("f1", 10)
@@ -106,7 +135,7 @@ class OperatorTest extends FlatSpec
     val simEvent = op.run(100, 0 , 10)
 
     // 10 events have been produced, but only 1 is written to the output queue
-    simEvent should be (List(Produced(op, 0, 10, 10.0, Map(p1 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(10.0, 10.0, 10.0, p1 -> 10.0))))
     assertInput(op, 0)
     op.outputQueues(n1) should be (1)
   }
@@ -117,7 +146,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10, 10)
 
     val simEvent = op.run(200, 0, 20)
-    simEvent should be (List(Produced(op, 0, 20, 20.0, Map(p1 -> 10.0, p2 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 20, EventSet(20.0, 20.0, 20.0, p1 -> 10.0, p2 -> 10.0))))
 
     assertInput(op, 0, 0)
     op.outputQueues(n1) should be (20)
@@ -129,7 +158,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10, 10)
 
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 10.0, Map(p1 -> 5.0, p2 -> 5.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(10.0, 10.0, 10.0, p1 -> 5.0, p2 -> 5.0))))
 
     assertInput(op, 5, 5)
     op.outputQueues(n1) should be (10)
@@ -142,7 +171,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 12, 4)
 
     val simEvent = op.run(120, 0, 12)
-    simEvent should be (List(Produced(op, 0, 12, 12.0, Map(p1 -> 9.0, p2 -> 3.0))))
+    simEvent should be (List(Produced(op, 0, 12, EventSet(12.0, 12.0, 12.0, p1 -> 9.0, p2 -> 3.0))))
 
     assertInput(op, 3, 1)
     op.outputQueues(n1) should be (12)
@@ -156,7 +185,7 @@ class OperatorTest extends FlatSpec
 
     // there are three queues, and it is possible to process 10 events in total
     val simEvent: Produced = op.run(100, 0, 10)(0).asInstanceOf[Produced]
-    simEvent should equal (Produced(op, 0, 10, 10.00, Map(p1 -> 3.333, p2 -> 3.333, p3 -> 3.333)))
+    simEvent should equal (Produced(op, 0, 10, EventSet(10.0, 10, 10, p1 -> 3.333, p2 -> 3.333, p3 -> 3.333)))
 
     assertInput(op, 6.66, 6.66, 6.66)
     op.outputQueues(n1) should be (10.00)
@@ -169,7 +198,7 @@ class OperatorTest extends FlatSpec
 
     // there are four queues, and it is possible to process 27 events in total
     val simEvent = op.run(270, 0, 27)
-    simEvent should be (List(Produced(op, 0, 27, 27.00, Map(p1 -> 6.75, p2 -> 6.75, p3 -> 6.75, p4 -> 6.75))))
+    simEvent should be (List(Produced(op, 0, 27, EventSet(27.00, 27, 27, p1 -> 6.75, p2 -> 6.75, p3 -> 6.75, p4 -> 6.75))))
 
     assertInput(op, 3.25, 3.25, 3.25, 3.25)
     op.outputQueues(n1) should be (27)
@@ -181,7 +210,7 @@ class OperatorTest extends FlatSpec
     enqueue(op, 10, 5, 14, 11) // 0.25 (7.5), 0.125 (3.75), 0.35 (10.5), 0.275 (8.25)
 
     val simEvent = op.run(300, 0, 30)
-    simEvent should be (List(Produced(op, 0, 30, 30.00, Map(p1 -> 7.5, p2 -> 3.75, p3 -> 10.5, p4 -> 8.25))))
+    simEvent should be (List(Produced(op, 0, 30, EventSet(30.00, 30, 30, p1 -> 7.5, p2 -> 3.75, p3 -> 10.5, p4 -> 8.25))))
 
     assertInput(op, 2.5, 1.25, 3.5, 2.75)
     op.outputQueues(n1) should be (3)
@@ -194,14 +223,16 @@ class OperatorTest extends FlatSpec
     enqueue(op, 5, 5)
 
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 10.00, Map(p1 -> 5.0, p2 -> 5.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(10.00, 10.0, 10.0, p1 -> 5.0, p2 -> 5.0))))
 
     assertInput(op, 0, 0)
     op.outputQueues(n1) should be (0.5)
 
-    enqueue(op, 5, 5)
+    op.enqueueIntoInput(p1, EventSet(5, 10, 0, p1 -> 5.0))
+    op.enqueueIntoInput(p2, EventSet(5, 10, 0, p2 -> 5.0))
+
     val simEvent2 = op.run(100, 10, 20)
-    simEvent2 should be (List(Produced(op, 10, 20, 10.00, Map(p1 -> 5.0, p2 -> 5.0))))
+    simEvent2 should be (List(Produced(op, 10, 20, EventSet(10.00, 20.0, 10.0, p1 -> 5.0, p2 -> 5.0))))
 
     assertInput(op, 0, 0)
     op.outputQueues(n1) should be (1)
@@ -220,7 +251,7 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 100)
     val simEvent = op.run(1000, 0, 100)
-    simEvent should be (List(Produced(op, 0, 100, 100.00, Map(p1 -> 100.0))))
+    simEvent should be (List(Produced(op, 0, 100, EventSet(100.00, 100.0, 100.0, p1 -> 100.0))))
 
     assertInput(op, 0)
     op.outputQueues(n1) should be (50)
@@ -237,14 +268,14 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 10)
     val simEvent = op.run(50, 0, 5)
-    simEvent should be (List(Produced(op, 0, 5, 5.00, Map(p1 -> 5.0))))
+    simEvent should be (List(Produced(op, 0, 5, EventSet(5.00, 5.0, 5.0, p1 -> 5.0))))
 
     assertInput(op, 5)
     op.outputQueues(n1) should be (0.5)
     op.outputQueues(n2) should be (2.5)
 
     val simEvent2 = op.run(50, 5, 10)
-    simEvent2 should be (List(Produced(op, 5, 10, 5.00, Map(p1 -> 5.0))))
+    simEvent2 should be (List(Produced(op, 5, 10, EventSet(5.00, 10.0, 10.0, p1 -> 5.0))))
 
     assertInput(op, 0)
     op.outputQueues(n1) should be (1)
@@ -257,7 +288,7 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 10)
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 10.00, Map(p1 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(10.00, 10.0, 10.0, p1 -> 10.0))))
 
     assertInput(op, 0)
     op.outputQueues(n1) should be (50.0)
@@ -275,7 +306,7 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 10)
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 5.0, Map(p1 -> 5.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(5.0, 10.0, 10.0, p1 -> 5.0))))
 
     assertInput(op, 5)
     op.outputQueues(n1) should be(5)
@@ -294,7 +325,7 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 10)
     val simEvent = op.run(100, 0, 10)
-    simEvent should be (List(Produced(op, 0, 10, 3.0, Map(p1 -> 3.0))))
+    simEvent should be (List(Produced(op, 0, 10, EventSet(3.0, 10.0, 10.0, p1 -> 3.0))))
 
     assertInput(op, 7)
     op.outputQueues(n1) should be (3)
@@ -315,7 +346,7 @@ class OperatorTest extends FlatSpec
 
     enqueue(op, 100)
     val simEvent = op.run(1000, 0, 100)
-    simEvent should be (List(Produced(op, 0, 100, 10.0, Map(p1 -> 10.0))))
+    simEvent should be (List(Produced(op, 0, 100, EventSet(10.0, 100, 100, p1 -> 10.0))))
 
     assertInput(op, 90)
     op.outputQueues(n1) should be (5)

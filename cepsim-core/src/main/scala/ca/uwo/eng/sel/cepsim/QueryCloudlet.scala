@@ -8,7 +8,6 @@ import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
 
 import scala.annotation.varargs
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration.Duration
 
 
 object QueryCloudlet {
@@ -63,10 +62,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
     if (!placement.vertices.contains(v))
       throw new IllegalStateException("This cloudlet does not contain the target vertex")
 
-    var history = History()
-    v.enqueueIntoInput(orig, events)
 
     // TODO do we need a received type of event?
+    var history = History()
+    //v.enqueueIntoInput(orig, events)
     //history = history.logReceived(id, receivedTime, v, orig, events)
     history
   }
@@ -150,15 +149,13 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
               if (sentMessages > 0) {
                 // TODO think about how to model remote communication
 //                history = history.logSent(id, startTime, v, dest, sentMessages)
-                ov.dequeueFromOutput((dest, sentMessages))
+                ov.dequeueFromOutput(dest, sentMessages)
               }
             }
 
             inPlacement.foreach { (dest) =>
               val events = ov.outputQueues(dest)
-              ov.dequeueFromOutput((dest, events))
-              dest.enqueueIntoInput(ov, events)
-
+              dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))
             }
           }
 

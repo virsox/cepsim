@@ -2,6 +2,7 @@ package ca.uwo.eng.sel.cepsim.query
 
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.history.{Generated, Produced, SimEvent}
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** EventProducer companion object. */
 object EventProducer {
@@ -19,8 +20,12 @@ object EventProducer {
 class EventProducer(val id: String, val ipe: Double, val generator: Generator, limitProducer: Boolean)
   extends Vertex with OutputVertex {
 
-  /** Number of events generated but still not processed by the producer. */
-  var inputQueue = 0.0
+  /** Event set of events generated but still not processed by the producer. */
+  var inputEventSet = EventSet.empty()
+
+  /** Number of events on the input event set. */
+  def inputQueue = inputEventSet.size
+
 
   /**
     * Invokes the generator object in order to generate new events.
@@ -34,8 +39,10 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
     val generated = (if (limitProducer) generator.generate(interval, Math.floor(maximumNumberOfEvents).toInt)
                      else generator.generate(interval))
 
-    inputQueue += generated
-    Generated(this, from, to, generated)
+    val es = EventSet(generated, to, 0, Map(this -> generated))
+    inputEventSet.add(es)
+
+    Generated(this, from, to, es)
   }
 
   /**
@@ -48,15 +55,14 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent] = {
 
     val maxOutput = (instructions / ipe)
-
     val processed = maxOutput.min(inputQueue).min(maximumNumberOfEvents)
 
-    inputQueue -= processed
-    sendToAllOutputs(processed)
+    val es = inputEventSet.extract(processed)
+    es.updateTimestamp(endTime)
 
-    List(Produced(this, startTime, endTime, processed))
+    sendToAllOutputs(es)
+    List(new Produced(this, startTime, endTime, es))
   }
-
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[EventProducer]
 
