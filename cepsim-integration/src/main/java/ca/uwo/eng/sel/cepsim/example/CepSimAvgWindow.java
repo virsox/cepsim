@@ -25,7 +25,7 @@ import java.util.*;
 public class CepSimAvgWindow {
 
     private static final Double SIM_INTERVAL = 0.1;
-    private static final Long DURATION = 61L;
+    private static final Long DURATION = 1201L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -154,7 +154,7 @@ public class CepSimAvgWindow {
 
             Operator outlierDetector = new Operator("outlierDetector" + i, 30000, 1024);
             Operator average = WindowedOperator.apply("average" + i, 32500, 15000, 15000,
-                    WindowedOperator.constant(NUM_SENSORS));
+                    WindowedOperator.constant(NUM_SENSORS), 1024);
             Operator db = new Operator("db" + i, 12500000, 1024);
 
             EventConsumer c = new EventConsumer("end" + i, 1000, 1024);

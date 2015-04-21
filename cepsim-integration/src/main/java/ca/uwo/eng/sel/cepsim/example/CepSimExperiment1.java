@@ -169,7 +169,7 @@ public class CepSimExperiment1 {
 		Operator f1 = new Operator("f1_" + number, 5000, 10000);
 		Operator f2 = new Operator("f2_" + number, 5000, 10000);
 		Operator f3 = new Operator("f3_" + number, 5000, 10000);
-		Operator j1 = new JoinOperator("j1_" + number, 20000, 0.01, Duration.apply(100, TimeUnit.MILLISECONDS), 10000);
+		Operator j1 = new Operator("j1_" + number, 20000, 10000);//new JoinOperator("j1_" + number, 20000, 0.01, Duration.apply(100, TimeUnit.MILLISECONDS), 10000);
 		EventConsumer c = new EventConsumer("c1" + number, 1000, 1000);
 		Set<Vertex> vertices = new HashSet<>(Arrays.asList(p1, p2, f1, f2, f3, j1, c));
 
