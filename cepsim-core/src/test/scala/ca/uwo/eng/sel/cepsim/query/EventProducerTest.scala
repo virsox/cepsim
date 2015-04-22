@@ -38,6 +38,25 @@ class EventProducerTest extends FlatSpec
     prod.inputQueue should be (100)
   }
 
+  it should "respect buffer limits from successors when generating events" in {
+    val generator = mock[Generator]
+    val n1 = mock[Operator]("n1")
+
+    val prod = EventProducer("p1", 1, generator, true)
+    prod.addOutputQueue(n1)
+
+    prod.inputEventSet.add(EventSet(50, 5.0, 0.0, prod -> 50.0))
+    prod.setLimit(n1, 100)
+
+    prod.generate(1000, 2000)
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(50.0))
+
+    prod.inputEventSet.reset()
+    prod.inputEventSet.add(EventSet(120, 5.0, 0.0, prod -> 50.0))
+    prod.generate(1000, 2000)
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(0.0))
+  }
+
   it should "process events and put them in the output queue" in new Fixture {
     val result1 = prod.generate(0, 1000)
     result1 should be (Generated(prod, 0, 1000, EventSet(100, 1000, 0, prod -> 100.0)))
@@ -82,8 +101,10 @@ class EventProducerTest extends FlatSpec
 
     prod2.inputQueue should be (66.666 +- 0.001)
     prod2.outputQueues(n1) should be (33.333 +- 0.001)
-
-
   }
+
+
+
+
 
 }

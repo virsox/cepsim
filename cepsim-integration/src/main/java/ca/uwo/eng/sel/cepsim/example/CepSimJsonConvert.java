@@ -11,6 +11,8 @@ import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -25,7 +27,7 @@ import java.util.*;
 public class CepSimJsonConvert {
 
     private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 10L;
+    private static final Long DURATION = 61L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -159,13 +161,13 @@ public class CepSimJsonConvert {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 1000, gen, false);
+            EventProducer p = new EventProducer("spout" + i, 30000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 50000, 100000);
-            Operator validate = new Operator("validate" + i, 30000, 100000);
-            Operator xml = new Operator("xmlOutput" + i, 40000, 100000);
+            Operator jsonParser = new Operator("jsonParser" + i, 50000, 1024);
+            Operator validate = new Operator("validate" + i, 30000, 1024);
+            Operator xml = new Operator("xmlOutput" + i, 40000, 1024);
 
-            EventConsumer c = new EventConsumer("end" + i, 1000, 1000000);
+            EventConsumer c = new EventConsumer("end" + i, 30000, 1024);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -204,8 +206,8 @@ public class CepSimJsonConvert {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights), 100);
-                //DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
+                //DefaultOpScheduleStrategy.weighted(weights), 100);
+                DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 

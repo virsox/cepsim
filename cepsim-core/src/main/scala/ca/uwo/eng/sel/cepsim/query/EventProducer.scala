@@ -36,8 +36,12 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   def generate(from: Double, to: Double): SimEvent = {
 
     val interval = to - from
-    val generated = (if (limitProducer) generator.generate(interval, Math.floor(maximumNumberOfEvents).toInt)
-                     else generator.generate(interval))
+    val generated = (
+      if (limitProducer) {
+        val toGenerate = Math.floor((maximumNumberOfEvents - inputQueue).max(0)).toInt
+        generator.generate(interval, toGenerate)
+      } else generator.generate(interval)
+    )
 
     val es = EventSet(generated, to, 0, Map(this -> generated))
     inputEventSet.add(es)

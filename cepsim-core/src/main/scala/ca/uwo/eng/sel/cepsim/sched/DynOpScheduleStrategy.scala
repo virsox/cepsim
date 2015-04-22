@@ -50,7 +50,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       * @return true if the vertex can be allocated, false otherwise.
       */
     private def canAllocate(v: Vertex): Boolean =
-      (instructionsNeeded(v) > 0) && (v.ipe < remainingInstructions)
+      (instructionsNeeded(v) > 1) && (v.ipe < remainingInstructions)
 
     /**
       * Get the index of the next vertex to be allocated. Method used in the second round.
