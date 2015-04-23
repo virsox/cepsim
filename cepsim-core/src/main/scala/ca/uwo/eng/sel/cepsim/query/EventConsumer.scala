@@ -21,13 +21,7 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
   val outputEventSet = EventSet.empty
 
   /** Total number of consumed events. */
-  def outputQueue: Int = Math.floor(outputEventSet.size).toInt
-
-  /**
-    * Because event consumers only consumes full events (does not consume partial events), this set
-    * accumulates the decimal parts that haven't been consumed.
-    */
-  var accumulated = EventSet.empty()
+  def outputQueue: Double = outputEventSet.size
 
   /**
     * Consumes events from the input queues.
@@ -41,30 +35,8 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
 
     val processed = EventSet.addAll(fromInput.values)
     processed.updateTimestamp(endTime)
-
-    val diff = processed.size -  Math.floor(processed.size)
-
-    // accumulates the decimal part
-    if (diff > 0) {
-      accumulated.add(processed.extract(diff))
-    }
-
-    // if it larger than one, then it is possible to emit more events
-    while (accumulated.size > 1.0) {
-      val es = accumulated.extract(1.0)
-      es.updateTimestamp(endTime)
-      processed.add(es)
-    }
-
-    // consider this is true if there were double rounding errors
-    if (Math.abs(accumulated.size - 1.0) < 0.001) {
-      accumulated.size = 1.0
-      accumulated.updateTimestamp(endTime)
-      processed.add(accumulated)
-      accumulated.reset()
-    }
-
     outputEventSet.add(processed)
+
     if (processed.size == 0) List()
     else List(Consumed(this, startTime, endTime, processed))
   }

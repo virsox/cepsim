@@ -47,7 +47,7 @@ class QueryVolumeTest extends FlatSpec {
 
       val t = cloudlet.metric(ThroughputMetric.ID, cons)
       val l = cloudlet.metric(LatencyMetric.ID, cons)
-      println(f"Iteration [${i}%d]: Size = ${cons.outputQueue}%d, T = ${t}%.2f, L = ${l}%.4f")
+      println(f"Iteration [${i}%d]: Size = ${cons.outputQueue}%.4f, T = ${t}%.2f, L = ${l}%.4f")
     }
 
 

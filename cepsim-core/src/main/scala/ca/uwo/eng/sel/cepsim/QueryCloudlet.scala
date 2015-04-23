@@ -105,7 +105,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // events to be consumed
         placement.producers foreach ((prod) => {
           val event = prod.generate(lastExecution, time)
-          iterationSimEvents += event
+          event match {
+            case Some(ev) => iterationSimEvents += ev
+            case None =>
+          }
         })
         lastExecution = time
 

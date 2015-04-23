@@ -47,7 +47,7 @@ class QueryCloudletTest extends FlatSpec
   }
 
   trait Fixture1 extends Fixture {
-    doReturn(Generated(prod, 0.0, 1000, EventSet(100.0, 1000, 0, Map(prod -> 100.0)))).when(prod).generate(0.0, 1000)
+    doReturn(Some(Generated(prod, 0.0, 1000, EventSet(100.0, 1000, 0, Map(prod -> 100.0))))).when(prod).generate(0.0, 1000)
 
     doReturn(List(Produced(prod, 1000.0, 1100.0, EventSet(100.0, 1100.0,  100.0, prod -> 100.0)))).when(prod).run(100000, 1000.0, 1100.0)
     doReturn(List(Produced(f1,   1100.0, 1500.0, EventSet(100.0, 1500.0,  500.0, prod -> 100.0)))).when(f1  ).run(400000, 1100.0, 1500.0)
@@ -163,16 +163,18 @@ class QueryCloudletTest extends FlatSpec
 
 
     // 1st iteration
-    doReturn(List(Produced(prod, 500.0,  550.0, EventSet(50.0,  550.0,  50.0, prod -> 50.0)))).when(prod).run( 50000, 500.0,  550.0)
-    doReturn(List(Produced(f1,   550.0,  750.0, EventSet(50.0,  750.0, 250.0, prod -> 50.0)))).when(f1  ).run(200000, 550.0,  750.0)
-    doReturn(List(Produced(f2,   750.0,  950.0, EventSet(50.0,  950.0, 450.0, prod -> 50.0)))).when(f2  ).run(200000, 750.0,  950.0)
-    doReturn(List(Consumed(cons, 950.0, 1000.0, EventSet(50.0, 1000.0, 500.0, prod -> 50.0)))).when(cons).run( 50000, 950.0, 1000.0)
+    doReturn(Some(Generated(prod,    0.0, 500.0, EventSet(50.0,  500.0,   0.0, prod -> 50.0)))).when(prod).generate(0.0, 500.0)
+    doReturn(List(Produced (prod, 500.0,  550.0, EventSet(50.0,  550.0,  50.0, prod -> 50.0)))).when(prod).run( 50000, 500.0,  550.0)
+    doReturn(List(Produced (f1,   550.0,  750.0, EventSet(50.0,  750.0, 250.0, prod -> 50.0)))).when(f1  ).run(200000, 550.0,  750.0)
+    doReturn(List(Produced (f2,   750.0,  950.0, EventSet(50.0,  950.0, 450.0, prod -> 50.0)))).when(f2  ).run(200000, 750.0,  950.0)
+    doReturn(List(Consumed (cons, 950.0, 1000.0, EventSet(50.0, 1000.0, 500.0, prod -> 50.0)))).when(cons).run( 50000, 950.0, 1000.0)
 
     // 2nd iteration
-    doReturn(List(Produced(prod, 1000.0, 1050.0, EventSet(50.0, 1050.0,  50.0, prod -> 50.0)))).when(prod).run( 50000, 1000.0, 1050.0)
-    doReturn(List(Produced(f1,   1050.0, 1250.0, EventSet(50.0, 1250.0, 250.0, prod -> 50.0)))).when(f1  ).run(200000, 1050.0, 1250.0)
-    doReturn(List(Produced(f2,   1250.0, 1450.0, EventSet(50.0, 1450.0, 450.0, prod -> 50.0)))).when(f2  ).run(200000, 1250.0, 1450.0)
-    doReturn(List(Consumed(cons, 1450.0, 1500.0, EventSet(50.0, 1500.0, 500.0, prod -> 50.0)))).when(cons).run(50000,  1450.0, 1500.0)
+    doReturn(Some(Generated(prod,  500.0, 1000.0, EventSet(50.0, 1000.0,  50.0, prod -> 50.0)))).when(prod).generate(500.0, 1000.0)
+    doReturn(List(Produced (prod, 1000.0, 1050.0, EventSet(50.0, 1050.0,  50.0, prod -> 50.0)))).when(prod).run( 50000, 1000.0, 1050.0)
+    doReturn(List(Produced (f1,   1050.0, 1250.0, EventSet(50.0, 1250.0, 250.0, prod -> 50.0)))).when(f1  ).run(200000, 1050.0, 1250.0)
+    doReturn(List(Produced (f2,   1250.0, 1450.0, EventSet(50.0, 1450.0, 450.0, prod -> 50.0)))).when(f2  ).run(200000, 1250.0, 1450.0)
+    doReturn(List(Consumed (cons, 1450.0, 1500.0, EventSet(50.0, 1500.0, 500.0, prod -> 50.0)))).when(cons).run(50000,  1450.0, 1500.0)
 
     // 2 iterations
     val cloudlet = QueryCloudlet.apply("c1", placement, opSchedule, 2)

@@ -27,13 +27,15 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   def inputQueue = inputEventSet.size
 
 
+  var accumulated = 0.0
+
   /**
     * Invokes the generator object in order to generate new events.
     * @param from Beginning of the period to be considered.
     * @param to End of the period.
     * @return A Generated simulation event.
     */
-  def generate(from: Double, to: Double): SimEvent = {
+  def generate(from: Double, to: Double): Option[SimEvent] = {
 
     val interval = to - from
     val generated = (
@@ -43,10 +45,26 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
       } else generator.generate(interval)
     )
 
-    val es = EventSet(generated, to, 0, Map(this -> generated))
-    inputEventSet.add(es)
+    // only the integer part
+    var output = Math.floor(generated)
 
-    Generated(this, from, to, es)
+    // accumulates the decimal part
+    val decimal = generated - output
+    if (decimal > 0) {
+      accumulated += decimal
+    }
+
+    if (accumulated + 0.001 > 1) {
+      output += 1
+      accumulated -= 1
+    }
+
+    // there is some output
+    if (output > 0) {
+      val es = EventSet(output, to, 0, Map(this -> output))
+      inputEventSet.add(es)
+      Some(Generated(this, from, to, es))
+    } else None
   }
 
   /**

@@ -36,7 +36,7 @@ class EventConsumerTest extends FlatSpec
 
     cons1 enqueueIntoInput(op1, EventSet(100.0, 500.0, 200.0, prod -> 100.0))
     val simEvent = cons1 run(100, 900.0, 1000.0)
-    simEvent should be (List(Consumed(cons1, 900.0, 1000, EventSet(100.0, 1000.0, 700.0, prod -> 100.0))))
+    simEvent should be (List(Consumed(cons1, 900.0, 1000.0, EventSet(100.0, 1000.0, 700.0, prod -> 100.0))))
 
     cons1.inputQueues(op1) should be (0)
     cons1.outputQueue should be (100)
@@ -55,46 +55,28 @@ class EventConsumerTest extends FlatSpec
 
     cons1.inputQueues(op1) should be (33.333 +- 0.001)
     cons1.inputQueues(op2) should be (16.666 +- 0.001)
-    cons1.outputQueue should be (100)
+    cons1.outputQueue should be (100.0 +- 0.001)
   }
 
-  it should "accumulate partial events" in new Fixture {
+  it should "generate partial events" in new Fixture {
     val cons1 = EventConsumer("c1", 3)
     cons1 addInputQueue op1
     cons1 enqueueIntoInput (op1, EventSet(100, 1000, 0, prod -> 100.0))
 
     val simEvent = cons1.run(100, 1000, 1100)(0).asInstanceOf[Consumed]
-    simEvent should equal (Consumed(cons1, 1000, 1100, EventSet(33.0, 1100.0, 100.0, prod -> 33.0)))
+    simEvent should equal (Consumed(cons1, 1000, 1100, EventSet(33.3333, 1100.0, 100.0, prod -> 33.3333)))
     cons1.inputQueues(op1) should be (66.666 +- 0.001)
-    cons1.outputQueue should be (33)
+    cons1.outputQueue should be (33.3333 +- 0.0001)
 
     val simEvent2 = cons1.run(100, 1100, 1200)(0).asInstanceOf[Consumed]
-    simEvent2 should equal (Consumed(cons1, 1100, 1200, EventSet(33.0, 1200.0, 200.0, prod -> 33.0)))
+    simEvent2 should equal (Consumed(cons1, 1100, 1200, EventSet(33.3333, 1200.0, 200.0, prod -> 33.3333)))
     cons1.inputQueues(op1) should be (33.333 +- 0.001)
-    cons1.outputQueue should be (66)
+    cons1.outputQueue should be (66.6666 +- 0.0001)
 
     val simEvent3 = cons1.run(100, 1200, 1300)(0).asInstanceOf[Consumed]
-    simEvent3 should equal (Consumed(cons1, 1200, 1300, EventSet(34.0, 1300.0, 300.0, prod -> 34.0)))
+    simEvent3 should equal (Consumed(cons1, 1200, 1300, EventSet(33.3333, 1300.0, 300.0, prod -> 33.3333)))
     cons1.inputQueues(op1) should be (0.000 +- 0.001)
-    cons1.outputQueue should be (100)
-
-  }
-
-  it should "consume input events even if no output is generated" in new Fixture {
-    val cons1 = EventConsumer("c1", 100)
-    cons1 addInputQueue op1
-    cons1 enqueueIntoInput (op1, EventSet(1, 0, 0, prod -> 1.0))
-
-    var simEvent = cons1.run(50, 0, 50)
-    simEvent should have size (0)
-    cons1.inputQueues(op1) should be (0.5 +- 0.001)
-
-    simEvent = cons1.run(50, 50, 100)
-    simEvent should have size (1)
-
-    cons1.inputQueues(op1) should be (0.0 +- 0.001)
-    cons1.outputQueue should be (1.0)
-    simEvent(0) should be (Consumed(cons1, 50, 100, EventSet(1.0, 100.0, 100.0, prod -> 1.0)))
+    cons1.outputQueue should be (100.0 +- 0.0001)
 
   }
 
