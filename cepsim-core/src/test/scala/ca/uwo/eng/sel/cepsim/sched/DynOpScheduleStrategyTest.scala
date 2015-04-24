@@ -46,7 +46,7 @@ class DynOpScheduleStrategyTest extends FlatSpec
       .when(allocationStrategy).instructionsPerOperator(1000, placement)
 
     val strategy = DynOpScheduleStrategy(allocationStrategy)
-    val ret = strategy.allocate(1000, placement)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement) // capacity = 0.01 MIPS = 10 instructions per ms
 
     doReturn(1.0).when(p1).ipe
     doReturn(1.0).when(f1).ipe
@@ -54,16 +54,16 @@ class DynOpScheduleStrategyTest extends FlatSpec
     doReturn(1.0).when(c1).ipe
 
     doReturn(250.0).when(p1).inputQueue
-    ret.next should be ((p1, 250))
+    ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
 
     doReturn(250.0).when(f1).totalInputEvents
-    ret.next should be ((f1, 250))
+    ret.next should be (ExecuteAction(f1, 25.0, 50.0, 250))
 
     doReturn(250.0).when(f2).totalInputEvents
-    ret.next should be ((f2, 100))
+    ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
 
     doReturn(200.0).when(c1).totalInputEvents
-    ret.next should be ((c1, 200))
+    ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
   }
 
   it should "reschedule operators if there are remaining instructions" in new Fixture {
@@ -74,7 +74,7 @@ class DynOpScheduleStrategyTest extends FlatSpec
 
     val strategy = new DynOpScheduleStrategy(allocationStrategy)
 
-    val ret = strategy.allocate(1000, placement)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement)
 
     doReturn(1.0).when(p1).ipe
     doReturn(1.0).when(f1).ipe
@@ -86,23 +86,23 @@ class DynOpScheduleStrategyTest extends FlatSpec
     doReturn(150.0).when(f2).totalInputEvents
     doReturn( 50.0).when(c1).totalInputEvents
 
-    ret.next should be ((p1, 150))
-    ret.next should be ((f1, 150))
-    ret.next should be ((f2, 250))
-    ret.next should be ((c1, 50))
+    ret.next should be (ExecuteAction(p1,  0.0, 15.0, 150))
+    ret.next should be (ExecuteAction(f1, 15.0, 30.0, 150))
+    ret.next should be (ExecuteAction(f2, 30.0, 55.0, 250))
+    ret.next should be (ExecuteAction(c1, 55.0, 60.0, 50))
 
     // ----- round 2
     doReturn(  0.0).when(p1).inputQueue
     doReturn(  0.0).when(f1).totalInputEvents
     doReturn(100.0).when(f2).totalInputEvents
-    ret.next should be ((f2, 250))
+    ret.next should be (ExecuteAction(f2, 60.0, 85.0, 250))
 
     doReturn(50.0).when(f2).totalInputEvents
     doReturn(50.0).when(c1).totalInputEvents
-    ret.next should be ((c1, 50))
+    ret.next should be (ExecuteAction(c1, 85.0, 90.0, 50))
 
     // ---- round 3
-    ret.next should be ((f2, 100))
+    ret.next should be (ExecuteAction(f2, 90.0, 100.0, 100))
 
   }
 

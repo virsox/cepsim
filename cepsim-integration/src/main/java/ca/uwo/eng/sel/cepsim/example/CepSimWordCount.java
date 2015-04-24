@@ -9,7 +9,7 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -185,8 +185,7 @@ public class CepSimWordCount {
 
 
         QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
-                //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 0.1, 2500));
-                RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500), 1);
+				DefaultOpScheduleStrategy.weighted(weights), 1);
 
 
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);

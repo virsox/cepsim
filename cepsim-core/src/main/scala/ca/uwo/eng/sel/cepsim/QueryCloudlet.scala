@@ -4,7 +4,7 @@ import ca.uwo.eng.sel.cepsim.history._
 import ca.uwo.eng.sel.cepsim.metric._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
-import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
+import ca.uwo.eng.sel.cepsim.sched.{ExecuteAction, OpScheduleStrategy}
 
 import scala.annotation.varargs
 import scala.collection.mutable.ListBuffer
@@ -84,12 +84,10 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
     if (instructions > 0) {
 
-      // auxiliary function
-      val instructionsPerMs = (capacity * 1000)
-      def totalMs(number: Double) = number / instructionsPerMs
+
 
       val instructionsPerIteration = Math.floor(instructions / iterations).toLong
-      var time = startTime
+      var iterationStartTime = startTime
 
       (1 to iterations).foreach((i) => {
 
@@ -104,24 +102,24 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
         // in theory this enables more complex strategies that consider the number of
         // events to be consumed
         placement.producers foreach ((prod) => {
-          val event = prod.generate(lastExecution, time)
+          val event = prod.generate(lastExecution, iterationStartTime)
           event match {
             case Some(ev) => iterationSimEvents += ev
             case None =>
           }
         })
-        lastExecution = time
+        lastExecution = iterationStartTime
 
         // Vertices execution
 
-        val verticesList = opSchedStrategy.allocate(availableInstructions, placement)
+        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement)
         verticesList.foreach { (elem) =>
 
-          val v: Vertex = elem._1
-          val startTime = time
-          val endTime = startTime + totalMs(elem._2)
+          val v: Vertex = elem.v
+          val startTime = elem.from
+          val endTime = elem.to//startTime + totalMs(elem._2)
 
-          iterationSimEvents ++= v.run(elem._2, startTime, endTime)
+          iterationSimEvents ++= v.run(elem.asInstanceOf[ExecuteAction].instructions, startTime, endTime)
 
           if (v.isInstanceOf[InputVertex]) {
             val iv = v.asInstanceOf[InputVertex]
@@ -162,7 +160,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
             }
           }
 
-          time = endTime
+          iterationStartTime = endTime
         }
 
         iterationSimEvents.foreach((simEvent) =>

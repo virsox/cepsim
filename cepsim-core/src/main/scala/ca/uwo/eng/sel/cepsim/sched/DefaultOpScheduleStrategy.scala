@@ -9,6 +9,9 @@ import java.util.{Map => JavaMap}
 /** DefaultOpScheduleStrategy companion object. */
 object DefaultOpScheduleStrategy {
 
+
+  def apply(allocStrategy: AllocationStrategy) = new DefaultOpScheduleStrategy(allocStrategy)
+
   def uniform() = new DefaultOpScheduleStrategy(UniformAllocationStrategy())
   def weighted() = new DefaultOpScheduleStrategy(WeightedAllocationStrategy.apply(Map.empty[Vertex, Double].withDefaultValue(1.0)))
 
@@ -19,18 +22,18 @@ object DefaultOpScheduleStrategy {
 }
 
 /**
-  * Default allocation strategy. This strategy distributes the available instructions equally
-  * among the queries of the placement. For each query, the allocated instructions are distributed
-  * among the vertices proportionally according to the instructions/event metric. For example, if an
-  * operator x requires 10 instructions/event, and an operator y requires 5, then x will receive twice
-  * more instructions.
+  * Default scheduling strategy. This strategy distributes the available instructions according to the
+  * informed allocation strategy, and iterate through the vertex according to the order defined by the
+  * placement class.
+  * @param allocStrategy Strategy used to split instructions among all vertices from the placement.
   */
 class DefaultOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
+  // cache results - performance improvement
   var cachedResults: Map[(Double, Placement), Map[Vertex, Double]] = Map.empty
 
 
-  override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] =  {
+  override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement): Iterator[Action] =  {
 
     val instrPerOperator = cachedResults.get((instructions, placement)) match {
       case Some(result) => result
@@ -42,7 +45,13 @@ class DefaultOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSch
     }
 
     // build the return list
-    placement.iterator.map((v) => (v, instrPerOperator(v)))
+    var time = startTime
+    placement.iterator.map((v) => {
+      val start = time
+      val end   = endTime(start, instrPerOperator(v), capacity)
+      time = end
+      ExecuteAction(v, start, end, instrPerOperator(v))
+    })
   }
 
 }

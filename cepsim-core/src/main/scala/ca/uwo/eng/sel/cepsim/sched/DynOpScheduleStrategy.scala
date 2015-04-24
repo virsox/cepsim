@@ -21,16 +21,18 @@ object DynOpScheduleStrategy {
   */
 class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
-  override def allocate(instructions: Double, placement: Placement): Iterator[(Vertex, Double)] =
-    new DynOpScheduleIterator(instructions, placement, allocStrategy)
+
+  override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement):
+    Iterator[Action] = new DynOpScheduleIterator(instructions, startTime, capacity, placement)
 
   /**
     * Iterator returned by the strategy.
     * @param instructions Total number of instructions that can be allocated.
     * @param placement Placement object encapsulating the vertices.
     */
-  class DynOpScheduleIterator(instructions: Double, placement: Placement, allocStrategy: AllocationStrategy)
-    extends Iterator[(Vertex, Double)] {
+  class DynOpScheduleIterator(instructions: Double, startTime: Double, capacity: Double,
+                              placement: Placement)
+    extends Iterator[Action] {
 
     /** Maximum number of instructions allocated to each vertex. */
     private val maxAllocation = allocStrategy.instructionsPerOperator(instructions, placement)
@@ -43,6 +45,9 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
     /** Current index in the vertices list - used in the second round. */
     private var currentIndex = 0
+
+    /** Current start time. */
+    private var currentTime = startTime
 
     /**
       * Verify if the vertex can be allocated
@@ -97,15 +102,21 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
     override def hasNext: Boolean = (nextVertexIndex != -1)
 
-    override def next(): (Vertex, Double) = {
+    override def next(): Action = {
+
       val v: Vertex = nextVertex()
 
       val allocation = instructionsNeeded(v).min(maxAllocation(v)).min(remainingInstructions)
       remainingInstructions -= allocation
 
-      (v, allocation)
+      val start = currentTime
+      val end   = endTime(start, allocation, capacity)
+      currentTime = end
+
+      ExecuteAction(v, start, end, allocation)
     }
 
   }
+
 
 }

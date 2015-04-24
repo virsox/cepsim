@@ -4,7 +4,7 @@ import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
 import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
-import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy
+import ca.uwo.eng.sel.cepsim.sched.{ExecuteAction, OpScheduleStrategy}
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -41,9 +41,13 @@ class QueryCloudletTest extends FlatSpec
     doReturn(Set(prod, f1, f2, cons)).when(placement).vertices
 
     var opSchedule = mock[OpScheduleStrategy]
-    doReturn(Iterator((prod, 100000.0), (f1, 400000.0), (f2, 400000.0), (cons, 100000.0))).
+    doReturn(Iterator(
+              ExecuteAction(prod, 1000.0, 1100.0, 100000.0),
+              ExecuteAction(f1, 1100.0, 1500.0, 400000.0),
+              ExecuteAction(f2, 1500.0, 1900.0, 400000.0),
+              ExecuteAction(cons, 1900.0, 2000.0, 100000.0))).
       when(opSchedule).
-      allocate(1000000, placement)
+      allocate(1000000, 1000.0, 1, placement)
   }
 
   trait Fixture1 extends Fixture {
@@ -155,11 +159,19 @@ class QueryCloudletTest extends FlatSpec
     // redefine schedule strategy
     opSchedule = mock[OpScheduleStrategy]
 
-    // this is needed to return a new iterator every time the method is invoked
-    doAnswer(new Answer[Iterator[(Vertex, Double)]]() {
-      override def answer(inv: InvocationOnMock): Iterator[(Vertex, Double)] =
-        Iterator((prod, 50000.0), (f1, 200000.0), (f2, 200000.0), (cons, 50000.0))
-    }).when(opSchedule).allocate(500000, placement)
+    // first iteration
+    doReturn(Iterator(
+        ExecuteAction(prod, 500.0,  550.0,  50000.0), ExecuteAction(f1,   550.0,  750.0, 200000.0),
+        ExecuteAction(f2,   750.0,  950.0, 200000.0), ExecuteAction(cons, 950.0, 1000.0,  50000.0))).
+      when(opSchedule).
+      allocate(500000, 500.0, 1, placement)
+
+    // second iteration
+    doReturn(Iterator(
+        ExecuteAction(prod, 1000.0, 1050.0,  50000.0), ExecuteAction(f1,   1050.0, 1250.0, 200000.0),
+        ExecuteAction(f2,   1250.0, 1450.0, 200000.0), ExecuteAction(cons, 1450.0, 1500.0,  50000.0))).
+      when(opSchedule).
+      allocate(500000, 1000.0, 1, placement)
 
 
     // 1st iteration

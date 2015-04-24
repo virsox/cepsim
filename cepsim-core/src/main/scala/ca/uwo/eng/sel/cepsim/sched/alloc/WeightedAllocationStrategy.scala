@@ -21,15 +21,19 @@ object WeightedAllocationStrategy {
   * @param weights Map from vertices to the weight assigned to each one.
   */
 class WeightedAllocationStrategy(weights: Map[Vertex, Double]) extends AllocationStrategy {
+
   /**
-   * Calculate the number os instructions to be allocated for each operator. First, the instructions are
-   * equally divided among all queries from the placement. Then, these instructions are distributed
-   * according to the weights vector.
-   *
-   * @param instructions Number of instructions to be allocated.
-   * @param placement Placement object encapsulating the vertices.
-   * @return A map of vertices to the number of instructions allocated to that vertex.
-   */
+    * Calculate the number os instructions to be allocated for each operator. First, the instructions are
+    * equally divided among all queries from the placement. Then, these instructions are distributed
+    * according to the instructions per event of each operator multiplied by its corresponding weight.
+    * For example, if an operator x requires 10 instructions/event, an operator y requires 5, and both
+    * have weight 1, then x will receive twice more instructions than y. Conversely, if y has weight 2, then
+    * both operators will receive the same number of instructions.
+    *
+    * @param instructions Number of instructions to be allocated.
+    * @param placement Placement object encapsulating the vertices.
+    * @return A map of vertices to the number of instructions allocated to that vertex.
+    */
   override def instructionsPerOperator(instructions: Double, placement: Placement): Map[Vertex, Double] = {
 
     // allocate the same amount of instructions for each query
