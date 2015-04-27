@@ -14,6 +14,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.collection.immutable.TreeSet
+
 
 @RunWith(classOf[JUnitRunner])
 class QueryCloudletTest extends FlatSpec
@@ -47,7 +49,7 @@ class QueryCloudletTest extends FlatSpec
               ExecuteAction(f2, 1500.0, 1900.0, 400000.0),
               ExecuteAction(cons, 1900.0, 2000.0, 100000.0))).
       when(opSchedule).
-      allocate(1000000, 1000.0, 1, placement)
+      allocate(1000000, 1000.0, 1, placement, TreeSet.empty)
   }
 
   trait Fixture1 extends Fixture {
@@ -164,14 +166,14 @@ class QueryCloudletTest extends FlatSpec
         ExecuteAction(prod, 500.0,  550.0,  50000.0), ExecuteAction(f1,   550.0,  750.0, 200000.0),
         ExecuteAction(f2,   750.0,  950.0, 200000.0), ExecuteAction(cons, 950.0, 1000.0,  50000.0))).
       when(opSchedule).
-      allocate(500000, 500.0, 1, placement)
+      allocate(500000, 500.0, 1, placement, TreeSet.empty)
 
     // second iteration
     doReturn(Iterator(
         ExecuteAction(prod, 1000.0, 1050.0,  50000.0), ExecuteAction(f1,   1050.0, 1250.0, 200000.0),
         ExecuteAction(f2,   1250.0, 1450.0, 200000.0), ExecuteAction(cons, 1450.0, 1500.0,  50000.0))).
       when(opSchedule).
-      allocate(500000, 1000.0, 1, placement)
+      allocate(500000, 1000.0, 1, placement, TreeSet.empty)
 
 
     // 1st iteration

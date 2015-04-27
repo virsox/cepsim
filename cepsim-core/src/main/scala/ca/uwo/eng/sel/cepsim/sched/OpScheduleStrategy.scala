@@ -1,7 +1,9 @@
 package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.query.Vertex
+
+import scala.collection.SortedSet
+import scala.collection.immutable.TreeSet
 
 /**
   * Strategy to distribute the available instructions to the placement vertices. It also defines the
@@ -21,7 +23,9 @@ trait OpScheduleStrategy {
     * @param startTime The current simulation time (in milliseconds).
     * @param capacity The total processor capacity (in MIPS) that is allocated to this cloudlet.
     * @param placement Placement object encapsulating the vertices.
+    * @param pendingActions Actions in the cloudlet that still need to be executed.
     * @return An iterator of Actions that must be executed by the simulation engine.
     */
-  def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement): Iterator[Action]
+  def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement,
+               pendingActions: SortedSet[Action] = TreeSet.empty): Iterator[Action]
 }

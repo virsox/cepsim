@@ -4,6 +4,9 @@ import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
 import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy
 
+import scala.collection.SortedSet
+import scala.collection.immutable.TreeSet
+
 /** DynOpScheduleStrategy companion object. */
 object DynOpScheduleStrategy {
   def apply(allocStrategy: AllocationStrategy) = new DynOpScheduleStrategy(allocStrategy)
@@ -12,7 +15,7 @@ object DynOpScheduleStrategy {
 /**
   * Schedule strategy that dynamically determines the next vertex to be processed. This strategy operates in
   * two or more rounds: in the first round, all operators receives the minimum between the number of instructions
-  * required to process all the input queues AND a maximum allocation value. The maximum allocation value
+  * required to process all the input queues and a maximum allocation value. The maximum allocation value
   * is determined by the allocation strategy informed as parameter. In the other rounds, the strategy iterates
   * through the operators and choose the next one which still has events in the input queue. This process is
   * repeated until all events have been processed OR there are no more instructions to be allocated.
@@ -22,8 +25,11 @@ object DynOpScheduleStrategy {
 class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
 
-  override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement):
-    Iterator[Action] = new DynOpScheduleIterator(instructions, startTime, capacity, placement)
+  override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement,
+                        pendingActions: SortedSet[Action] = TreeSet.empty): Iterator[Action] =
+    new DynOpScheduleIterator(instructions, startTime, capacity, placement,
+      pendingActions.filter(_.to < (startTime + instructionsInMs(instructions, capacity))))
+
 
   /**
     * Iterator returned by the strategy.
@@ -31,7 +37,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
     * @param placement Placement object encapsulating the vertices.
     */
   class DynOpScheduleIterator(instructions: Double, startTime: Double, capacity: Double,
-                              placement: Placement)
+                              placement: Placement, pendingActions: SortedSet[Action])
     extends Iterator[Action] {
 
     /** Maximum number of instructions allocated to each vertex. */
@@ -48,6 +54,9 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
     /** Current start time. */
     private var currentTime = startTime
+
+    /** List of actions that still need to be scheduled (initialized with all pending actions). */
+    private var toBeScheduled: List[Action] = pendingActions.toList
 
     /**
       * Verify if the vertex can be allocated
@@ -100,20 +109,38 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       }
 
 
-    override def hasNext: Boolean = (nextVertexIndex != -1)
+    override def hasNext: Boolean = (!toBeScheduled.isEmpty) || (nextVertexIndex != -1)
 
     override def next(): Action = {
 
-      val v: Vertex = nextVertex()
+      // check for pending actions
+      if (!toBeScheduled.isEmpty) {
+        val (head, tail) = (toBeScheduled.head, toBeScheduled.tail)
+        if ((head.from <= currentTime) || (nextVertexIndex == -1)) {
+          toBeScheduled = tail
+          if (currentTime < head.from)
+            currentTime = head.to
+          return head
+        }
+      }
 
+      val v: Vertex = nextVertex()
       val allocation = instructionsNeeded(v).min(maxAllocation(v)).min(remainingInstructions)
       remainingInstructions -= allocation
 
       val start = currentTime
       val end   = endTime(start, allocation, capacity)
       currentTime = end
+      val execute = ExecuteAction(v, start, end, allocation)
 
-      ExecuteAction(v, start, end, allocation)
+      // if there are pending actions that happens during the scheduled action,
+      // then we need to split the action in two
+      if ((!toBeScheduled.isEmpty) && (execute.include(toBeScheduled.head))) {
+        val head = toBeScheduled.head
+        val (p1, p2) = execute.splitAt(head.from)
+        toBeScheduled = head +: (p2 +: toBeScheduled.tail)
+        p1
+      } else execute
     }
 
   }

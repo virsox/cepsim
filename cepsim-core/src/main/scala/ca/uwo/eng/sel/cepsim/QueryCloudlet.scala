@@ -7,6 +7,7 @@ import ca.uwo.eng.sel.cepsim.query._
 import ca.uwo.eng.sel.cepsim.sched.{ExecuteAction, OpScheduleStrategy}
 
 import scala.annotation.varargs
+import scala.collection.immutable.TreeSet
 import scala.collection.mutable.ListBuffer
 
 
@@ -112,7 +113,7 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
         // Vertices execution
 
-        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement)
+        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, TreeSet.empty)
         verticesList.foreach { (elem) =>
 
           val v: Vertex = elem.v

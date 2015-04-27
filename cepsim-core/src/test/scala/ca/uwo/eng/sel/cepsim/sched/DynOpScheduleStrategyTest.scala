@@ -11,6 +11,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.collection.immutable.TreeSet
+
 /**
  * Created by virso on 2014-08-15.
  */
@@ -20,11 +22,11 @@ class DynOpScheduleStrategyTest extends FlatSpec
   with MockitoSugar {
 
   trait Fixture {
-    val p1 = mock[EventProducer]
-    val p2 = mock[EventProducer]
-    val f1 = mock[Operator]
-    val f2 = mock[Operator]
-    val c1 = mock[EventConsumer]
+    val p1 = mock[EventProducer]("p1")
+    val p2 = mock[EventProducer]("p2")
+    val f1 = mock[Operator]("f1")
+    val f2 = mock[Operator]("f2")
+    val c1 = mock[EventConsumer]("c1")
 
     val query1 = mock[Query]
 
@@ -39,19 +41,36 @@ class DynOpScheduleStrategyTest extends FlatSpec
     }).when(placement).iterator
   }
 
-  "A DynamicOpScheduleStrategy" should "schedule all operators first" in new Fixture {
 
+  trait Fixture1 extends Fixture {
     val allocationStrategy = mock[AllocationStrategy]
     doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 100.0, c1 -> 250.0))
       .when(allocationStrategy).instructionsPerOperator(1000, placement)
-
-    val strategy = DynOpScheduleStrategy(allocationStrategy)
-    val ret = strategy.allocate(1000, 0.0, 0.01, placement) // capacity = 0.01 MIPS = 10 instructions per ms
 
     doReturn(1.0).when(p1).ipe
     doReturn(1.0).when(f1).ipe
     doReturn(1.0).when(f2).ipe
     doReturn(1.0).when(c1).ipe
+
+    val strategy = DynOpScheduleStrategy(allocationStrategy)
+  }
+
+  trait Fixture2 extends Fixture {
+    val allocationStrategy = mock[AllocationStrategy]
+    doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 250.0, c1 -> 250.0))
+      .when(allocationStrategy).instructionsPerOperator(1000, placement)
+
+    val strategy = DynOpScheduleStrategy(allocationStrategy)
+
+    doReturn(1.0).when(p1).ipe
+    doReturn(1.0).when(f1).ipe
+    doReturn(5.0).when(f2).ipe
+    doReturn(1.0).when(c1).ipe
+  }
+
+
+  "A DynamicOpScheduleStrategy" should "schedule all operators first" in new Fixture1 {
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement) // capacity = 0.01 MIPS = 10 instructions per ms
 
     doReturn(250.0).when(p1).inputQueue
     ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
@@ -66,20 +85,113 @@ class DynOpScheduleStrategyTest extends FlatSpec
     ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
   }
 
-  it should "reschedule operators if there are remaining instructions" in new Fixture {
+  it should "consider a pending action between two actions" in new Fixture1 {
 
-    val allocationStrategy = mock[AllocationStrategy]
-    doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 250.0, c1 -> 250.0))
-      .when(allocationStrategy).instructionsPerOperator(1000, placement)
+    val enqueue1 = EnqueueAction(c1, 60.0, 10.0)
+    val pendingActions = TreeSet[Action](enqueue1)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
 
-    val strategy = new DynOpScheduleStrategy(allocationStrategy)
+    doReturn(250.0).when(p1).inputQueue
+    ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
+
+    doReturn(250.0).when(f1).totalInputEvents
+    ret.next should be (ExecuteAction(f1, 25.0, 50.0, 250))
+
+    doReturn(500.0).when(f2).totalInputEvents
+    ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
+    ret.next should be (enqueue1)
+
+    doReturn(200.0).when(c1).totalInputEvents
+    ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
+  }
+
+  it should "consider a pending action right in the beginning" in new Fixture1 {
+
+    val enqueue1 = EnqueueAction(f2, 10.0, 200.0)
+    val pendingActions = TreeSet[Action](enqueue1)
+    val ret = strategy.allocate(1000, 10.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
+
+    ret.next should be (enqueue1)
+
+    doReturn(100.0).when(p1).inputQueue
+    ret.next should be (ExecuteAction(p1, 10.0, 20.0, 100))
+
+    doReturn(100.0).when(f1).totalInputEvents
+    ret.next should be (ExecuteAction(f1, 20.0, 30.0, 100))
+
+    doReturn( 50.0).when(f2).totalInputEvents
+    ret.next should be (ExecuteAction(f2, 30.0, 35.0,  50))
+
+    doReturn( 50.0).when(c1).totalInputEvents
+    ret.next should be (ExecuteAction(c1, 35.0, 40.0,  50))
+
+    // no vertex has events left
+    doReturn(0.0).when(p1).inputQueue
+    doReturn(0.0).when(f1).totalInputEvents
+    doReturn(0.0).when(f2).totalInputEvents
+    doReturn(0.0).when(c1).totalInputEvents
+    ret.hasNext should be (false)
+  }
+
+  it should "consider a pending action in the middle of a execute action" in new Fixture1 {
+
+    val enqueue1 = EnqueueAction(f2, 15.0, 200.0)
+    val pendingActions = TreeSet[Action](enqueue1)
+
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
+
+    doReturn(100.0).when(p1).inputQueue
+    ret.next should be (ExecuteAction(p1, 0.0, 10.0, 100))
+
+    doReturn(100.0).when(f1).totalInputEvents
+    ret.next should be (ExecuteAction(f1, 10.0, 15.0, 50))
+    ret.next should be (enqueue1)
+    ret.next should be (ExecuteAction(f1, 15.0, 20.0, 50))
+
+    doReturn( 50.0).when(f2).totalInputEvents
+    ret.next should be (ExecuteAction(f2, 20.0, 25.0, 50))
+
+    doReturn( 50.0).when(c1).totalInputEvents
+    ret.next should be (ExecuteAction(c1, 25.0, 30.0, 50))
+
+    // no vertex has events left
+    doReturn(0.0).when(p1).inputQueue
+    doReturn(0.0).when(f1).totalInputEvents
+    doReturn(0.0).when(f2).totalInputEvents
+    doReturn(0.0).when(c1).totalInputEvents
+    ret.hasNext should be (false)
+  }
+
+
+  it should "consider many pending actions" in new Fixture1 {
+    val enqueue1 = EnqueueAction(c1,  0.0, 20.0)
+    val enqueue2 = EnqueueAction(f2, 40.0, 30.0)
+    val enqueue3 = EnqueueAction(c1, 60.0, 10.0)
+
+    val pendingActions = TreeSet[Action](enqueue1, enqueue2, enqueue3)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions)
+
+    ret.next should be (enqueue1)
+    doReturn(250.0).when(p1).inputQueue
+    ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
+
+    doReturn(250.0).when(f1).totalInputEvents
+    ret.next should be (ExecuteAction(f1, 25.0, 40.0, 150))
+    ret.next should be (enqueue2)
+    ret.next should be (ExecuteAction(f1, 40.0, 50.0, 100))
+
+    doReturn(500.0).when(f2).totalInputEvents
+    ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
+    ret.next should be (enqueue3)
+
+    doReturn(200.0).when(c1).totalInputEvents
+    ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
+
+  }
+
+  it should "reschedule operators if there are remaining instructions" in new Fixture2 {
 
     val ret = strategy.allocate(1000, 0.0, 0.01, placement)
-
-    doReturn(1.0).when(p1).ipe
-    doReturn(1.0).when(f1).ipe
-    doReturn(5.0).when(f2).ipe
-    doReturn(1.0).when(c1).ipe
 
     doReturn(150.0).when(p1).inputQueue
     doReturn(150.0).when(f1).totalInputEvents
@@ -106,5 +218,41 @@ class DynOpScheduleStrategyTest extends FlatSpec
 
   }
 
+  it should "consider pending actions in the second round of execution" in new Fixture2 {
+
+    val enqueue1 = EnqueueAction(c1, 30.0, 20.0)
+    val enqueue2 = EnqueueAction(f2, 70.0, 30.0)
+    val enqueue3 = EnqueueAction(c1, 90.0, 10.0)
+
+    val pendingActions = TreeSet[Action](enqueue1, enqueue2, enqueue3)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions)
+
+    doReturn(150.0).when(p1).inputQueue
+    doReturn(150.0).when(f1).totalInputEvents
+    doReturn(150.0).when(f2).totalInputEvents
+    doReturn( 50.0).when(c1).totalInputEvents
+
+    ret.next should be (ExecuteAction(p1,  0.0, 15.0, 150))
+    ret.next should be (ExecuteAction(f1, 15.0, 30.0, 150))
+    ret.next should be (enqueue1)
+    ret.next should be (ExecuteAction(f2, 30.0, 55.0, 250))
+    ret.next should be (ExecuteAction(c1, 55.0, 60.0, 50))
+
+    // ----- round 2
+    doReturn(  0.0).when(p1).inputQueue
+    doReturn(  0.0).when(f1).totalInputEvents
+    doReturn(100.0).when(f2).totalInputEvents
+    ret.next should be (ExecuteAction(f2, 60.0, 70.0, 100))
+    ret.next should be (enqueue2)
+    ret.next should be (ExecuteAction(f2, 70.0, 85.0, 150))
+
+    doReturn(50.0).when(f2).totalInputEvents
+    doReturn(50.0).when(c1).totalInputEvents
+    ret.next should be (ExecuteAction(c1, 85.0, 90.0, 50))
+    ret.next should be (enqueue3)
+
+    // ---- round 3
+    ret.next should be (ExecuteAction(f2, 90.0, 100.0, 100))
+  }
 
 }
