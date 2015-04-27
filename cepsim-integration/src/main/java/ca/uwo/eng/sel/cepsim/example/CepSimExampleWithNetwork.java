@@ -190,8 +190,8 @@ public class CepSimExampleWithNetwork {
 				scala.collection.immutable.List.<Vertex>empty());
 
         // ------------------  create cloudlets
-		QueryCloudlet p1Cloudlet = new QueryCloudlet("cl1", placement1, DefaultOpScheduleStrategy.weighted(), 1);
-		QueryCloudlet p2Cloudlet = new QueryCloudlet("cl2", placement2, DefaultOpScheduleStrategy.weighted(), 1);
+		QueryCloudlet p1Cloudlet = QueryCloudlet.apply("cl1", placement1, DefaultOpScheduleStrategy.weighted(), 1);
+		QueryCloudlet p2Cloudlet = QueryCloudlet.apply("cl2", placement2, DefaultOpScheduleStrategy.weighted(), 1);
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
 		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);

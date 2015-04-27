@@ -3,13 +3,16 @@ package ca.uwo.eng.sel.cepsim.sched.alloc
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{Query, EventConsumer, Operator, EventProducer}
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy
+import org.junit.runner.RunWith
 import org.mockito.Mockito._
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created by virso on 2015-04-23.
  */
+@RunWith(classOf[JUnitRunner])
 class WeightedAllocationStrategyTest extends FlatSpec
   with Matchers
   with MockitoSugar {

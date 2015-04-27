@@ -184,7 +184,7 @@ public class CepSimWordCount {
 
 
 
-        QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
+        QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
 				DefaultOpScheduleStrategy.weighted(weights), 1);
 
 

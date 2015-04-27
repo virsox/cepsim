@@ -2,34 +2,71 @@ package ca.uwo.eng.sel.cepsim
 
 import ca.uwo.eng.sel.cepsim.history._
 import ca.uwo.eng.sel.cepsim.metric._
+import ca.uwo.eng.sel.cepsim.network.NetworkInterface
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
-import ca.uwo.eng.sel.cepsim.sched.{ExecuteAction, OpScheduleStrategy}
+import ca.uwo.eng.sel.cepsim.sched.{EnqueueAction, Action, ExecuteAction, OpScheduleStrategy}
 
 import scala.annotation.varargs
 import scala.collection.immutable.TreeSet
 import scala.collection.mutable.ListBuffer
 
 
+/** QueryCloudlet companion object */
 object QueryCloudlet {
+
   def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int = 1) =
-    new QueryCloudlet(id, placement, opSchedStrategy, iterations)
+    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null)
+
+  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
+            networkInterface: NetworkInterface) =
+    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface)
+
+
+  @varargs def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
+             calculator: MetricCalculator*) =
+    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null, calculator:_*)
+
+  @varargs def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
+            networkInterface: NetworkInterface, calculator: MetricCalculator*) =
+    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface, calculator:_*)
+
+
+//  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy,
+//            iterations: Int = 1, networkInterface: NetworkInterface = null,
+//            metricCalculators: Set[MetricCalculator] = Set.empty) =
+//    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface, metricCalculators.toSeq:_*)
+//
+//  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy,
+//            iterations: Int, networkInterface: NetworkInterface = null) =
+//    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null)
 }
 
-class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrategy: OpScheduleStrategy,
-                    iterations: Int) {
+@varargs class QueryCloudlet(val id: String, val placement: Placement, opSchedStrategy: OpScheduleStrategy,
+                    val iterations: Int, var networkInterface: NetworkInterface,
+                    metricCalculators: MetricCalculator*) {
 
   // --------------- Metric manipulation
 
-  var calculatorsMap =  Map.empty[String, MetricCalculator]
-  var calculators = Set.empty[MetricCalculator]
+  private var calculatorsMap =  Map.empty[String, MetricCalculator]
+  private var calculators = Set.empty[MetricCalculator]
+
+  private def isRegistered(calculator: MetricCalculator): Boolean = {
+    calculators.exists(_.getClass() == calculator.getClass())
+  }
 
   def registerCalculator(calculator: MetricCalculator) = {
-    calculator.ids.foreach((id) =>
-      calculatorsMap = calculatorsMap updated (id, calculator)
-    )
-    calculators = calculators + calculator
+    if (!isRegistered(calculator)) {
+      calculator.ids.foreach((id) =>
+        calculatorsMap = calculatorsMap updated (id, calculator)
+      )
+      calculators = calculators + calculator
+    }
   }
+
+  // register all metrics
+  metricCalculators.foreach(registerCalculator(_))
+
 
   def metric(id: String, v: Vertex) = calculatorsMap(id).consolidate(id, v)
   def metricList(id: String, v: Vertex) = calculatorsMap(id).results(id, v)
@@ -37,14 +74,20 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   // ---------------------------------------
 
 
+  // --------------- Network interface
+
+
+
+
   var lastExecution = 0.0
+  var pendingActions = TreeSet.empty[Action]
+
 
   /**
     * Initialize all vertices from the cloudlet's placement.
     * @param startTime Execution start time (in milliseconds).
     */
-  @varargs def init(startTime: Double, calculators: MetricCalculator*): Unit = {
-    calculators.foreach((calculator) => registerCalculator(calculator))
+  def init(startTime: Double): Unit = {
     placement.vertices.foreach(_.init(startTime))
 
     lastExecution = startTime
@@ -53,22 +96,17 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
   /**
    * Enqueue into a vertex events received from another vertex that is currently running in
    * another placement.
-   * @param receivedTime Time in which the events has been received (in milliseconds).
-   * @param v Vertex that has received the events.
+   * @param receivedTime Time in which the events have been received (in milliseconds).
    * @param orig Origin of the received events.
-   * @param events Number of events that has been received.
+   * @param v Vertex that has received the events.
+   * @param es EventSet to be enqueued.
    * @return History containing the received event logged.
    */
-  def enqueue(receivedTime: Double, v: InputVertex, orig: OutputVertex, events: Int): History[SimEvent] = {
+  def enqueue(receivedTime: Double, orig: OutputVertex, v: InputVertex, es: EventSet): Unit = {
     if (!placement.vertices.contains(v))
       throw new IllegalStateException("This cloudlet does not contain the target vertex")
 
-
-    // TODO do we need a received type of event?
-    var history = History()
-    //v.enqueueIntoInput(orig, events)
-    //history = history.logReceived(id, receivedTime, v, orig, events)
-    history
+    pendingActions += EnqueueAction(v, orig, receivedTime, es)
   }
 
 
@@ -113,55 +151,15 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
 
         // Vertices execution
 
-        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, TreeSet.empty)
+        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity,placement, pendingActions)
         verticesList.foreach { (elem) =>
 
-          val v: Vertex = elem.v
-          val startTime = elem.from
-          val endTime = elem.to//startTime + totalMs(elem._2)
-
-          iterationSimEvents ++= v.run(elem.asInstanceOf[ExecuteAction].instructions, startTime, endTime)
-
-          if (v.isInstanceOf[InputVertex]) {
-            val iv = v.asInstanceOf[InputVertex]
-            if (iv.isBounded()) {
-              iv.predecessors.foreach { (pred) =>
-                pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
-              }
-            }
+          elem match {
+            case executeAction: ExecuteAction => iterationSimEvents ++= execute(executeAction)
+            case enqueueAction: EnqueueAction => execute(enqueueAction)
           }
 
-          // check if there are events to be sent to remote vertices
-          if (v.isInstanceOf[OutputVertex]) {
-
-            val ov = v.asInstanceOf[OutputVertex]
-
-            val successors: Set[InputVertex] = ov.successors
-            val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
-
-            val inPlacement = successors.intersect(placementInputVertices)
-            val notInPlacement = successors -- placementInputVertices
-
-
-            notInPlacement.foreach { (dest) =>
-              // log and remove from the output queue
-              // the actual sending is not implemented here
-
-              val sentMessages = Math.floor(ov.outputQueues(dest)).toInt
-              if (sentMessages > 0) {
-                // TODO think about how to model remote communication
-//                history = history.logSent(id, startTime, v, dest, sentMessages)
-                ov.dequeueFromOutput(dest, sentMessages)
-              }
-            }
-
-            inPlacement.foreach { (dest) =>
-              val events = ov.outputQueues(dest)
-              dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))
-            }
-          }
-
-          iterationStartTime = endTime
+          iterationStartTime = elem.to
         }
 
         iterationSimEvents.foreach((simEvent) =>
@@ -173,6 +171,52 @@ class QueryCloudlet(val id: String, val placement: Placement, val opSchedStrateg
    }
 
     history
+  }
+
+  private def execute(action: EnqueueAction) = {
+    action.v.enqueueIntoInput(action.fromVertex, action.es)
+  }
+
+  private def execute(action: ExecuteAction): Seq[SimEvent] = {
+    val v: Vertex = action.v
+    val startTime = action.from
+    val endTime = action.to//startTime + totalMs(elem._2)
+
+    val simEvents = v.run(action.asInstanceOf[ExecuteAction].instructions, startTime, endTime)
+
+    if (v.isInstanceOf[InputVertex]) {
+      val iv = v.asInstanceOf[InputVertex]
+      if (iv.isBounded()) {
+        iv.predecessors.foreach { (pred) =>
+          pred.setLimit(iv, iv.queueMaxSize - iv.inputQueues(pred))
+        }
+      }
+    }
+
+    // check if there are events to be sent to remote vertices
+    if (v.isInstanceOf[OutputVertex]) {
+
+      val ov = v.asInstanceOf[OutputVertex]
+
+      val successors: Set[InputVertex] = ov.successors
+      val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
+
+      val inPlacement = successors.intersect(placementInputVertices)
+      val notInPlacement = successors -- placementInputVertices
+
+
+      notInPlacement.foreach { (dest) =>
+        val events = ov.dequeueFromOutput(dest, ov.outputQueues(dest))
+        networkInterface.sendMessage(endTime, ov, dest, events)
+      }
+
+      inPlacement.foreach { (dest) =>
+        val events = ov.outputQueues(dest)
+        dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))
+      }
+    }
+
+    simEvents
   }
 
 }

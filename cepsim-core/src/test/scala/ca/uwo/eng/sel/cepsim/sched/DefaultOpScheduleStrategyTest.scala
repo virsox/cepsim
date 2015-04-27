@@ -1,5 +1,6 @@
 package ca.uwo.eng.sel.cepsim.sched
 
+import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy
@@ -20,6 +21,7 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
   with MockitoSugar {
 
   trait Fixture {
+
     val p1 = mock[EventProducer]
     val f1 = mock[Operator]
     val c1 = mock[EventConsumer]
@@ -40,6 +42,8 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     val a1 = ExecuteAction(p1,   0.0,  200.0, 200000.0)
     val a2 = ExecuteAction(f1, 200.0,  800.0, 600000.0)
     val a3 = ExecuteAction(c1, 800.0, 1000.0, 200000.0)
+
+    val ov = mock[Operator]
   }
 
 
@@ -69,14 +73,15 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
   it should "consider a pending action between two actions" in new Fixture {
 
     // right before c1 execution
-    val pendingActions = TreeSet[Action](EnqueueAction(c1, 800.0, 100.0))
+    val enqueue1 = EnqueueAction(c1, ov, 800.0, EventSet(100.0, 700.0, 100.0, p1 -> 100.0))
+    val pendingActions = TreeSet[Action](enqueue1)
 
     val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
     val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)
 
     it.next should be (a1)
     it.next should be (a2)
-    it.next should be (EnqueueAction(c1, 800.0, 100.0))
+    it.next should be (enqueue1)
     it.next should be (a3)
     it.hasNext should be (false)
   }
@@ -84,12 +89,13 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
   it should "consider a pending action right in the beginning" in new Fixture {
 
     // right before p1 execution
-    val pendingActions = TreeSet[Action](EnqueueAction(c1, 0.0, 100.0))
+    val enqueue1 = EnqueueAction(c1, ov, 0.0, EventSet(100.0, 0.0, 0.0, p1 -> 100.0))
+    val pendingActions = TreeSet[Action](enqueue1)
 
     val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
     val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)
 
-    it.next should be (EnqueueAction(c1, 0.0, 100.0))
+    it.next should be (enqueue1)
     it.next should be (a1)
     it.next should be (a2)
     it.next should be (a3)
@@ -98,13 +104,14 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
 
   it should "consider a pending action in the middle of a execute action" in new Fixture {
 
-    val pendingActions = TreeSet[Action](EnqueueAction(c1, 100.0, 100.0))
+    val enqueue1 = EnqueueAction(c1, ov, 100.0, EventSet(100.0, 50.0, 0.0, p1 -> 100.0))
+    val pendingActions = TreeSet[Action](enqueue1)
 
     val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
     val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)
 
     it.next should be (ExecuteAction(p1,   0.0, 100.0, 100000.0))
-    it.next should be (EnqueueAction(c1, 100.0, 100.0))
+    it.next should be (enqueue1)
     it.next should be (ExecuteAction(p1, 100.0, 200.0, 100000.0))
     it.next should be (a2)
     it.next should be (a3)
@@ -113,26 +120,29 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
 
 
   it should "consider many pending actions" in new Fixture {
-    val pendingActions = TreeSet[Action](EnqueueAction(p1,   0.0, 100.0),
-                                         EnqueueAction(f1, 100.0,  50.0),
-                                         EnqueueAction(c1, 800.0,  30.0))
+    val enqueue1 = EnqueueAction(f1, ov,   0.0, EventSet(100.0,   0.0,  0.0, p1 -> 100.0))
+    val enqueue2 = EnqueueAction(f1, ov, 100.0, EventSet( 50.0,  20.0, 10.0, p1 -> 50.0))
+    val enqueue3 = EnqueueAction(c1, ov, 800.0, EventSet( 30.0, 400.0, 10.0, p1 -> 30.0))
+    val pendingActions = TreeSet[Action](enqueue1, enqueue2, enqueue3)
 
     val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
     val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)
 
-    it.next should be (EnqueueAction(p1,   0.0, 100.0))
-    it.next should be (ExecuteAction(p1,   0.0, 100.0, 100000.0))
-    it.next should be (EnqueueAction(f1, 100.0,  50.0))
+    it.next should be (enqueue1)
+    it.next should be (ExecuteAction(p1, 0.0, 100.0, 100000.0))
+    it.next should be (enqueue2)
     it.next should be (ExecuteAction(p1, 100.0, 200.0, 100000.0))
     it.next should be (a2)
-    it.next should be (EnqueueAction(c1, 800.0,  30.0))
+    it.next should be (enqueue3)
     it.next should be (a3)
     it.hasNext should be (false)
   }
 
   it should "not consider actions after the iteration end" in new Fixture {
     // right before p1 execution
-    val pendingActions = TreeSet[Action](EnqueueAction(c1, 1000.0, 100.0), EnqueueAction(c1, 2000.0, 100.0))
+    val enqueue1 = EnqueueAction(c1, ov, 1000.0, EventSet(100.0,  800.0, 100.0, p1 -> 100.0))
+    val enqueue2 = EnqueueAction(c1, ov, 2000.0, EventSet(100.0, 1500.0, 200.0, p1 -> 100.0))
+    val pendingActions = TreeSet[Action](enqueue1, enqueue2)
 
     val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
     val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)

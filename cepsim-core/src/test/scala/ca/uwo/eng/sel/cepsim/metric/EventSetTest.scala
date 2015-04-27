@@ -1,12 +1,15 @@
 package ca.uwo.eng.sel.cepsim.metric
 
 import ca.uwo.eng.sel.cepsim.query.EventProducer
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * Created by virso on 2015-04-17.
  */
+@RunWith(classOf[JUnitRunner])
 class EventSetTest extends FlatSpec
   with Matchers
   with MockitoSugar {

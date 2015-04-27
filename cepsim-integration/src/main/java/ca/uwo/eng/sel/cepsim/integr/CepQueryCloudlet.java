@@ -1,10 +1,7 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
 import ca.uwo.eng.sel.cepsim.history.SimEvent;
-import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
-import ca.uwo.eng.sel.cepsim.metric.LatencyThroughputCalculator;
-import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
-import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
+import ca.uwo.eng.sel.cepsim.metric.*;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
@@ -40,34 +37,41 @@ public class CepQueryCloudlet extends Cloudlet {
 
     private double  executionTime;
     private boolean hasFinished;
-  
-	public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
-                            NetworkInterface networkInterface) {
-		// we are passing some "default parameters" for the following arguments
-		
-		// cloudletLength = Long.MAX_VALUE (this value is not used for CepCloudlets)
-		// pesNumber = 1
-		// cloudletFileSize = 0
-		// cloudletOutputSize = 0
-		// utilizationModelCpu = UtilizationModelFull
-		// utilizationModelRam = UtilizationModelFull
-		// utilizationModelBw =	UtilizationModelFull	
-		super (cloudletId, Long.MAX_VALUE, 1,
-				0, 0, UTIL_MODEL_FULL, UTIL_MODEL_FULL,
-				UTIL_MODEL_FULL, record);
-				
-		this.cloudlet = cloudlet;
-		this.history = new History<>();
+
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
+                            NetworkInterface networkInterface, MetricCalculator calculator) {
+        // we are passing some "default parameters" for the following arguments
+
+        // cloudletLength = Long.MAX_VALUE (this value is not used for CepCloudlets)
+        // pesNumber = 1
+        // cloudletFileSize = 0
+        // cloudletOutputSize = 0
+        // utilizationModelCpu = UtilizationModelFull
+        // utilizationModelRam = UtilizationModelFull
+        // utilizationModelBw =	UtilizationModelFull
+        super (cloudletId, Long.MAX_VALUE, 1,
+                0, 0, UTIL_MODEL_FULL, UTIL_MODEL_FULL,
+                UTIL_MODEL_FULL, record);
+
+        this.cloudlet = cloudlet;
+        this.history = new History<>();
         this.executionTime = 0;
         this.hasFinished = false;
 
-		// the vmId can be obtained from the placement
-		setVmId(this.cloudlet.placement().vmId());
+        // the vmId can be obtained from the placement
+        setVmId(this.cloudlet.placement().vmId());
 
         // list of network interfaces
         this.networkInterface = networkInterface;
-
         this.networkEvents = new PriorityQueue<>();
+
+        this.cloudlet.registerCalculator(calculator);
+    }
+
+
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
+                            NetworkInterface networkInterface) {
+		this(cloudletId, cloudlet, record, networkInterface, LatencyThroughputCalculator.apply(cloudlet.placement()));
 	}
 
 	
@@ -115,7 +119,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
         // it is the first time this method has been invoked
         if (this.executionTime == 0) {
-            this.cloudlet.init(previousTimeInMs, getMetricCalculator(this.cloudlet.placement()));
+            this.cloudlet.init(previousTimeInMs);
         }
         this.executionTime += (currentTime - previousTime);
 
@@ -123,12 +127,12 @@ public class CepQueryCloudlet extends Cloudlet {
         CepNetworkEvent netEvent = null;
         while (((netEvent = this.networkEvents.peek()) != null) && (netEvent.getDestTimestamp() < previousTime)) {
             this.networkEvents.remove();
-
-            History receivedHistory = this.cloudlet.enqueue(
-                    netEvent.getDestTimestamp() * 1000, (InputVertex) netEvent.getDest(),
-                    (OutputVertex) netEvent.getOrig(), netEvent.getQuantity());
-
-            history.merge(receivedHistory);
+            // TODO rethink networked queries
+//            History receivedHistory = this.cloudlet.enqueue(
+//                    netEvent.getDestTimestamp() * 1000, (InputVertex) netEvent.getDest(),
+//                    (OutputVertex) netEvent.getOrig(), netEvent.getQuantity());
+//
+//            history.merge(receivedHistory);
         }
 
         // this means the cepCloudlet has finished between previousTime and the currentTime
@@ -181,18 +185,18 @@ public class CepQueryCloudlet extends Cloudlet {
 
 
     // ------------ for testing only - mock injection
-    private MetricCalculator calculator;
-
-    private MetricCalculator getMetricCalculator(Placement placement) {
-        if (calculator == null) {
-            this.calculator = LatencyThroughputCalculator.apply(placement);
-        }
-        return calculator;
-    }
-
-    void setMetricCalculator(MetricCalculator calculator) {
-        this.calculator = calculator;
-    }
+//    private MetricCalculator calculator;
+//
+//    private MetricCalculator getMetricCalculator(Placement placement) {
+//        if (calculator == null) {
+//            this.calculator = LatencyThroughputCalculator.apply(placement);
+//        }
+//        return calculator;
+//    }
+//
+//    void setMetricCalculator(MetricCalculator calculator) {
+//        this.calculator = calculator;
+//    }
 
 
 

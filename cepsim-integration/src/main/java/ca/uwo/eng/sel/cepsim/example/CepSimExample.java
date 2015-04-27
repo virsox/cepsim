@@ -173,7 +173,7 @@ public class CepSimExample {
 			queries.add(q);
 			
 			Placement placement = Placement.withQueries(queries, 1);
-			QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement, DefaultOpScheduleStrategy.weighted(), 1);//new RoundRobinOpScheduleStrategy(10));
+			QueryCloudlet qCloudlet = QueryCloudlet.apply("cl" + i, placement, DefaultOpScheduleStrategy.weighted(), 1);//new RoundRobinOpScheduleStrategy(10));
 						
 			CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
 			cloudlet.setUserId(brokerId);

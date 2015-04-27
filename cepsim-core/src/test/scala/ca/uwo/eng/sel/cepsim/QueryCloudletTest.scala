@@ -2,14 +2,14 @@ package ca.uwo.eng.sel.cepsim
 
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
 import ca.uwo.eng.sel.cepsim.metric.EventSet
+import ca.uwo.eng.sel.cepsim.network.NetworkInterface
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
-import ca.uwo.eng.sel.cepsim.sched.{ExecuteAction, OpScheduleStrategy}
+import ca.uwo.eng.sel.cepsim.sched.{EnqueueAction, ExecuteAction, OpScheduleStrategy}
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
+import org.mockito.Mockito
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -62,7 +62,7 @@ class QueryCloudletTest extends FlatSpec
   }
 
   "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
-    val cloudlet = QueryCloudlet.apply("c1", placement, opSchedule)
+    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
     cloudlet.init(0.0)
 
     verify(prod).init(0.0)
@@ -72,16 +72,14 @@ class QueryCloudletTest extends FlatSpec
   }
 
   it should "correctly enqueue events received from the network" in new Fixture {
-    // TODO fix this test after working on networked queries
-    val cloudlet = QueryCloudlet.apply("c1", placement, opSchedule)
-    val history = cloudlet.enqueue(100.0, f1, prod, 1000)
 
-//    verify(f1).enqueueIntoInput(prod, 1000)
+    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
+    val enqueuedEs = EventSet(1000, 50.0, 10.0, prod -> 100.0)
 
+    cloudlet.enqueue(100.0, prod, f1, enqueuedEs)
 
-    val entries = history.from(f1)
-    entries should have size (0)
-    //entries should contain theSameElementsInOrderAs ())
+    cloudlet.pendingActions should have size (1)
+    cloudlet.pendingActions should contain (EnqueueAction(f1, prod, 100.0, enqueuedEs))
   }
 
   // --------------------------------------------------
@@ -114,8 +112,9 @@ class QueryCloudletTest extends FlatSpec
   }
 
 
-  it should "not run operators that are in a different Placement" in new Fixture1 {
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
+  it should "send events to operators that are in a different Placement" in new Fixture1 {
+    val network = mock[NetworkInterface]
+    val cloudlet = QueryCloudlet("c1", placement, opSchedule, 1, network)
     cloudlet.init(0.0)
 
     // create new operators
@@ -134,6 +133,9 @@ class QueryCloudletTest extends FlatSpec
     when(f2.outputQueues(cons)).thenReturn(100.0)
     when(f2.outputQueues(  f3)).thenReturn(100.0)
 
+    val es = EventSet(100.0, 1900.0, 900.0, prod -> 100.0)
+    when(f2.dequeueFromOutput(f3, 100.0)).thenReturn(es)
+
     // the cloudlet should run all operators
     val history = cloudlet run(1000000, 1000.0, 1)
 
@@ -147,8 +149,9 @@ class QueryCloudletTest extends FlatSpec
     verify(f3, never()).run(anyDouble(), anyDouble(), anyDouble())
     verify(cons2, never()).run(anyDouble(), anyDouble(), anyDouble())
 
+    // network interface object should be invoked
+    verify(network).sendMessage(1900.0, f2, f3, es)
 
-    // TODO fix this test after working on networked queries
     val entries = history.from(f2)
     entries should have size (1)
     entries should be (List(Produced(f2, 1500.0, 1900.0, EventSet(100.0, 1900.0, 900.0, prod -> 100.0))))
@@ -202,7 +205,6 @@ class QueryCloudletTest extends FlatSpec
     cloudlet run(1000000, 500.0, 1)  // 1 million instructions @ 1 MIPS = 1 second
 
     // two iterations of 500,000 instructions each
-
     verify(prod).generate(  0.0,  500.0)
     verify(prod).generate(500.0, 1000.0)
 
@@ -215,5 +217,63 @@ class QueryCloudletTest extends FlatSpec
     verify(cons).run( 50000,  950.0, 1000.0)
     verify(cons).run( 50000, 1450.0, 1500.0)
   }
+
+
+  it should "consider all pending actions" in new Fixture {
+
+    val f3 = mock[Operator]("f3")
+    doReturn(Set(f1, f3)).when(f2).predecessors
+
+    val enqueueEs = EventSet(100.0, 1000.0, 20.0, prod -> 100.0)
+    val enqueue1 = EnqueueAction(f1, f3, 1200.0, enqueueEs)
+    doReturn(Iterator(
+        ExecuteAction(prod, 1000.0, 1100.0, 100000.0),
+        ExecuteAction(f1,   1100.0, 1200.0, 100000.0),
+        enqueue1,
+        ExecuteAction(f1,   1200.0, 1500.0, 300000.0),
+        ExecuteAction(f2,   1500.0, 1900.0, 400000.0),
+        ExecuteAction(cons, 1900.0, 2000.0, 100000.0))).
+      when(opSchedule).
+      allocate(1000000, 1000.0, 1, placement, TreeSet(enqueue1))
+
+    doReturn(Some(Generated(prod, 0.0, 1000, EventSet(100.0, 1000, 0, Map(prod -> 100.0))))).when(prod).generate(0.0, 1000)
+    doReturn(List(Produced(prod, 1000.0, 1100.0, EventSet(100.0, 1100.0,  100.0, prod -> 100.0)))).when(prod).run(100000, 1000.0, 1100.0)
+    doReturn(List(Produced(f1,   1100.0, 1200.0, EventSet( 25.0, 1200.0,  200.0, prod ->  25.0)))).when(f1  ).run(100000, 1100.0, 1200.0)
+    doReturn(List(Produced(f1,   1200.0, 1500.0, EventSet( 75.0, 1500.0,  500.0, prod ->  75.0)))).when(f1  ).run(300000, 1200.0, 1500.0)
+    doReturn(List(Produced(f2,   1500.0, 1900.0, EventSet(100.0, 1900.0,  900.0, prod -> 100.0)))).when(f2  ).run(400000, 1500.0, 1900.0)
+    doReturn(List(Consumed(cons, 1900.0, 2000.0, EventSet(100.0, 2000.0, 1000.0, prod -> 100.0)))).when(cons).run(100000, 1900.0, 2000.0)
+
+    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
+    cloudlet.init(0.0)
+    cloudlet.enqueue(1200.0, f3, f1, enqueueEs)
+
+    doReturn(100.0).when(prod).outputQueues(f1)
+    doReturn(100.0).when(f1).outputQueues(f2)
+    doReturn(100.0).when(f2).outputQueues(cons)
+
+    // the cloudlet should run all operators
+    val history = cloudlet run(1000000, 1000.0, 1)
+
+    val inOrder = Mockito.inOrder(prod, f1, f2, cons)
+    inOrder.verify(prod).generate(0.0, 1000.0)
+    inOrder.verify(prod).run(100000, 1000.0, 1100.0)
+    inOrder.verify(f1  ).run(100000, 1100.0, 1200.0)
+    inOrder.verify(f1  ).enqueueIntoInput(f3, enqueueEs)
+    inOrder.verify(f1  ).run(300000, 1200.0, 1500.0)
+    inOrder.verify(f2  ).run(400000, 1500.0, 1900.0)
+    inOrder.verify(cons).run(100000, 1900.0, 2000.0)
+
+    history should have size (6)
+    history.toList should contain theSameElementsInOrderAs (List(
+      Generated(prod,    0.0, 1000.0, EventSet(100.0, 1000.0,    0.0, prod -> 100.0)),
+      Produced (prod, 1000.0, 1100.0, EventSet(100.0, 1100.0,  100.0, prod -> 100.0)),
+      Produced (f1,   1100.0, 1200.0, EventSet( 25.0, 1200.0,  200.0, prod ->  25.0)),
+      Produced (f1,   1200.0, 1500.0, EventSet( 75.0, 1500.0,  500.0, prod ->  75.0)),
+      Produced (f2,   1500.0, 1900.0, EventSet(100.0, 1900.0,  900.0, prod -> 100.0)),
+      Consumed (cons, 1900.0, 2000.0, EventSet(100.0, 2000.0, 1000.0, prod -> 100.0))
+    ))
+  }
+
+
 
 }

@@ -60,11 +60,10 @@ public class CepQueryCloudletTest {
 
 		// 1st invocation
         // long instructions, double currentTime, double previousTime, double capacity
-		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
-        cloudlet.setMetricCalculator(calculator);
+		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
         cloudlet.updateQuery(100, 30, 0, 1000);
 
-        verify(queryCloudlet).init(0, calculator);
+        verify(queryCloudlet).init(0);
 		verify(queryCloudlet).run(100, 0, 1000);
 		assertEquals(70.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
@@ -85,11 +84,10 @@ public class CepQueryCloudletTest {
         when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
 		// 1st invocation
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
-        cloudlet.setMetricCalculator(calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
         cloudlet.updateQuery(100, 80, 0, 1000);
 
-        verify(queryCloudlet).init(0, calculator);
+        verify(queryCloudlet).init(0);
 		verify(queryCloudlet).run(100, 0, 1000);
 		assertEquals(20.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
@@ -161,7 +159,7 @@ public class CepQueryCloudletTest {
 
     @Test
     public void testGetVertices() {
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
 
         Set<Vertex> expected = new HashSet<>();
         expected.add(p1);

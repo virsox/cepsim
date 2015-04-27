@@ -1,6 +1,7 @@
 package ca.uwo.eng.sel.cepsim.sched
 
-import ca.uwo.eng.sel.cepsim.query.Vertex
+import ca.uwo.eng.sel.cepsim.metric.EventSet
+import ca.uwo.eng.sel.cepsim.query.{InputVertex, OutputVertex, Vertex}
 
 /**
   * Trait for simulation actions. The temporal relationships between actions are similar to the ones
@@ -78,10 +79,11 @@ case class ExecuteAction(val v: Vertex, val from: Double, val to: Double, val in
   * action from the simulator perspective, this action does not have a duration.
   *
   * @param v Vertex on which events should be enqueued.
+  * @param fromVertex Vertex from which events are coming.
   * @param at Timestamp of the action.
-  * @param events Number of events to be enqueued.
+  * @param es Event set to be enqueued.
   */
-case class EnqueueAction(val v: Vertex, val at: Double, val events: Double) extends Action {
+case class EnqueueAction(val v: InputVertex, val fromVertex: OutputVertex, val at: Double, val es: EventSet) extends Action {
   def from: Double = at
   def to: Double = at
 

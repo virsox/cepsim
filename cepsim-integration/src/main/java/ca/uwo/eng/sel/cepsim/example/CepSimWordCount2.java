@@ -215,8 +215,7 @@ public class CepSimWordCount2 {
 
             Placement placement = Placement.withQueries(queries, 1);
 
-			// TODO fix this
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl" + i, placement,
+            QueryCloudlet qCloudlet = QueryCloudlet.apply("cl" + i, placement,
 					DefaultOpScheduleStrategy.weighted(weights), 1);
                     //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 100));
                     //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50), 1);

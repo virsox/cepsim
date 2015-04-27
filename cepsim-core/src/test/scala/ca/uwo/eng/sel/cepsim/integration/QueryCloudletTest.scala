@@ -78,8 +78,8 @@ class QueryCloudletTest extends FlatSpec
     val calculator = mock[metric.MetricCalculator]
     doReturn(Set("latency")).when(calculator).ids
 
-    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
-    cloudlet.init(0.0, calculator)
+    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted(), 1, calculator)
+    cloudlet.init(0.0)
 
     cloudlet run(10000000, 10.0, 1000)
 

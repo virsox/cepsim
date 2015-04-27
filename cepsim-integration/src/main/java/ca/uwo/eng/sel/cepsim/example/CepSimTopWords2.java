@@ -10,7 +10,6 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.RRDynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -243,7 +242,7 @@ public class CepSimTopWords2 {
             queries.add(q);
 
             Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = new QueryCloudlet("cl", placement,
+            QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
                     DefaultOpScheduleStrategy.weighted(weights), 1);
                     //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500));
 
