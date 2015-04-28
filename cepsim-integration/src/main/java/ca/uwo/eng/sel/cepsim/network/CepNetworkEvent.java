@@ -1,6 +1,8 @@
 package ca.uwo.eng.sel.cepsim.network;
 
-import ca.uwo.eng.sel.cepsim.query.Vertex;
+import ca.uwo.eng.sel.cepsim.metric.EventSet;
+import ca.uwo.eng.sel.cepsim.query.InputVertex;
+import ca.uwo.eng.sel.cepsim.query.OutputVertex;
 
 /**
  * Created by virso on 2014-11-11.
@@ -9,23 +11,24 @@ public class CepNetworkEvent implements Comparable<CepNetworkEvent> {
 
     private double origTimestamp;
     private double destTimestamp;
-    private Vertex orig;
-    private Vertex dest;
-    private Integer quantity;
+    private OutputVertex orig;
+    private InputVertex dest;
+    private EventSet eventSet;
 
-    public CepNetworkEvent(double origTimestamp, Vertex orig, double destTimestamp, Vertex dest, Integer quantity) {
+    public CepNetworkEvent(double origTimestamp, OutputVertex orig, double destTimestamp, InputVertex dest,
+                           EventSet eventSet) {
         this.origTimestamp = origTimestamp;
         this.destTimestamp = destTimestamp;
         this.orig = orig;
         this.dest = dest;
-        this.quantity = quantity;
+        this.eventSet = eventSet;
     }
 
     public double getOrigTimestamp() {
         return origTimestamp;
     }
 
-    public Vertex getOrig() {
+    public OutputVertex getOrig() {
         return orig;
     }
 
@@ -33,12 +36,12 @@ public class CepNetworkEvent implements Comparable<CepNetworkEvent> {
         return destTimestamp;
     }
 
-    public Vertex getDest() {
+    public InputVertex getDest() {
         return dest;
     }
 
-    public Integer getQuantity() {
-        return quantity;
+    public EventSet getEventSet() {
+        return eventSet;
     }
 
 

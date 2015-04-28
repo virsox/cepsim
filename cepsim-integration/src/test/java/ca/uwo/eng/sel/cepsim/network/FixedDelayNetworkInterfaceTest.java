@@ -3,12 +3,19 @@ package ca.uwo.eng.sel.cepsim.network;
 
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimTags;
-import ca.uwo.eng.sel.cepsim.query.Vertex;
+import ca.uwo.eng.sel.cepsim.metric.EventSet;
+import ca.uwo.eng.sel.cepsim.query.EventProducer;
+import ca.uwo.eng.sel.cepsim.query.InputVertex;
+import ca.uwo.eng.sel.cepsim.query.OutputVertex;
 import org.cloudbus.cloudsim.Vm;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,8 +25,9 @@ import static org.mockito.Mockito.when;
  */
 public class FixedDelayNetworkInterfaceTest {
 
-    @Mock private Vertex orig;
-    @Mock private Vertex dest;
+    @Mock private EventProducer producer;
+    @Mock private OutputVertex orig;
+    @Mock private InputVertex dest;
     @Mock private Vm destVm;
     @Mock private CepSimBroker broker;
 
@@ -34,11 +42,17 @@ public class FixedDelayNetworkInterfaceTest {
         when(broker.getVmAllocation(dest)).thenReturn(destVm);
         when(broker.getDatacenterId(destVm)).thenReturn(1);
 
-        FixedDelayNetworkInterface ni = new FixedDelayNetworkInterface(broker, 50);
-        ni.sendMessage(100, orig, dest, 5000);
+        Map<EventProducer, Object> totals = new HashMap<>();
+        totals.put(producer, 5000.0);
+        EventSet es = new EventSet(5000.0, 10.0, 1.0, totals);
 
-        CepNetworkEvent expected = new CepNetworkEvent(100, orig, 150, dest, 5000);
-        verify(broker).schedule(1, 50, CepSimTags.CEP_EVENT_SENT, expected);
+        FixedDelayNetworkInterface ni = new FixedDelayNetworkInterface(broker, 0.5); // 500 ms
+
+        // this is invoked by CEPSim core - so, it is in ms
+        ni.sendMessage(100, orig, dest, es);
+
+        CepNetworkEvent expected = new CepNetworkEvent(0.1, orig, 0.6, dest, es);
+        verify(broker).schedule(1, 0.5, CepSimTags.CEP_EVENT_SENT, expected);
 
     }
 }

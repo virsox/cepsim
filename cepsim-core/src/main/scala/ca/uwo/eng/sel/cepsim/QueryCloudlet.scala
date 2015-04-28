@@ -123,8 +123,6 @@ object QueryCloudlet {
 
     if (instructions > 0) {
 
-
-
       val instructionsPerIteration = Math.floor(instructions / iterations).toLong
       var iterationStartTime = startTime
 

@@ -4,9 +4,6 @@ import ca.uwo.eng.sel.cepsim.history.SimEvent;
 import ca.uwo.eng.sel.cepsim.metric.*;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
-import ca.uwo.eng.sel.cepsim.placement.Placement;
-import ca.uwo.eng.sel.cepsim.query.InputVertex;
-import ca.uwo.eng.sel.cepsim.query.OutputVertex;
 import ca.uwo.eng.sel.cepsim.query.Query;
 import ca.uwo.eng.sel.cepsim.query.Vertex;
 import org.cloudbus.cloudsim.Cloudlet;
@@ -127,12 +124,10 @@ public class CepQueryCloudlet extends Cloudlet {
         CepNetworkEvent netEvent = null;
         while (((netEvent = this.networkEvents.peek()) != null) && (netEvent.getDestTimestamp() < previousTime)) {
             this.networkEvents.remove();
-            // TODO rethink networked queries
-//            History receivedHistory = this.cloudlet.enqueue(
-//                    netEvent.getDestTimestamp() * 1000, (InputVertex) netEvent.getDest(),
-//                    (OutputVertex) netEvent.getOrig(), netEvent.getQuantity());
-//
-//            history.merge(receivedHistory);
+
+            // need to transform back into ms
+            this.cloudlet.enqueue(netEvent.getDestTimestamp() * 1000, netEvent.getOrig(),
+                  netEvent.getDest(), netEvent.getEventSet());
         }
 
         // this means the cepCloudlet has finished between previousTime and the currentTime
@@ -145,15 +140,6 @@ public class CepQueryCloudlet extends Cloudlet {
 
         // need to transform from seconds to milliseconds
         History<SimEvent> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
-
-        // TODO rethink networked queries
-//        for (History.Entry entry : asJavaList(execHistory)) {
-//            if (entry instanceof History.Sent) {
-//                History.Sent sentEntry = (History.Sent) entry;
-//                this.networkInterface.sendMessage(sentEntry.time() / 1000, sentEntry.v(), sentEntry.dest(), sentEntry.quantity());
-//            }
-//        }
-
         history.append(execHistory);
 	}
 

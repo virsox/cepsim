@@ -1,6 +1,11 @@
 package ca.uwo.eng.sel.cepsim.metric
 
+import java.util.{Map => JavaMap}
+
 import ca.uwo.eng.sel.cepsim.query.EventProducer
+
+import scala.collection.JavaConversions.mapAsScalaMap
+
 
 /** EventSet companion object. */
 object EventSet {
@@ -55,6 +60,10 @@ object EventSet {
  *                originate the events currently in the set.
   */
 case class EventSet(var size: Double, var ts: Double, var latency: Double, var totals: Map[EventProducer, Double]) {
+
+  // constructor for java usage
+  def this(size: Double, ts: Double, latency: Double, totals: JavaMap[EventProducer, Double]) =
+    this(size, ts, latency, mapAsScalaMap(totals).toMap)
 
   /**
     * Add an EventSet to the current one. The new timestamp and latency values are calculated as an weighted average

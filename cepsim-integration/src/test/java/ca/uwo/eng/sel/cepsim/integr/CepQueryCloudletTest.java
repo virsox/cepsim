@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.integr;
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.history.SimEvent;
+import ca.uwo.eng.sel.cepsim.metric.EventSet;
 import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import scala.collection.JavaConversions;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -61,20 +63,20 @@ public class CepQueryCloudletTest {
 		// 1st invocation
         // long instructions, double currentTime, double previousTime, double capacity
 		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
-        cloudlet.updateQuery(100, 30, 0, 1000);
+        cloudlet.updateQuery(30_000_000L, 30, 0, 1); // 10s
 
         verify(queryCloudlet).init(0);
-		verify(queryCloudlet).run(100, 0, 1000);
+		verify(queryCloudlet).run(30_000_000L, 0, 1);
 		assertEquals(70.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		// 2nd invocation		
-        cloudlet.updateQuery(100, 60, 30, 1000);
-		verify(queryCloudlet).run(100, 30000, 1000);
+        cloudlet.updateQuery(30_000_000L, 60, 30, 1);
+		verify(queryCloudlet).run(30_000_000L, 30_000, 1);
 		assertEquals(40.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		// 3rd invocation
-        cloudlet.updateQuery(100, 100, 60, 1000);
-		verify(queryCloudlet).run(100, 60000, 1000);
+        cloudlet.updateQuery(40_000_000L, 100, 60, 1);
+		verify(queryCloudlet).run(40_000_000L, 60_000, 1);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
@@ -85,76 +87,47 @@ public class CepQueryCloudletTest {
 
 		// 1st invocation
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
-        cloudlet.updateQuery(100, 80, 0, 1000);
+        cloudlet.updateQuery(80_000_000L, 80, 0, 1);
 
         verify(queryCloudlet).init(0);
-		verify(queryCloudlet).run(100, 0, 1000);
+		verify(queryCloudlet).run(80_000_000L, 0, 1);
 		assertEquals(20.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		
 		// 2nd invocation		
-        cloudlet.updateQuery(100, 180, 80, 1000);
-		verify(queryCloudlet).run(20, 80000, 1000);
+        cloudlet.updateQuery(100_000_000L, 180, 80, 1);
+		verify(queryCloudlet).run(20_000_000L, 80000, 1);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
 
 
-    // TODO review these two tests when dealing with networked queries
-//    @Test
-//    public void testUpdateCloudletWithEventsSent() {
-//        History history = new History<SimEvent>();
-//        history = history.logProcessed("cl1", 0.0, f1, 1000);
-//        history = history.logSent("cl1", 1000.0, f1, c1,  1000);
-//        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(history);
-//
-//        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
-//        cloudlet.setMetricCalculator(calculator);
-//        cloudlet.updateQuery(100, 30, 0, 1000);
-//
-//        verify(queryCloudlet).init(0, calculator);
-//        verify(queryCloudlet).run(100, 0, 1000);
-//        verify(network).sendMessage(1.0, f1, c1, 1000);
-//    }
-//
-//    @Test
-//    public void testUpdateCloudletWithEventsReceived() {
-//        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network);
-//        cloudlet.setMetricCalculator(calculator);
-//
-//        // enqueue network events
-//        CepNetworkEvent net1 = new CepNetworkEvent(1.0, p1, 6.0,  f1, 1000);
-//        CepNetworkEvent net2 = new CepNetworkEvent(1.0, p1, 8.0,  f1, 2000);
-//        CepNetworkEvent net3 = new CepNetworkEvent(1.0, p1, 15.0, f1, 5000);
-//        cloudlet.enqueue(net1);
-//        cloudlet.enqueue(net2);
-//        cloudlet.enqueue(net3);
-//
-//        // configure the cloudlet to return histories
-//        History<History.Entry> hist1 = new History<>();
-//        hist1 = hist1.logReceived("cl1", 6000.0, f1, p1, 1000);
-//
-//        History<History.Entry> hist2 = new History<>();
-//        hist2 = hist2.logReceived("cl1", 8000.0, f1, p1, 2000);
-//
-//        when(queryCloudlet.enqueue(6000.0, f1, p1, 1000)).thenReturn(hist1);
-//        when(queryCloudlet.enqueue(8000.0, f1, p1, 2000)).thenReturn(hist2);
-//
-//        History history = new History<History.Entry>();
-//        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(history);
-//
-//
-//        // process them and check if they are correctly processed
-//        cloudlet.updateQuery(100, 20, 10, 1000);
-//
-//        verify(queryCloudlet).init(10000, calculator);
-//        verify(queryCloudlet).enqueue(6000.0, f1, p1, 1000);
-//        verify(queryCloudlet).enqueue(8000.0, f1, p1, 2000);
-//        verify(queryCloudlet).run(100, 10000, 1000);
-//
-//        //instructions: Double, startTime: Double, capacity: Double)
-//
-//    }
+    @Test
+    public void testUpdateCloudletWithEventsReceived() {
+        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
+
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
+
+        // enqueue network events
+        EventSet es1 = new EventSet(1000, 1.0, 0.0, Collections.<EventProducer, Object>singletonMap(p1, 1000.0));
+        EventSet es2 = new EventSet(2000, 1.0, 0.0, Collections.<EventProducer, Object>singletonMap(p1, 2000.0));
+        EventSet es3 = new EventSet(5000, 1.0, 0.0, Collections.<EventProducer, Object>singletonMap(p1, 5000.0));
+
+        CepNetworkEvent net1 = new CepNetworkEvent(1.0, p1, 6.0,  f1, es1);
+        CepNetworkEvent net2 = new CepNetworkEvent(1.0, p1, 8.0,  f1, es2);
+        CepNetworkEvent net3 = new CepNetworkEvent(1.0, p1, 15.0, f1, es3);
+        cloudlet.enqueue(net1);
+        cloudlet.enqueue(net2);
+        cloudlet.enqueue(net3);
+
+        // process them and check if they are correctly processed
+        cloudlet.updateQuery(100, 20, 10, 1000);
+
+        verify(queryCloudlet).init(10000);
+        verify(queryCloudlet).enqueue(6000.0, p1, f1, es1);
+        verify(queryCloudlet).enqueue(8000.0, p1, f1, es2);
+        verify(queryCloudlet).run(100, 10000, 1000);
+    }
 
 
     @Test
