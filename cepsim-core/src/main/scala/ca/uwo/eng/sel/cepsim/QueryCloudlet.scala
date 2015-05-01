@@ -148,17 +148,15 @@ object QueryCloudlet {
         lastExecution = iterationStartTime
 
         // Vertices execution
-
-        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity,placement, pendingActions)
+        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, pendingActions)
         verticesList.foreach { (elem) =>
-
           elem match {
             case executeAction: ExecuteAction => iterationSimEvents ++= execute(executeAction)
             case enqueueAction: EnqueueAction => execute(enqueueAction)
           }
-
-          iterationStartTime = elem.to
         }
+        iterationStartTime += (availableInstructions / (capacity * 1000))
+
 
         iterationSimEvents.foreach((simEvent) =>
           calculators.foreach(_.update(simEvent))

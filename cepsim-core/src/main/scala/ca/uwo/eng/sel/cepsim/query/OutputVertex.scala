@@ -21,22 +21,14 @@ trait OutputVertex extends Vertex {
   override def successors: Set[InputVertex] = outputEventSets.keySet.collect { case iv: InputVertex => iv }
 
   /**
-   * Initializes the output queues with a set of successors (assumes selectivity of 1.0 for all successors).
-   * @param successors Set containing the vertex successors.
-   */
-  def initOutputQueues(successors: Set[Vertex]) = {
-    successors.foreach(addOutputQueue(_))
-  }
-
-  /**
     * Adds a new output queue for a new successor.
     * @param v New successor vertex.
     * @param selectivity Edge selectivity.
     */
-  def addOutputQueue(v: Vertex, selectivity: Double = 1.0) = {
+  def addOutputQueue(v: InputVertex, selectivity: Double = 1.0) = {
     outputEventSets = outputEventSets + (v -> EventSet.empty())
     selectivities = selectivities + (v -> selectivity)
-    limits = limits + (v -> Int.MaxValue)
+    limits = limits + (v -> (if (v.queueMaxSize == 0) Long.MaxValue else v.queueMaxSize))
   }
 
   /**

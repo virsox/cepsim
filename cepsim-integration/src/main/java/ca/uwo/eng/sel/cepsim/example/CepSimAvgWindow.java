@@ -12,6 +12,8 @@ import ca.uwo.eng.sel.cepsim.metric.LatencyThroughputCalculator;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -26,7 +28,7 @@ import java.util.*;
 public class CepSimAvgWindow {
 
     private static final Double SIM_INTERVAL = 0.1;
-    private static final Long DURATION = 601L;
+    private static final Long DURATION = 61L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -197,7 +199,8 @@ public class CepSimAvgWindow {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                DefaultOpScheduleStrategy.weighted(weights), 10);
+				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                //DefaultOpScheduleStrategy.weighted(weights), 10);
 
 
         CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);

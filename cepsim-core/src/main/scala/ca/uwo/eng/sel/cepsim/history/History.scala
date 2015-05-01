@@ -95,8 +95,10 @@ class History[T <: SimEvent](es: Seq[T]) extends Seq[T] {
     * @param other History to be appended.
     * @return Reference to the history itself.
     */
-  def append(other: History[T]): History[T] =
+  def append(other: History[T]): History[T] = {
     this.buffer ++= other.buffer
+    this
+  }
 
   /**
    * Merge the current history with the informed one.
