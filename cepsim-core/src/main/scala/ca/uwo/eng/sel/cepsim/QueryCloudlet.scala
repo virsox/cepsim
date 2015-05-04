@@ -67,20 +67,16 @@ object QueryCloudlet {
   // register all metrics
   metricCalculators.foreach(registerCalculator(_))
 
-
   def metric(id: String, v: Vertex) = calculatorsMap(id).consolidate(id, v)
+  def metrics(id: String, v: Vertex) = calculatorsMap(id).consolidateByMinute(id ,v)
   def metricList(id: String, v: Vertex) = calculatorsMap(id).results(id, v)
 
   // ---------------------------------------
 
 
-  // --------------- Network interface
-
-
-
-
   var lastExecution = 0.0
   var pendingActions = TreeSet.empty[Action]
+
 
 
   /**

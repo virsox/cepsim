@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.sched
 
 import ca.uwo.eng.sel.cepsim.placement.Placement
-import ca.uwo.eng.sel.cepsim.query.{EventProducer, InputVertex, Vertex}
+import ca.uwo.eng.sel.cepsim.query._
 import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy
 
 import scala.collection.SortedSet
@@ -104,8 +104,10 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       */
     private def instructionsNeeded(v: Vertex): Double =
       v match {
-        case in: InputVertex => in.totalInputEvents * in.ipe
-        case _ => v.asInstanceOf[EventProducer].inputQueue * v.ipe
+        case ec: EventConsumer => ec.totalInputEvents * ec.ipe
+        case ep: EventProducer => ep.inputQueue.min(ep.maximumNumberOfEvents) * v.ipe
+        case ov: Operator      => ov.totalInputEvents.min(ov.maximumNumberOfEvents) * ov.ipe
+        case _ => throw new IllegalArgumentException()
       }
 
 

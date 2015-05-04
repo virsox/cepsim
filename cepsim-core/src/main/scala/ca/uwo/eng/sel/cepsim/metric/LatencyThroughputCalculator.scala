@@ -4,6 +4,8 @@ import ca.uwo.eng.sel.cepsim.history._
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
 
+import scala.collection.SortedMap
+
 /** LatencyThroughputCalculator companion object.  */
 object LatencyThroughputCalculator {
   def apply(placement: Placement) = new LatencyThroughputCalculator(placement)
@@ -18,21 +20,25 @@ object LatencyThroughputCalculator {
 class LatencyThroughputCalculator(val placement: Placement) extends MetricCalculator {
 
 
+
   /** Map from event consumers to calculated latencies.  */
-  var latencies: Map[Vertex, Vector[Metric]] = Map.empty withDefaultValue(Vector.empty)
+  var latencies: Map[Vertex, Vector[LatencyMetric]] = Map.empty withDefaultValue(Vector.empty)
 
   /** Map from event consumers to calculated throughputs. */
-  var throughputs: Map[Vertex, Vector[Metric]] = Map.empty withDefaultValue(Vector.empty[Metric])
+  var throughputs: Map[Vertex, Vector[ThroughputMetric]] = Map.empty withDefaultValue(Vector.empty)
 
   /** Number of existing paths from a consumer to each producer. */
   var pathsNo: Map[(EventConsumer, EventProducer), Int] = Map.empty
 
-  /**
-   * For each consumer, it keeps track of the total number of events from each producer
-   * that had to be generated in order to originate the events consumed.
-   */
-  var totalEvents: Map[EventConsumer, Map[EventProducer, Double]] = placement.consumers.map((e) =>
-    (e, placement.producers.map((_, 0.0)).toMap)).toMap
+  /** Initial timestamp. */
+  var startTime = 0.0
+
+//  /**
+//   * For each consumer, it keeps track of the total number of events from each producer
+//   * that had to be generated in order to originate the events consumed.
+//   */
+//  var totalEvents: Map[EventConsumer, Map[EventProducer, Double]] = placement.consumers.map((e) =>
+//    (e, placement.producers.map((_, 0.0)).toMap)).toMap
 
 
   // initialize the pathsNo map
@@ -44,6 +50,14 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
       })
     })
   })
+
+
+
+  /**
+   * Initialize the metric calculator.
+   * @param time Timestamp at which the cloudlet start its execution.
+   */
+  override def init(time: Double): Unit = startTime = time
 
   /**
    * Gets the identifiers of calculated metrics.
@@ -69,9 +83,40 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
    * @return A single value that consolidates latency or throughput
    */
   override def consolidate(id: String, v: Vertex): Double = {
-    if (id == LatencyMetric.ID) super.consolidate(id, v)
-    else throughputs(v).last.value
+    if (id == ThroughputMetric.ID) {
+        throughputs(v).foldLeft(0.0)((acc, vectorEntry) => acc + vectorEntry.value) / throughputs(v).length
+
+    } else if (id == LatencyMetric.ID) {
+        val sums = latencies(v).foldLeft((0.0, 0.0))((acc, vectorEntry) =>
+            (acc._1 + vectorEntry.quantity * vectorEntry.value, acc._2 + vectorEntry.quantity))
+        sums._1 / sums._2
+
+    } else {
+      throw new IllegalArgumentException("Invalid Metric ID")
+    }
   }
+
+  def consolidateByMinute(id: String, v: Vertex): SortedMap[Int, Double] = {
+    if (id == ThroughputMetric.ID) {
+      SortedMap[Int, Double]() ++
+        throughputs(v).groupBy((metric) => Math.floor(metric.time / 60.0).toInt).
+                       map((mapEntry) => mapEntry._1 ->
+                                         mapEntry._2.foldLeft(0.0)((acc, vectorEntry) => acc + vectorEntry.value) / 60.0)
+
+    } else if (id == LatencyMetric.ID) {
+      SortedMap[Int, Double]() ++
+        latencies(v).groupBy((metric) => Math.floor(metric.time / 60000.0).toInt).
+                     map((mapEntry) => {
+                           val sums = mapEntry._2.foldLeft((0.0, 0.0))((acc, vectorEntry) =>
+                             (acc._1 + vectorEntry.quantity * vectorEntry.value, acc._2 + vectorEntry.quantity))
+                           mapEntry._1 -> (sums._1 / sums._2)
+                        })
+
+    } else {
+      throw new IllegalArgumentException("Invalid Metric ID")
+    }
+  }
+
 
   /**
    * Method invoked to update the metrics calculation with new processing information.
@@ -98,17 +143,22 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
         latencies(consumer) :+ LatencyMetric(consumed.v, consumed.es.ts, consumed.es.size, consumed.es.latency))
     }
 
-    // --------- throughput code --------------------------------------------
 
-    // updates the totalEvents map
-    val sum = consumed.es.totals
-    sum.foreach((e) => totalEvents = totalEvents updated (consumer,
-      totalEvents(consumer) updated (e._1, totalEvents(consumer)(e._1) + e._2)
-    ))
+    // calculate the total number of events processed
+    val total = consumed.es.totals.foldLeft(0.0)((acc, e) => acc + (e._2 / pathsNo(consumer, e._1)))
 
-    // calculate the current metric value
-    val total = totalEvents(consumer).foldLeft(0.0)((acc, e) => acc + (e._2 / pathsNo(consumer, e._1)))
-    throughputs = throughputs updated (consumer, throughputs(consumer) :+ ThroughputMetric(consumer, consumed.at, total))
+    // at which simulation second this total should be added
+    val second = Math.floor((consumed.at - startTime) / 1000.0).toInt
+
+
+    val consumerThroughput = throughputs(consumer)
+    if ((!consumerThroughput.isEmpty) && (consumerThroughput.last.time == second)) {
+      val last = consumerThroughput.last
+      last.value = last.value + total
+    } else {
+      throughputs = throughputs updated (consumer, consumerThroughput :+ ThroughputMetric(consumer, second, total))
+    }
   }
+
 
 }

@@ -14,9 +14,7 @@ import ca.uwo.eng.sel.cepsim.history.History;
 import scala.Option;
 import scala.collection.JavaConversions;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 import static scala.collection.JavaConversions.asJavaList;
 
@@ -165,8 +163,26 @@ public class CepQueryCloudlet extends Cloudlet {
         return this.cloudlet.metric(LatencyMetric.ID(), consumer);
     }
 
+    public SortedMap<Integer, Double> getLatencyByMinute(Vertex consumer) {
+        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.cloudlet.metrics(LatencyMetric.ID(), consumer));
+        SortedMap<Integer, Double> sorted = new TreeMap<>();
+        for (Map.Entry<Object, Object> entry : tmpMap.entrySet()) {
+            sorted.put((Integer) entry.getKey(), (Double) entry.getValue());
+        }
+        return sorted;
+    }
+
     public double getThroughput(Vertex consumer) {
         return this.cloudlet.metric(ThroughputMetric.ID(), consumer);
+    }
+
+    public SortedMap<Integer, Double> getThroughputByMinute(Vertex consumer) {
+        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.cloudlet.metrics(ThroughputMetric.ID(), consumer));
+        SortedMap<Integer, Double> sorted = new TreeMap<>();
+        for (Map.Entry<Object, Object> entry : tmpMap.entrySet()) {
+            sorted.put((Integer) entry.getKey(), (Double) entry.getValue());
+        }
+        return sorted;
     }
 
 

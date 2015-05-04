@@ -39,7 +39,7 @@ class WindowedOperatorTest extends FlatSpec
 
 
   "A WindowedOperator" should "generate an output only after the windows has elapsed" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 500)
@@ -69,7 +69,7 @@ class WindowedOperatorTest extends FlatSpec
 
 
   it should "accumulate events from consecutive runs" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 500)
@@ -108,7 +108,7 @@ class WindowedOperatorTest extends FlatSpec
       }
     }
 
-    val op = new WindowedOperator("w1", 10, 10 seconds, 1 second, WindowedOperator.constant(2), 1000)
+    val op = new WindowedOperator("w1", 10, 10 seconds, 1 second, WindowedOperator.constant(2), false, 1000)
     setup(op)
 
     op.init(0.0, 1000)
@@ -156,7 +156,7 @@ class WindowedOperatorTest extends FlatSpec
       }
     }
 
-    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 100)
@@ -198,7 +198,7 @@ class WindowedOperatorTest extends FlatSpec
   }
 
   it should "take the start time into consideration" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.constant(1), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.constant(1), false, 1000)
     setup(op)
 
     op.init(200, 500)
@@ -224,7 +224,7 @@ class WindowedOperatorTest extends FlatSpec
   }
 
   it should "not emit anything if there is no event accumulated" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 100)
@@ -248,7 +248,7 @@ class WindowedOperatorTest extends FlatSpec
   }
 
   it should "skip more than one slot if needed" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 100)
@@ -284,7 +284,7 @@ class WindowedOperatorTest extends FlatSpec
 
 
   it should "respect the bounds of the successor buffer" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1024)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), false, 1024)
     setup(op)
 
     op.init(0.0, 1000)
@@ -316,7 +316,7 @@ class WindowedOperatorTest extends FlatSpec
   it should "respect the bounds of the successor buffer when there are remaining events " +
             "and the window is closing" in new Fixture {
 
-    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), 1024)
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), false, 1024)
     setup(op)
 
     op.init(0.0, 1000)
@@ -348,7 +348,7 @@ class WindowedOperatorTest extends FlatSpec
 
 
   it should "hold events from many slots if the sucessor buffer is full" in new Fixture {
-    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), 1000)
+    val op = new WindowedOperator("w1", 10, 1 second, 100 milliseconds, WindowedOperator.identity(), false, 1000)
     setup(op)
 
     op.init(0.0, 100)

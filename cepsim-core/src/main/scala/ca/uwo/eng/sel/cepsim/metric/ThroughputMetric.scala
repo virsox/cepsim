@@ -18,9 +18,12 @@ import ca.uwo.eng.sel.cepsim.query.{EventConsumer, InputVertex, EventProducer, V
  *
  * @param v EventConsumer of which the metric is calculated.
  * @param time Time of the calculation.
- * @param value Metric value.
+ * @param _value Metric value.
  */
-case class ThroughputMetric(val v: Vertex, val time: Double, val value: Double) extends Metric
+case class ThroughputMetric(val v: Vertex, val time: Double, private var _value: Double) extends Metric {
+  def value: Double = _value
+  private [metric] def value_=(newValue: Double) = _value = newValue
+}
 
 
 /** ThroughputMetric companion object */

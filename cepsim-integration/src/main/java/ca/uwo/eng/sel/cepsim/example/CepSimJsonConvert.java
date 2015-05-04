@@ -12,6 +12,7 @@ import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -26,8 +27,8 @@ import java.util.*;
 
 public class CepSimJsonConvert {
 
-    private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 61L;
+    private static final Double SIM_INTERVAL = 0.1;
+    private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -123,8 +124,8 @@ public class CepSimJsonConvert {
 
 
 
-                System.out.println("Latency: " + cepCl.getLatency(consumer));
-                System.out.println("Throughput: " + cepCl.getThroughput(consumer));
+                System.out.println("Latency: " + cepCl.getLatencyByMinute(consumer));
+                System.out.println("Throughput: " + cepCl.getThroughputByMinute(consumer));
 
 
 
@@ -152,7 +153,7 @@ public class CepSimJsonConvert {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1000;
+        final int NUM_SENSORS = 500;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -161,13 +162,13 @@ public class CepSimJsonConvert {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 30000, gen, true);
+            EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 50000, 1024);
-            Operator validate = new Operator("validate" + i, 30000, 1024);
-            Operator xml = new Operator("xmlOutput" + i, 40000, 1024);
+            Operator jsonParser = new Operator("jsonParser" + i, 250000, 1024);
+            Operator validate = new Operator("validate" + i, 250000, 1024);
+            Operator xml = new Operator("xmlOutput" + i, 250000, 1024);
 
-            EventConsumer c = new EventConsumer("end" + i, 30000, 1024);
+            EventConsumer c = new EventConsumer("end" + i, 1000, 1024);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -195,7 +196,7 @@ public class CepSimJsonConvert {
             weights.put(c, 1.0);
 
 
-            Query q = Query.apply("testavg" + i, vertices, edges, DURATION);
+            Query q = Query.apply("testjson" + i, vertices, edges, DURATION);
 
             queries.add(q);
 
@@ -206,8 +207,8 @@ public class CepSimJsonConvert {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                //DefaultOpScheduleStrategy.weighted(weights), 100);
-                DynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights)), 1);
+                //DefaultOpScheduleStrategy.weighted(weights), 10);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 

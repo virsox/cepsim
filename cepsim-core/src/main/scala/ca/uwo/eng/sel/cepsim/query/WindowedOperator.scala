@@ -11,11 +11,16 @@ import scala.concurrent.duration._
 object WindowedOperator {
 
   def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double) =
-    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, 1024)
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, true, 1024)
 
   def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double,
             queueMaxSize: Int) =
-    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, queueMaxSize)
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, true, queueMaxSize)
+
+  def apply(id: String, ipe: Double, size: Double, advance: Double, function: (Map[Vertex, Double]) => Double,
+            limitOutput: Boolean, queueMaxSize: Int) =
+    new WindowedOperator(id, ipe, size milliseconds, advance milliseconds, function, limitOutput, queueMaxSize)
+
 
   /** Returns an identify function to be used with WindowedOperators. */
   def identity(): (Map[Vertex, Double]) => Double = ((x) => Vertex.sumOfValues(x))
@@ -40,10 +45,11 @@ object WindowedOperator {
   * @param function     The aggregation function. It receives a map from predecessors to the number of events received
   *                    from it in the last window, and it returns the number of events that must be output by
   *                    the operator.
+  * @param limitOutput  Flag that indicate if the operator should limit its output when generating tuples.
   * @param queueMaxSize Maximum size of the input queues, if limited.
   */
 class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance: Duration,
-                      function: (Map[Vertex, Double]) => Double, queueMaxSize: Int)
+                      function: (Map[Vertex, Double]) => Double, limitOutput: Boolean, queueMaxSize: Int)
   extends Operator(id, ipe, queueMaxSize) {
 
   /** Start time. */
@@ -140,6 +146,15 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
           acc
         }).totals
 
+        // check the successor queues for elements when the window closes. If there is any,
+        // then some of the generated tuples are discarded. The rationale for this process is that the
+        // successor could not process all elements between windows - which means that if all we send
+        // events again, the latency will keep increasing
+        if (limitOutput) {
+          eventSum.extract(maxOutputQueueSize())
+        }
+
+
         val output = functionTotal min availableSpace
         if (output > 0) {
 
@@ -200,6 +215,16 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
     accumulatedSlot = currentIndex
     retrievedEvents
   }
+
+
+  /**
+    * Calculates the maximum number of elements (normalized by selectivity) in the successors queues.
+    * @return Maximum number of elements.
+    */
+  private def maxOutputQueueSize(): Double =
+    successors.map((v) => v.inputQueues(this) / selectivities(v)).
+               foldLeft(Double.MinValue)((acc, number) => acc.max(number))
+
 
   /**
     * Reset a slot.

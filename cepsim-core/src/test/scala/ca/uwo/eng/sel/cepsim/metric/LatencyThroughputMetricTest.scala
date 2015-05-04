@@ -148,7 +148,7 @@ class LatencyThroughputMetricTest extends FlatSpec
     
     val throughput = calc.results(ThroughputMetric.ID, cons1)
     throughput should have size (1)
-    throughput.head should be (ThroughputMetric(cons1, 25.0, 10.0))
+    throughput.head should be (ThroughputMetric(cons1, 0.0, 10.0))
 
   }
 
@@ -168,7 +168,7 @@ class LatencyThroughputMetricTest extends FlatSpec
 
     val throughput = calc.results(ThroughputMetric.ID, cons1)
     throughput should have size (1)
-    throughput.head should be (ThroughputMetric(cons1, 42.0, 10.0))
+    throughput.head should be (ThroughputMetric(cons1, 0.0, 10.0))
   }
 
 
@@ -188,8 +188,112 @@ class LatencyThroughputMetricTest extends FlatSpec
 
     val results = throughput.results(ThroughputMetric.ID, cons1)
     results should have size (1)
-    results(0) should be (ThroughputMetric(cons1, 60.0, 30.0))
+    results(0) should be (ThroughputMetric(cons1, 0.0, 30.0))
   }
+
+  it should "correctly split the throughput measurements in seconds" in new Fixture1 {
+    val throughput = LatencyThroughputCalculator(placement)
+    throughput.init(0.0)
+
+    throughput update Consumed (cons1,   50.0,  100.0, EventSet(10.0,  100.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1,  500.0,  550.0, EventSet(10.0,  550.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1,  900.0,  950.0, EventSet( 5.0,  950.0, 20.0, prod1 ->  5.0))
+    throughput update Consumed (cons1, 1100.0, 1150.0, EventSet(10.0, 1150.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1, 5000.0, 5050.0, EventSet( 6.0, 5050.0, 20.0, prod1 ->  6.0))
+
+    val results = throughput.results(ThroughputMetric.ID, cons1)
+    results should have size (3)
+    results(0) should be (ThroughputMetric(cons1, 0.0, 25.0))
+    results(1) should be (ThroughputMetric(cons1, 1.0, 10.0))
+    results(2) should be (ThroughputMetric(cons1, 5.0,  6.0))
+  }
+
+
+  it should "consider the init time in calculation" in new Fixture1 {
+    val throughput = LatencyThroughputCalculator(placement)
+    throughput.init(100.0)
+
+    throughput update Consumed (cons1,  200.0,  300.0, EventSet(10.0,  300.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1, 1000.0, 1050.0, EventSet( 5.0, 1050.0, 20.0, prod1 -> 10.0)) // still the first second
+    throughput update Consumed (cons1, 1100.0, 1200.0, EventSet(10.0, 1200.0, 20.0, prod1 -> 10.0))
+
+    val results = throughput.results(ThroughputMetric.ID, cons1)
+    results should have size (2)
+    results(0) should be (ThroughputMetric(cons1, 0.0, 20.0))
+    results(1) should be (ThroughputMetric(cons1, 1.0, 10.0))
+  }
+
+
+  it should "consider the init time in calculation when there are two paths for the same producer" in new Fixture2 {
+    val throughput = LatencyThroughputCalculator(placement)
+    throughput.init(100.0)
+
+    throughput update Consumed (cons1,  200.0,  300.0, EventSet(10.0,  300.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1, 1000.0, 1050.0, EventSet( 5.0, 1050.0, 20.0, prod1 -> 10.0)) // still the first second
+    throughput update Consumed (cons1, 1100.0, 1200.0, EventSet(10.0, 1200.0, 20.0, prod1 -> 10.0))
+
+    val results = throughput.results(ThroughputMetric.ID, cons1)
+    results should have size (2)
+    results(0) should be (ThroughputMetric(cons1, 0.0, 10.0))
+    results(1) should be (ThroughputMetric(cons1, 1.0,  5.0))
+  }
+
+
+
+  it should "consolidate latency per minute" in new Fixture1 {
+    val latency = LatencyThroughputCalculator(placement)
+    latency.init(0.0)
+
+    latency update Consumed (cons1,     50.0,    100.0, EventSet(10.0,    100.0, 20.0, prod1 -> 10.0))
+    latency update Consumed (cons1,  50000.0,  50500.0, EventSet(10.0,  50500.0, 10.0, prod1 -> 10.0))
+    latency update Consumed (cons1,  60000.0,  60050.0, EventSet( 5.0,  60050.0, 20.0, prod1 ->  5.0))
+    latency update Consumed (cons1,  61000.0,  61050.0, EventSet(20.0,  61050.0, 10.0, prod1 -> 20.0))
+    latency update Consumed (cons1, 190000.0, 190050.0, EventSet(15.0, 190050.0, 20.0, prod1 -> 15.0))
+
+
+    val results = latency.results(LatencyMetric.ID, cons1)
+    results should contain theSameElementsInOrderAs(List(
+      LatencyMetric(cons1,    100.0, 10.0, 20.0),
+      LatencyMetric(cons1,  50500.0, 10.0, 10.0),
+      LatencyMetric(cons1,  60050.0,  5.0, 20.0),
+      LatencyMetric(cons1,  61050.0, 20.0, 10.0),
+      LatencyMetric(cons1, 190050.0, 15.0, 20.0)
+    ))
+
+    val consolidated = latency.consolidateByMinute(LatencyMetric.ID, cons1)
+    consolidated should have size (3)
+    consolidated(0) should be (15.000 +- 0.0001)
+    consolidated(1) should be (12.000 +- 0.0001)
+    consolidated(3) should be (20.000 +- 0.0001)
+  }
+
+
+  it should "consolidate throughput per minute" in new Fixture1 {
+    val throughput = LatencyThroughputCalculator(placement)
+    throughput.init(0.0)
+
+    throughput update Consumed (cons1,     50.0,    100.0, EventSet(10.0,    100.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1,  50000.0,  50500.0, EventSet(10.0,  50500.0, 20.0, prod1 -> 10.0))
+    throughput update Consumed (cons1,  60000.0,  60050.0, EventSet( 5.0,  60050.0, 20.0, prod1 ->  5.0))
+    throughput update Consumed (cons1, 190000.0, 190050.0, EventSet(15.0, 190050.0, 20.0, prod1 -> 15.0))
+
+
+    val results = throughput.results(ThroughputMetric.ID, cons1)
+    results should have size (4)
+    results(0) should be (ThroughputMetric(cons1,   0.0, 10.0))
+    results(1) should be (ThroughputMetric(cons1,  50.0, 10.0))
+    results(2) should be (ThroughputMetric(cons1,  60.0,  5.0))
+    results(3) should be (ThroughputMetric(cons1, 190.0, 15.0))
+
+    val consolidated = throughput.consolidateByMinute(ThroughputMetric.ID, cons1)
+    consolidated should have size (3)
+    consolidated(0) should be (0.3333 +- 0.0001)
+    consolidated(1) should be (0.0833 +- 0.0001)
+    consolidated(3) should be (0.2500 +- 0.0001)
+  }
+
+
+  
 
 
 }

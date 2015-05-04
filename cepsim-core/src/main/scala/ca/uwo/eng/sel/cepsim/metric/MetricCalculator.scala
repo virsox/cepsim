@@ -4,6 +4,8 @@ import ca.uwo.eng.sel.cepsim.history.SimEvent
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.Vertex
 
+import scala.collection.SortedMap
+
 /** Trait for metric calculators. */
 trait MetricCalculator {
 
@@ -18,6 +20,12 @@ trait MetricCalculator {
     * @return placement of which the metrics are being calculated.
     */
   def placement: Placement
+
+  /**
+    * Initialize the metric calculator.
+    * @param startTime Timestamp at which the cloudlet start its execution.
+    */
+  def init(startTime: Double)
 
   /**
     * Method invoked to update the metrics calculation with new processing information.
@@ -43,6 +51,6 @@ trait MetricCalculator {
   def consolidate(id: String, v: Vertex): Double =
     results(id, v).foldLeft(0.0)((acc, metric) => acc + metric.value) / results(id, v).length
 
-
+  def consolidateByMinute(id: String, v: Vertex): SortedMap[Int, Double]
 
 }
