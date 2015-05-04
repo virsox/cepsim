@@ -62,7 +62,7 @@ public class CepQueryCloudletTest {
 
 		// 1st invocation
         // long instructions, double currentTime, double previousTime, double capacity
-		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
+		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
         cloudlet.updateQuery(30_000_000L, 30, 0, 1); // 10s
 
         verify(queryCloudlet).init(0);
@@ -86,7 +86,7 @@ public class CepQueryCloudletTest {
         when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
 		// 1st invocation
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
         cloudlet.updateQuery(80_000_000L, 80, 0, 1);
 
         verify(queryCloudlet).init(0);
@@ -106,7 +106,7 @@ public class CepQueryCloudletTest {
     public void testUpdateCloudletWithEventsReceived() {
         when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
 
         // enqueue network events
         EventSet es1 = new EventSet(1000, 1.0, 0.0, Collections.<EventProducer, Object>singletonMap(p1, 1000.0));
@@ -132,7 +132,7 @@ public class CepQueryCloudletTest {
 
     @Test
     public void testGetVertices() {
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, network, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
 
         Set<Vertex> expected = new HashSet<>();
         expected.add(p1);

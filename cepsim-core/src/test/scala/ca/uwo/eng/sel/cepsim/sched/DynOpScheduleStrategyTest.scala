@@ -30,6 +30,11 @@ class DynOpScheduleStrategyTest extends FlatSpec
     val c1 = mock[EventConsumer]("c1")
     val ov = mock[Operator]("originVertex")
 
+    when(p1.needsAllocation).thenReturn(true)
+    when(f1.needsAllocation).thenReturn(true)
+    when(f2.needsAllocation).thenReturn(true)
+    when(c1.needsAllocation).thenReturn(true)
+
     val query1 = mock[Query]
 
     val placement = mock[Placement]
@@ -74,36 +79,31 @@ class DynOpScheduleStrategyTest extends FlatSpec
   "A DynamicOpScheduleStrategy" should "schedule all operators first" in new Fixture1 {
     val ret = strategy.allocate(1000, 0.0, 0.01, placement) // capacity = 0.01 MIPS = 10 instructions per ms
 
-    doReturn(250.0).when(p1).inputQueue
+    when(p1.instructionsNeeded).thenReturn(250.0)
+    when(f1.instructionsNeeded).thenReturn(250.0)
+    when(f2.instructionsNeeded).thenReturn(250.0)
+    when(c1.instructionsNeeded).thenReturn(200.0)
+
     ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
-
-    doReturn(250.0).when(f1).totalInputEvents
     ret.next should be (ExecuteAction(f1, 25.0, 50.0, 250))
-
-    doReturn(250.0).when(f2).totalInputEvents
     ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
-
-    doReturn(200.0).when(c1).totalInputEvents
     ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
   }
 
   it should "consider a pending action between two actions" in new Fixture1 {
-
     val enqueue1 = EnqueueAction(c1, ov, 60.0, EventSet(10.0, 50.0, 5.0, p1 -> 10.0))
     val pendingActions = TreeSet[Action](enqueue1)
     val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
 
-    doReturn(250.0).when(p1).inputQueue
+    when(p1.instructionsNeeded).thenReturn(250.0)
+    when(f1.instructionsNeeded).thenReturn(250.0)
+    when(f2.instructionsNeeded).thenReturn(500.0)
+    when(c1.instructionsNeeded).thenReturn(200.0)
+
     ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
-
-    doReturn(250.0).when(f1).totalInputEvents
     ret.next should be (ExecuteAction(f1, 25.0, 50.0, 250))
-
-    doReturn(500.0).when(f2).totalInputEvents
     ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
     ret.next should be (enqueue1)
-
-    doReturn(200.0).when(c1).totalInputEvents
     ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
   }
 
@@ -113,25 +113,22 @@ class DynOpScheduleStrategyTest extends FlatSpec
     val pendingActions = TreeSet[Action](enqueue1)
     val ret = strategy.allocate(1000, 10.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
 
+    when(p1.instructionsNeeded).thenReturn(100.0)
+    when(f1.instructionsNeeded).thenReturn(100.0)
+    when(f2.instructionsNeeded).thenReturn( 50.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
+
     ret.next should be (enqueue1)
-
-    doReturn(100.0).when(p1).inputQueue
     ret.next should be (ExecuteAction(p1, 10.0, 20.0, 100))
-
-    doReturn(100.0).when(f1).totalInputEvents
     ret.next should be (ExecuteAction(f1, 20.0, 30.0, 100))
-
-    doReturn( 50.0).when(f2).totalInputEvents
     ret.next should be (ExecuteAction(f2, 30.0, 35.0,  50))
-
-    doReturn( 50.0).when(c1).totalInputEvents
     ret.next should be (ExecuteAction(c1, 35.0, 40.0,  50))
 
     // no vertex has events left
-    doReturn(0.0).when(p1).inputQueue
-    doReturn(0.0).when(f1).totalInputEvents
-    doReturn(0.0).when(f2).totalInputEvents
-    doReturn(0.0).when(c1).totalInputEvents
+    when(p1.needsAllocation).thenReturn(false)
+    when(f1.needsAllocation).thenReturn(false)
+    when(f2.needsAllocation).thenReturn(false)
+    when(c1.needsAllocation).thenReturn(false)
     ret.hasNext should be (false)
   }
 
@@ -142,25 +139,23 @@ class DynOpScheduleStrategyTest extends FlatSpec
 
     val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
 
-    doReturn(100.0).when(p1).inputQueue
-    ret.next should be (ExecuteAction(p1, 0.0, 10.0, 100))
+    when(p1.instructionsNeeded).thenReturn(100.0)
+    when(f1.instructionsNeeded).thenReturn(100.0)
+    when(f2.instructionsNeeded).thenReturn( 50.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
 
-    doReturn(100.0).when(f1).totalInputEvents
+    ret.next should be (ExecuteAction(p1, 0.0, 10.0, 100))
     ret.next should be (ExecuteAction(f1, 10.0, 15.0, 50))
     ret.next should be (enqueue1)
     ret.next should be (ExecuteAction(f1, 15.0, 20.0, 50))
-
-    doReturn( 50.0).when(f2).totalInputEvents
     ret.next should be (ExecuteAction(f2, 20.0, 25.0, 50))
-
-    doReturn( 50.0).when(c1).totalInputEvents
     ret.next should be (ExecuteAction(c1, 25.0, 30.0, 50))
 
     // no vertex has events left
-    doReturn(0.0).when(p1).inputQueue
-    doReturn(0.0).when(f1).totalInputEvents
-    doReturn(0.0).when(f2).totalInputEvents
-    doReturn(0.0).when(c1).totalInputEvents
+    when(p1.needsAllocation).thenReturn(false)
+    when(f1.needsAllocation).thenReturn(false)
+    when(f2.needsAllocation).thenReturn(false)
+    when(c1.needsAllocation).thenReturn(false)
     ret.hasNext should be (false)
   }
 
@@ -173,32 +168,30 @@ class DynOpScheduleStrategyTest extends FlatSpec
     val pendingActions = TreeSet[Action](enqueue1, enqueue2, enqueue3)
     val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions)
 
-    ret.next should be (enqueue1)
-    doReturn(250.0).when(p1).inputQueue
-    ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
+    when(p1.instructionsNeeded).thenReturn(250.0)
+    when(f1.instructionsNeeded).thenReturn(250.0)
+    when(f2.instructionsNeeded).thenReturn(500.0)
+    when(c1.instructionsNeeded).thenReturn(200.0)
 
-    doReturn(250.0).when(f1).totalInputEvents
+    ret.next should be (enqueue1)
+    ret.next should be (ExecuteAction(p1,  0.0, 25.0, 250))
     ret.next should be (ExecuteAction(f1, 25.0, 40.0, 150))
     ret.next should be (enqueue2)
     ret.next should be (ExecuteAction(f1, 40.0, 50.0, 100))
-
-    doReturn(500.0).when(f2).totalInputEvents
     ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
     ret.next should be (enqueue3)
-
-    doReturn(200.0).when(c1).totalInputEvents
     ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
-
   }
 
   it should "reschedule operators if there are remaining instructions" in new Fixture2 {
 
     val ret = strategy.allocate(1000, 0.0, 0.01, placement)
 
-    doReturn(150.0).when(p1).inputQueue
-    doReturn(150.0).when(f1).totalInputEvents
-    doReturn(150.0).when(f2).totalInputEvents
-    doReturn( 50.0).when(c1).totalInputEvents
+
+    when(p1.instructionsNeeded).thenReturn(150.0)
+    when(f1.instructionsNeeded).thenReturn(150.0)
+    when(f2.instructionsNeeded).thenReturn(150.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
 
     ret.next should be (ExecuteAction(p1,  0.0, 15.0, 150))
     ret.next should be (ExecuteAction(f1, 15.0, 30.0, 150))
@@ -206,13 +199,13 @@ class DynOpScheduleStrategyTest extends FlatSpec
     ret.next should be (ExecuteAction(c1, 55.0, 60.0, 50))
 
     // ----- round 2
-    doReturn(  0.0).when(p1).inputQueue
-    doReturn(  0.0).when(f1).totalInputEvents
-    doReturn(100.0).when(f2).totalInputEvents
+    when(p1.needsAllocation).thenReturn(false)
+    when(f1.needsAllocation).thenReturn(false)
+    when(f2.instructionsNeeded).thenReturn(100.0)
     ret.next should be (ExecuteAction(f2, 60.0, 85.0, 250))
 
-    doReturn(50.0).when(f2).totalInputEvents
-    doReturn(50.0).when(c1).totalInputEvents
+    when(f2.instructionsNeeded).thenReturn(50.0)
+    when(c1.instructionsNeeded).thenReturn(50.0)
     ret.next should be (ExecuteAction(c1, 85.0, 90.0, 50))
 
     // ---- round 3

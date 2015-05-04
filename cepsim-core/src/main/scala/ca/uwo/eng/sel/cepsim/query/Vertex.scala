@@ -15,6 +15,12 @@ trait Vertex {
   /** Number of instructions needed to process one event. */
   def ipe: Double
 
+  /** The number of instructions needed to process all pending events. */
+  def instructionsNeeded: Double
+
+  /** Indicates if the vertex has pending events and needs to be allocated. */
+  def needsAllocation: Boolean = instructionsNeeded > 0.0
+
   // the next two methods are overriden in the InputVertex / OutputVertex traits.
   /**
    * Gets the set of successors of a vertex.
@@ -43,6 +49,7 @@ trait Vertex {
     * @return A sequence of simulation events happened during the vertex simulation.
     */
   def run(instructions: Double, startTime: Double = 0.0, endTime: Double = 0.0): Seq[SimEvent]
+
 
 
   override def toString: String = s"[id: $id]"

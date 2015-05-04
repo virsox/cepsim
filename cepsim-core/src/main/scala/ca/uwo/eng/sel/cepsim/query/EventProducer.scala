@@ -26,6 +26,8 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   /** Number of events on the input event set. */
   def inputQueue = inputEventSet.size
 
+  /** The number of instructions needed to process all pending events. */
+  def instructionsNeeded: Double = inputQueue.min(maximumNumberOfEvents) * ipe
 
   var accumulated = 0.0
 

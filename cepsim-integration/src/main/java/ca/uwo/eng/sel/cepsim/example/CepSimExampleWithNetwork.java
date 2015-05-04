@@ -194,8 +194,8 @@ public class CepSimExampleWithNetwork {
 		QueryCloudlet p2Cloudlet = QueryCloudlet.apply("cl2", placement2, DefaultOpScheduleStrategy.weighted(), 1);
 
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
-		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false, network);
-        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, p2Cloudlet, false, network);
+		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false);
+        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, p2Cloudlet, false);
 
         cloudlet1.setUserId(broker.getId());
         cloudlet2.setUserId(broker.getId());

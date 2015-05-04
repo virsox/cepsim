@@ -83,6 +83,9 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
     processAt = start + advance.toUnit(MILLISECONDS)
   }
 
+  /** Indicates if the vertex has pending events and needs to be allocated. */
+  override def needsAllocation: Boolean = !toBeSent.isEmpty || instructionsNeeded > 0.0
+
   /**
     * Add a new input queue to the windowed operator. Overrides the InputVertex definition because
     * it also needs to initialize the accumulated map.

@@ -40,6 +40,9 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
     else List(Produced(this, startTime, endTime, events))
   }
 
+  /** The number of instructions needed to process all pending events. */
+  def instructionsNeeded: Double = totalInputEvents.min(maximumNumberOfEvents) * ipe
+
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[Operator]
 

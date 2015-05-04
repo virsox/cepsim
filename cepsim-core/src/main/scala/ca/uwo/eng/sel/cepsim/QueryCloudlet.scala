@@ -148,7 +148,10 @@ object QueryCloudlet {
         verticesList.foreach { (elem) =>
           elem match {
             case executeAction: ExecuteAction => iterationSimEvents ++= execute(executeAction)
-            case enqueueAction: EnqueueAction => execute(enqueueAction)
+            case enqueueAction: EnqueueAction => {
+              execute(enqueueAction)
+              pendingActions -= enqueueAction
+            }
           }
         }
         iterationStartTime += (availableInstructions / (capacity * 1000))
@@ -199,12 +202,16 @@ object QueryCloudlet {
 
       notInPlacement.foreach { (dest) =>
         val events = ov.dequeueFromOutput(dest, ov.outputQueues(dest))
-        networkInterface.sendMessage(endTime, ov, dest, events)
+        if (events.size > 0) {
+          networkInterface.sendMessage(endTime, ov, dest, events)
+        }
       }
 
       inPlacement.foreach { (dest) =>
         val events = ov.outputQueues(dest)
-        dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))
+        if (events > 0) {
+          dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))
+        }
       }
     }
 

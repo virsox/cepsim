@@ -3,17 +3,17 @@ package ca.uwo.eng.sel.cepsim.example;
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
-import ca.uwo.eng.sel.cepsim.history.SimEvent;
+import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.network.FixedDelayNetworkInterface;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -25,14 +25,15 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class CepSimExperiment1 {
+public class CepSimAvgWindowNetwork {
 
     private static final Double SIM_INTERVAL = 0.01;
+    private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
-	private static List<CepQueryCloudlet> cloudletList;
-	/** The vmList. */
-	private static List<Vm> vmList;
+	private static List<Cloudlet> cloudletList;
+	/** The vmlist. */
+	private static List<Vm> vmlist;
 
 	/**
 	 * Creates main() to run this example.
@@ -40,7 +41,8 @@ public class CepSimExperiment1 {
 	 * @param args the args
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting CepSimExample...");
+		Log.printLine("Starting CepSimAvgWindow...");
+
 
 		try {
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
@@ -60,42 +62,31 @@ public class CepSimExperiment1 {
             CepSimBroker broker = createBroker();
 			int brokerId = broker.getId();
 
-			// Fourth step: Create two virtual machines
-			vmList = new ArrayList<Vm>();
+			// Fourth step: Create one virtual machine
+			vmlist = new ArrayList<Vm>();
 
 			// VM description
-			int vmid = 1;
-			int mips = 2000;
+			int mips = 2500;
 			long size = 10000; // image size (MB)
-			int ram = 4096; // vm memory (MB)
-			long bw = 10000;
+			int ram = 2048; // vm memory (MB)
+			long bw = 1000;
 			int pesNumber = 1; // number of cpus
 			String vmm = "Xen"; // VMM name
 
-			// create VMs
-			Vm vm1 = new Vm(vmid,     brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
-			Vm vm2 = new Vm(vmid + 1, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			// create VM
+			Vm vm1 = new Vm(1, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			Vm vm2 = new Vm(2, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
 
-			// add the VMs to the vmList
-			vmList.add(vm1);
-            vmList.add(vm2);
+			// add the VM to the vmList
+			vmlist.add(vm1);
+			vmlist.add(vm2);
 
 			// submit vm list to the broker
-			broker.submitVmList(vmList);
+			broker.submitVmList(vmlist);
 
 			// Fifth step: Create one Cloudlet
-			cloudletList = new ArrayList<CepQueryCloudlet>();
+			cloudletList = new ArrayList<Cloudlet>();
 
-			// Cloudlet properties
-//			int id = 0;
-//			long length = 400000;
-//			long fileSize = 300;
-//			long outputSize = 300;
-//			UtilizationModel utilizationModel = new UtilizationModelFull();
-
-//			Cloudlet cloudlet = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
-//			cloudlet.setUserId(brokerId);
-//			cloudlet.setVmId(vmid);
 
 			// add the cloudlet to the list
 			cloudletList.addAll(createCloudlets(broker));
@@ -104,31 +95,33 @@ public class CepSimExperiment1 {
 			broker.submitCloudletList(cloudletList);
 
 			// Sixth step: Starts the simulation
+			long start = System.nanoTime();
 			CloudSim.startSimulation();
-
 			CloudSim.stopSimulation();
+			double time = (System.nanoTime() - start) / (1E6);
+
+			System.out.println("Time [" + time + "]");
 
 			//Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
 			printCloudletList(newList);
 
 
-            // get all queries and history from all cloudlets
-            History<SimEvent> fullHistory = new History<>();
-            Set<Query> queries = new HashSet<>();
 			for (Cloudlet cl : newList) {
+                if (!(cl instanceof CepQueryCloudlet)) continue;
+
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-                fullHistory.merge(cepCl.getExecutionHistory());
-                queries.addAll(cepCl.getQueries());
+
+                Query q = cepCl.getQueries().iterator().next();
+                Vertex consumer = q.consumers().head();
+
+                History history = cepCl.getExecutionHistory().from(consumer);
+
+                System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
+                System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
 			}
 
-//            for (Query q : queries) {
-//                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-//                System.out.println("Latency   : " + LatencyMetric.calculate(q, fullHistory));
-//            }
-
-
-            Log.printLine("CloudSimExample1 finished!");
+			Log.printLine("CloudSimExample1 finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
@@ -137,54 +130,90 @@ public class CepSimExperiment1 {
 
 
 
-	private static Set<CepQueryCloudlet> createCloudlets(CepSimBroker broker) {
+	private static Set<Cloudlet> createCloudlets(CepSimBroker broker) {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-		Query q = getQuery1(1);
-        Placement placement1 = Placement.apply(q, 1);
-				//apply(JavaConversions.asScalaSet(p1Vertices).<Vertex>toSet(), 1);
+        final int MAX_QUERIES = 1;
+        final int NUM_SENSORS = 2500;
 
-		QueryCloudlet p1Cloudlet = QueryCloudlet.apply("cl1", placement1, DefaultOpScheduleStrategy.weighted(), 1);
+		Set<Cloudlet> cloudlets = new HashSet<>();
+        Set<Query> queries = new HashSet<Query>();
+        Map<Vertex, Object> weights = new HashMap<>();
 
-        NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.05);
-		CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, p1Cloudlet, false);
-        cloudlet1.setUserId(broker.getId());
+        for (int i = 1; i <= MAX_QUERIES; i++) {
+            Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-		Set<CepQueryCloudlet> cloudlets = new HashSet<>();
-		cloudlets.add(cloudlet1);
-		return cloudlets;
+            EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
+            Operator outlierDetector = new Operator("outlierDetector" + i, 70000, 2048);
+            Operator average = WindowedOperator.apply("average" + i, 70000, 15000, 15000,
+                    WindowedOperator.constant(NUM_SENSORS), 2048);
+            Operator db = new Operator("db" + i, 11000000, 2048);
+            EventConsumer c = new EventConsumer("end" + i, 1000, 2048);
+
+
+            Set<Vertex> vertices = new HashSet<>();
+            vertices.add(p);
+            vertices.add(outlierDetector);
+            vertices.add(average);
+            vertices.add(db);
+            vertices.add(c);
+
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, outlierDetector, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(outlierDetector, average, 0.95);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(average, db, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(db, c, 1.0);
+
+            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+            edges.add(e1);
+            edges.add(e2);
+            edges.add(e3);
+            edges.add(e4);
+
+            weights.put(p, 100.0);
+            weights.put(outlierDetector, 50.0);
+            weights.put(average, 50.0);
+            weights.put(db, 1.0);
+            weights.put(c, 1.0);
+
+            Query q = Query.apply("testavg" + i, vertices, edges, DURATION);
+            queries.add(q);
+
+            NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
+
+            // ------------- cloudlet 1
+
+            Set<Vertex> p1Vertices = new HashSet<>();
+            p1Vertices.add(p);
+            p1Vertices.add(outlierDetector);
+            p1Vertices.add(average);
+            p1Vertices.add(c);
+            Placement placement1 = Placement.apply(p1Vertices, 1);
+
+            QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+
+            CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, false);
+            cloudlet1.setUserId(broker.getId());
+            cloudlets.add(cloudlet1);
+
+            // ------------- cloudlet 2
+            Set<Vertex> p2Vertices = new HashSet<>();
+            p2Vertices.add(db);
+            Placement placement2 = Placement.apply(p2Vertices, 2);
+
+            QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+
+            CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
+            cloudlet2.setUserId(broker.getId());
+            cloudlets.add(cloudlet2);
+
+        }
+
+        return cloudlets;
 	}
-
-
-	public static Query getQuery1(int number) {
-
-		Generator gen1 = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
-		Generator gen2 = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
-
-		EventProducer p1 = new EventProducer("p1_" + number, 1000, gen1, true);
-		EventProducer p2 = new EventProducer("p2_" + number, 1000, gen2, true);
-		Operator f1 = new Operator("f1_" + number, 5000, 10000);
-		Operator f2 = new Operator("f2_" + number, 5000, 10000);
-		Operator f3 = new Operator("f3_" + number, 5000, 10000);
-		Operator j1 = new Operator("j1_" + number, 20000, 10000);//new JoinOperator("j1_" + number, 20000, 0.01, Duration.apply(100, TimeUnit.MILLISECONDS), 10000);
-		EventConsumer c = new EventConsumer("c1" + number, 1000, 1000);
-		Set<Vertex> vertices = new HashSet<>(Arrays.asList(p1, p2, f1, f2, f3, j1, c));
-
-		Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, f1, 1.0);
-		Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, f2, 1.0);
-		Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(f1, j1, 0.1);
-		Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(f2, f3, 0.5);
-		Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(f3, j1, 0.1);
-		Tuple3<OutputVertex, InputVertex, Object> e6 = new Tuple3<OutputVertex, InputVertex, Object>(j1,  c, 1.0);
-		Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>(
-				Arrays.asList(e1, e2, e3, e4, e5, e6)
-		);
-
-		Query q = Query.apply("q1_" + number, vertices, edges, 10L);
-		return q;
-	}
-
+	
 	/**
 	 * Creates the datacenter.
 	 *
@@ -200,23 +229,21 @@ public class CepSimExperiment1 {
 		List<Host> hostList = new ArrayList<>();
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
-		// In this example, it will have only one core.
 		List<Pe> peList = new ArrayList<>();
 
-		int mips = 2000;
-
 		// 3. Create PEs and add these into a list.
-		peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
-		peList.add(new Pe(1, new PeProvisionerSimple(mips)));
-		peList.add(new Pe(2, new PeProvisionerSimple(mips)));
-		peList.add(new Pe(3, new PeProvisionerSimple(mips)));
+        int mips = 2500;
+        for (int i = 0; i < 12; i++) {
+            peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
+        }
+
 
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 16384; // host memory (MB)
-		long storage = 1000000000; // host storage (1TB)
-		int bw = 100000;
+		int ram = 98304; // host memory (MB)
+		long storage = 1000000; // host storage
+		int bw = 10000;
 
 		hostList.add(
 			new Host(
@@ -252,8 +279,7 @@ public class CepSimExperiment1 {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		Datacenter datacenter = null;
 		try {
-			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList),
-                    storageList, SIM_INTERVAL);
+			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, SIM_INTERVAL);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

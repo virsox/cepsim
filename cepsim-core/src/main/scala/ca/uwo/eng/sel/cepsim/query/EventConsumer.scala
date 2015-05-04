@@ -41,6 +41,8 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     else List(Consumed(this, startTime, endTime, processed))
   }
 
+  /** The number of instructions needed to process all pending events. */
+  def instructionsNeeded: Double = totalInputEvents * ipe
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[EventConsumer]
 

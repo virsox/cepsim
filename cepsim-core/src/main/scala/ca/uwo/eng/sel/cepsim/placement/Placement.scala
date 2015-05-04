@@ -9,16 +9,22 @@ import scala.collection.mutable
 
 /** Companion Placement object */
 object Placement {
-  // for java usage
+  // ----------------------- for java usage
+  def apply(vertices: JavaSet[Vertex], vmId: Int): Placement = new Placement(asScalaSet(vertices).toSet, vmId)
 
   def withQueries(queries: JavaSet[Query], vmId: Int, iterationList:JavaList[Vertex]): Placement =
     Placement.withQueries(asScalaSet(queries).toSet, vmId, iterableAsScalaIterable(iterationList))
+
   def withQueries(queries: JavaSet[Query], vmId: Int): Placement =
     Placement.withQueries(asScalaSet(queries).toSet, vmId)
+
+  // ----------------------------------------------------------------------------------------
+
   def withQueries(queries: Set[Query], vmId: Int, iterationOrder: Iterable[Vertex] = List.empty): Placement =
     new Placement(queries.flatMap(_.vertices), vmId, iterationOrder)
 
   def apply(q: Query, vmId: Int): Placement = new Placement(q.vertices, vmId)
+
   def apply(vertices: Set[Vertex], vmId: Int, iterationOrder: Iterable[Vertex] = List.empty): Placement =
     new Placement(vertices, vmId, iterationOrder)
 }

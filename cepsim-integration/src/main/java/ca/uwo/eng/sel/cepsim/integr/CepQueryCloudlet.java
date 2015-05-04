@@ -23,7 +23,6 @@ import static scala.collection.JavaConversions.asJavaList;
 public class CepQueryCloudlet extends Cloudlet {
 
     private static final UtilizationModelFull UTIL_MODEL_FULL = new UtilizationModelFull();
-    private NetworkInterface networkInterface;
 
 
     private QueryCloudlet cloudlet;
@@ -34,7 +33,7 @@ public class CepQueryCloudlet extends Cloudlet {
     private boolean hasFinished;
 
     public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
-                            NetworkInterface networkInterface, MetricCalculator calculator) {
+                            MetricCalculator calculator) {
         // we are passing some "default parameters" for the following arguments
 
         // cloudletLength = Long.MAX_VALUE (this value is not used for CepCloudlets)
@@ -57,16 +56,14 @@ public class CepQueryCloudlet extends Cloudlet {
         setVmId(this.cloudlet.placement().vmId());
 
         // list of network interfaces
-        this.networkInterface = networkInterface;
         this.networkEvents = new PriorityQueue<>();
 
         this.cloudlet.registerCalculator(calculator);
     }
 
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
-                            NetworkInterface networkInterface) {
-		this(cloudletId, cloudlet, record, networkInterface, LatencyThroughputCalculator.apply(cloudlet.placement()));
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record) {
+		this(cloudletId, cloudlet, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
 	}
 
 	
