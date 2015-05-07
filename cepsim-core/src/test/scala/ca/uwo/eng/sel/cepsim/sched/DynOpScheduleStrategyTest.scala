@@ -190,7 +190,7 @@ class DynOpScheduleStrategyTest extends FlatSpec
 
     when(p1.instructionsNeeded).thenReturn(150.0)
     when(f1.instructionsNeeded).thenReturn(150.0)
-    when(f2.instructionsNeeded).thenReturn(150.0)
+    when(f2.instructionsNeeded).thenReturn(750.0)
     when(c1.instructionsNeeded).thenReturn( 50.0)
 
     ret.next should be (ExecuteAction(p1,  0.0, 15.0, 150))
@@ -201,11 +201,11 @@ class DynOpScheduleStrategyTest extends FlatSpec
     // ----- round 2
     when(p1.needsAllocation).thenReturn(false)
     when(f1.needsAllocation).thenReturn(false)
-    when(f2.instructionsNeeded).thenReturn(100.0)
+    when(f2.instructionsNeeded).thenReturn(500.0)
     ret.next should be (ExecuteAction(f2, 60.0, 85.0, 250))
 
-    when(f2.instructionsNeeded).thenReturn(50.0)
-    when(c1.instructionsNeeded).thenReturn(50.0)
+    when(f2.instructionsNeeded).thenReturn(250.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
     ret.next should be (ExecuteAction(c1, 85.0, 90.0, 50))
 
     // ---- round 3
@@ -222,10 +222,10 @@ class DynOpScheduleStrategyTest extends FlatSpec
     val pendingActions = TreeSet[Action](enqueue1, enqueue2, enqueue3)
     val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions)
 
-    doReturn(150.0).when(p1).inputQueue
-    doReturn(150.0).when(f1).totalInputEvents
-    doReturn(150.0).when(f2).totalInputEvents
-    doReturn( 50.0).when(c1).totalInputEvents
+    when(p1.instructionsNeeded).thenReturn(150.0)
+    when(f1.instructionsNeeded).thenReturn(150.0)
+    when(f2.instructionsNeeded).thenReturn(750.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
 
     ret.hasNext should be (true)
     ret.next should be (ExecuteAction(p1,  0.0, 15.0, 150))
@@ -239,9 +239,10 @@ class DynOpScheduleStrategyTest extends FlatSpec
     ret.next should be (ExecuteAction(c1, 55.0, 60.0, 50))
 
     // ----- round 2
-    doReturn(  0.0).when(p1).inputQueue
-    doReturn(  0.0).when(f1).totalInputEvents
-    doReturn(100.0).when(f2).totalInputEvents
+    when(p1.needsAllocation).thenReturn(false)
+    when(f1.needsAllocation).thenReturn(false)
+    when(f2.instructionsNeeded).thenReturn(500.0)
+
     ret.hasNext should be (true)
     ret.next should be (ExecuteAction(f2, 60.0, 70.0, 100))
     ret.hasNext should be (true)
@@ -249,17 +250,19 @@ class DynOpScheduleStrategyTest extends FlatSpec
     ret.hasNext should be (true)
     ret.next should be (ExecuteAction(f2, 70.0, 85.0, 150))
 
-    doReturn(50.0).when(f2).totalInputEvents
-    doReturn(50.0).when(c1).totalInputEvents
+    when(f2.instructionsNeeded).thenReturn(250.0)
+    when(c1.instructionsNeeded).thenReturn( 50.0)
     ret.hasNext should be (true)
     ret.next should be (ExecuteAction(c1, 85.0, 90.0, 50))
     ret.hasNext should be (true)
     ret.next should be (enqueue3)
 
     // ---- round 3
+    when(c1.needsAllocation).thenReturn(false)
     ret.hasNext should be (true)
     ret.next should be (ExecuteAction(f2, 90.0, 100.0, 100))
 
+    when(f2.needsAllocation).thenReturn(false)
     ret.hasNext should be (false)
   }
 

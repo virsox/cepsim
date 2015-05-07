@@ -138,20 +138,6 @@ class DefaultOpScheduleStrategyTest extends FlatSpec
     it.hasNext should be (false)
   }
 
-  it should "not consider actions after the iteration end" in new Fixture {
-    // right before p1 execution
-    val enqueue1 = EnqueueAction(c1, ov, 1000.0, EventSet(100.0,  800.0, 100.0, p1 -> 100.0))
-    val enqueue2 = EnqueueAction(c1, ov, 2000.0, EventSet(100.0, 1500.0, 200.0, p1 -> 100.0))
-    val pendingActions = TreeSet[Action](enqueue1, enqueue2)
-
-    val schedStrategy = DefaultOpScheduleStrategy(allocStrategy)
-    val it = schedStrategy.allocate(1000000.0, 0.0, 1, placement, pendingActions)
-
-    it.next should be (a1)
-    it.next should be (a2)
-    it.next should be (a3)
-    it.hasNext should be (false)
-  }
 
 
 }

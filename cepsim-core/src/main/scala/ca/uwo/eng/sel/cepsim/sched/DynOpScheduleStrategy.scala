@@ -24,12 +24,11 @@ object DynOpScheduleStrategy {
   */
 class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpScheduleStrategy {
 
+  import OpScheduleStrategy._
 
   override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement,
                         pendingActions: SortedSet[Action] = TreeSet.empty): Iterator[Action] =
-    new DynOpScheduleIterator(instructions, startTime, capacity, placement,
-      pendingActions.filter(_.to < (startTime + instructionsInMs(instructions, capacity))))
-
+    new DynOpScheduleIterator(instructions, startTime, capacity, placement, pendingActions)
 
   /**
     * Iterator returned by the strategy.
@@ -64,7 +63,6 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       * @return true if the vertex can be allocated, false otherwise.
       */
     private def canAllocate(v: Vertex): Boolean = v.needsAllocation
-      //(instructionsNeeded(v) > 1) //&& (v.ipe < remainingInstructions)
 
     /**
       * Get the index of the next vertex to be allocated. Method used in the second round.
@@ -96,20 +94,6 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
         vertices(index)
       }
     }
-
-//    /**
-//      * Calculate the total number of instructions needed to process the whole input queues.
-//      * @param v Vertex to which the calculation should be performed.
-//      * @return total number of instructions needed to process the whole input queues.
-//      */
-//    private def instructionsNeeded(v: Vertex): Double =
-//      v match {
-//        case ec: EventConsumer => ec.totalInputEvents * ec.ipe
-//        case ep: EventProducer => ep.inputQueue.min(ep.maximumNumberOfEvents) * v.ipe
-//        case ov: Operator      => ov.totalInputEvents.min(ov.maximumNumberOfEvents) * ov.ipe
-//        case _ => throw new IllegalArgumentException()
-//      }
-
 
     override def hasNext: Boolean = (!toBeScheduled.isEmpty) || (nextVertexIndex != -1)
 

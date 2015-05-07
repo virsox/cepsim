@@ -5,6 +5,7 @@ import ca.uwo.eng.sel.cepsim.metric._
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._
+import ca.uwo.eng.sel.cepsim.sched.OpScheduleStrategy._
 import ca.uwo.eng.sel.cepsim.sched.{EnqueueAction, Action, ExecuteAction, OpScheduleStrategy}
 
 import scala.annotation.varargs
@@ -144,17 +145,18 @@ object QueryCloudlet {
         lastExecution = iterationStartTime
 
         // Vertices execution
-        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, pendingActions)
+        val iterationEndTime = iterationStartTime + instructionsInMs(availableInstructions, capacity)
+        val (p1, p2) = pendingActions.partition(_.to < iterationEndTime)
+        pendingActions = p2
+
+        val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, p1)
         verticesList.foreach { (elem) =>
           elem match {
             case executeAction: ExecuteAction => iterationSimEvents ++= execute(executeAction)
-            case enqueueAction: EnqueueAction => {
-              execute(enqueueAction)
-              pendingActions -= enqueueAction
-            }
+            case enqueueAction: EnqueueAction => execute(enqueueAction)
           }
         }
-        iterationStartTime += (availableInstructions / (capacity * 1000))
+        iterationStartTime = iterationEndTime
 
 
         iterationSimEvents.foreach((simEvent) =>

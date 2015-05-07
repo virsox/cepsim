@@ -5,16 +5,21 @@ import ca.uwo.eng.sel.cepsim.placement.Placement
 import scala.collection.SortedSet
 import scala.collection.immutable.TreeSet
 
+
+/** OpScheduleStrategy companion object. */
+object OpScheduleStrategy {
+  // auxiliary function
+  def instructionsPerMs(capacity: Double) = (capacity * 1000)
+  def instructionsInMs(number: Double, capacity: Double) = number / instructionsPerMs(capacity)
+  def endTime(startTime: Double, number: Double, capacity: Double) = startTime + instructionsInMs(number, capacity)
+}
+
 /**
   * Strategy to distribute the available instructions to the placement vertices. It also defines the
   * order on which the vertices should be traversed.
   */
 trait OpScheduleStrategy {
 
-  // auxiliary function
-  def instructionsPerMs(capacity: Double) = (capacity * 1000)
-  def instructionsInMs(number: Double, capacity: Double) = number / instructionsPerMs(capacity)
-  def endTime(startTime: Double, number: Double, capacity: Double) = startTime + instructionsInMs(number, capacity)
 
   /**
     * Allocates instructions to vertices from a placement.

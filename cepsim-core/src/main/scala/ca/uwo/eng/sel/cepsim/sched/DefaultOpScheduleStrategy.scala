@@ -108,6 +108,8 @@ class DefaultOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSch
   override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement,
                         pendingActions: SortedSet[Action] = TreeSet.empty): Iterator[Action] =  {
 
+    import OpScheduleStrategy._
+
     val instrPerOperator = cachedResults.get((instructions, placement)) match {
       case Some(result) => result
       case None         => {
@@ -127,8 +129,7 @@ class DefaultOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSch
     }).toList
 
     val iterationEndTime = startTime + instructionsInMs(instructions, capacity)
-    merge(executeActions,
-          pendingActions.filter(_.to < iterationEndTime)).iterator
+    merge(executeActions, pendingActions).iterator
   }
 
 }

@@ -224,17 +224,22 @@ class QueryCloudletTest extends FlatSpec
     val f3 = mock[Operator]("f3")
     doReturn(Set(f1, f3)).when(f2).predecessors
 
-    val enqueueEs = EventSet(100.0, 1000.0, 20.0, prod -> 100.0)
-    val enqueue1 = EnqueueAction(f1, f3, 1200.0, enqueueEs)
+    val enqueueEs1 = EventSet(100.0, 1000.0, 20.0, prod -> 100.0)
+    val enqueueAction1 = EnqueueAction(f1, f3, 1200.0, enqueueEs1)
+
+    // this action should not be scheduled because it is out of the iteration time bounds
+    val enqueueEs2 = EventSet(100.0, 2100.0, 20.0, prod -> 100.0)
+    val enqueueAction2 = EnqueueAction(f1, f3, 2200.0, enqueueEs2)
+
     doReturn(Iterator(
         ExecuteAction(prod, 1000.0, 1100.0, 100000.0),
         ExecuteAction(f1,   1100.0, 1200.0, 100000.0),
-        enqueue1,
+        enqueueAction1,
         ExecuteAction(f1,   1200.0, 1500.0, 300000.0),
         ExecuteAction(f2,   1500.0, 1900.0, 400000.0),
         ExecuteAction(cons, 1900.0, 2000.0, 100000.0))).
       when(opSchedule).
-      allocate(1000000, 1000.0, 1, placement, TreeSet(enqueue1))
+      allocate(1000000, 1000.0, 1, placement, TreeSet(enqueueAction1))
 
     doReturn(Some(Generated(prod, 0.0, 1000, EventSet(100.0, 1000, 0, Map(prod -> 100.0))))).when(prod).generate(0.0, 1000)
     doReturn(List(Produced(prod, 1000.0, 1100.0, EventSet(100.0, 1100.0,  100.0, prod -> 100.0)))).when(prod).run(100000, 1000.0, 1100.0)
@@ -245,7 +250,8 @@ class QueryCloudletTest extends FlatSpec
 
     val cloudlet = QueryCloudlet("c1", placement, opSchedule)
     cloudlet.init(0.0)
-    cloudlet.enqueue(1200.0, f3, f1, enqueueEs)
+    cloudlet.enqueue(1200.0, f3, f1, enqueueEs1)
+    cloudlet.enqueue(2200.0, f3, f1, enqueueEs2)
 
     doReturn(100.0).when(prod).outputQueues(f1)
     doReturn(100.0).when(f1).outputQueues(f2)
@@ -258,7 +264,7 @@ class QueryCloudletTest extends FlatSpec
     inOrder.verify(prod).generate(0.0, 1000.0)
     inOrder.verify(prod).run(100000, 1000.0, 1100.0)
     inOrder.verify(f1  ).run(100000, 1100.0, 1200.0)
-    inOrder.verify(f1  ).enqueueIntoInput(f3, enqueueEs)
+    inOrder.verify(f1  ).enqueueIntoInput(f3, enqueueEs1)
     inOrder.verify(f1  ).run(300000, 1200.0, 1500.0)
     inOrder.verify(f2  ).run(400000, 1500.0, 1900.0)
     inOrder.verify(cons).run(100000, 1900.0, 2000.0)
@@ -272,6 +278,10 @@ class QueryCloudletTest extends FlatSpec
       Produced (f2,   1500.0, 1900.0, EventSet(100.0, 1900.0,  900.0, prod -> 100.0)),
       Consumed (cons, 1900.0, 2000.0, EventSet(100.0, 2000.0, 1000.0, prod -> 100.0))
     ))
+
+    // enqueue action 2 is not scheduled
+    cloudlet.pendingActions should have size (1)
+    cloudlet.pendingActions should contain theSameElementsAs(Set(enqueueAction2))
   }
 
 
