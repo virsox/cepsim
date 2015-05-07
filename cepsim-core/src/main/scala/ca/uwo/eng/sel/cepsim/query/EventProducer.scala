@@ -1,8 +1,8 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.history.{Generated, Produced, SimEvent}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** EventProducer companion object. */
 object EventProducer {

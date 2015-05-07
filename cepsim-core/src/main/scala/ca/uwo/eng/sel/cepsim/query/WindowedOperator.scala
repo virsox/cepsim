@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.history.{Produced, WindowAccumulated, SimEvent}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._

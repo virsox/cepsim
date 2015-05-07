@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.metric
+package ca.uwo.eng.sel.cepsim.event
 
 import java.util.{Map => JavaMap}
 

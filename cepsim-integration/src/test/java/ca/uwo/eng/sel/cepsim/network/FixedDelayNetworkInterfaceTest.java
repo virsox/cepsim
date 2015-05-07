@@ -3,7 +3,7 @@ package ca.uwo.eng.sel.cepsim.network;
 
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimTags;
-import ca.uwo.eng.sel.cepsim.metric.EventSet;
+import ca.uwo.eng.sel.cepsim.event.EventSet;
 import ca.uwo.eng.sel.cepsim.query.EventProducer;
 import ca.uwo.eng.sel.cepsim.query.InputVertex;
 import ca.uwo.eng.sel.cepsim.query.OutputVertex;

@@ -1,8 +1,8 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.history.{Produced, Generated}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._

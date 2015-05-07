@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.sched
 
-import ca.uwo.eng.sel.cepsim.metric.EventSet
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Operator, Query}
 import ca.uwo.eng.sel.cepsim.sched.alloc.AllocationStrategy

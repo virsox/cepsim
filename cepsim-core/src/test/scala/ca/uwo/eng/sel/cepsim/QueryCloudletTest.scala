@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface
 import ca.uwo.eng.sel.cepsim.placement.Placement
 import ca.uwo.eng.sel.cepsim.query._

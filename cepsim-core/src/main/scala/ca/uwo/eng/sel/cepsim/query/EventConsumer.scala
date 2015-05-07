@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.history.{Consumed, SimEvent}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 
 /** EventConsumer companion object. */
 object EventConsumer {

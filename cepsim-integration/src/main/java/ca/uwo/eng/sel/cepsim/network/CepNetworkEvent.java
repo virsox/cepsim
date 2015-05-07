@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.network;
 
-import ca.uwo.eng.sel.cepsim.metric.EventSet;
+import ca.uwo.eng.sel.cepsim.event.EventSet;
 import ca.uwo.eng.sel.cepsim.query.InputVertex;
 import ca.uwo.eng.sel.cepsim.query.OutputVertex;
 

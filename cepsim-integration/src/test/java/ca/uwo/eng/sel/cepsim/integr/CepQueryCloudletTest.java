@@ -3,7 +3,7 @@ package ca.uwo.eng.sel.cepsim.integr;
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.history.SimEvent;
-import ca.uwo.eng.sel.cepsim.metric.EventSet;
+import ca.uwo.eng.sel.cepsim.event.EventSet;
 import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
 import ca.uwo.eng.sel.cepsim.network.NetworkInterface;

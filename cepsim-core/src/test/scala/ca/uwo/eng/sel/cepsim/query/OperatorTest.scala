@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.query
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.history.Produced
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 import ca.uwo.eng.sel.cepsim.util.SimEventBaseTest
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

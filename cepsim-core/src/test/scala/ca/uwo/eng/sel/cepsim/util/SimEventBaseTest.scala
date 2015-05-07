@@ -1,7 +1,7 @@
 package ca.uwo.eng.sel.cepsim.util
 
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Produced}
-import ca.uwo.eng.sel.cepsim.metric.EventSet
 import org.scalautils.Equality
 
 /**
@@ -13,7 +13,7 @@ trait SimEventBaseTest {
   def compare(a: Double, b: Double): Boolean = Math.abs(a - b) < 0.001
 
   def compare(a: EventSet, b: EventSet): Boolean = compare(a.size, b.size) &&
-    a.ts == b.ts &&
+    compare(a.ts, b.ts) &&
     compare(a.latency, b.latency) &&
     a.totals.forall((e) => compare(e._2, b.totals.getOrElse(e._1, -1.0)))
 

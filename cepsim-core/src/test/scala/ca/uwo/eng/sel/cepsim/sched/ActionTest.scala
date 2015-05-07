@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.sched
 
-import ca.uwo.eng.sel.cepsim.metric.EventSet
+import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.query.{EventProducer, Operator, Vertex}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

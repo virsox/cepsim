@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.query
 
-import ca.uwo.eng.sel.cepsim.metric.EventSet
+import ca.uwo.eng.sel.cepsim.event.EventSet
 
 /** Trait that represent vertices that have outgoing edges. */
 trait OutputVertex extends Vertex {
