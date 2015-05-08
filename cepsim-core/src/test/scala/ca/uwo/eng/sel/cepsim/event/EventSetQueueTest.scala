@@ -1,6 +1,5 @@
 package ca.uwo.eng.sel.cepsim.event
 
-import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.query.EventProducer
 import ca.uwo.eng.sel.cepsim.util.SimEventBaseTest
 import org.junit.runner.RunWith

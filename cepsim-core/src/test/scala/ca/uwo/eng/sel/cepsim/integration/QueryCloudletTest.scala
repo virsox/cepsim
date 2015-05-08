@@ -99,7 +99,7 @@ class QueryCloudletTest extends FlatSpec
     val query2 = Query("q2", Set(prod2, f3, f4, cons2), Set((prod2, f3, 1.0), (f3, f4, 1.0), (f4, cons2, 0.1)))
 
     val placement = Placement(query1.vertices ++ query2.vertices, 1)
-    val cloudlet = QueryCloudlet("c1", placement, DefaultOpScheduleStrategy.weighted()) //, 0.0)
+    val cloudlet = QueryCloudlet("c1", placement, DefaultOpScheduleStrategy.weighted())
     cloudlet.init(0.0)
 
     val h = cloudlet run (10000000, 10.0, 1000)

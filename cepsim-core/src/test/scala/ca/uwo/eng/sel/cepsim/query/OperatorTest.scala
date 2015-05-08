@@ -116,13 +116,31 @@ class OperatorTest extends FlatSpec
     setup(op, 1.0, p1)
     enqueue(op, 10.0)   // currently in the queue EventSet(10, 0, 0, Map(p1 -> 10))
 
-    op enqueueIntoInput(p1, EventSet(10, 20, 10, p1 -> 10.0)) // queue is now EventSet(20, 10, 5, p1 -> 20)
-    var outputEs = op.run(100.0, 30, 40)(0).es
-    outputEs should be (EventSet(10.0, 40.0, 35.0, p1 -> 10.0))
+    op enqueueIntoInput(p1, EventSet(10, 20, 10, p1 -> 10.0))
+    // queue is now EventSet(10, 0, 0, Map(p1 -> 10)), EventSet(10, 20, 10, p1 -> 10)
 
+    // first es only
+    var outputEs = op.run(100.0, 30, 40)(0).es
+    outputEs should be (EventSet(10.0, 40.0, 40.0, p1 -> 10.0))
+
+    // second es
     outputEs = op.run(100.0, 40, 50)(0).es
-    outputEs should be (EventSet(10.0, 50.0, 45.0, p1 -> 10.0))
+    outputEs should be (EventSet(10.0, 50.0, 40.0, p1 -> 10.0))
   }
+
+
+  it should "dequeue partial event sets" in new Fixture {
+    val op = Operator("f1", 10)
+    setup(op, 1.0, p1)
+    enqueue(op, 10.0)
+
+    // queue is now EventSet(10, 0, 0, Map(p1 -> 10)), EventSet(20, 10, 5, p1 -> 20)
+    op enqueueIntoInput(p1, EventSet(10, 20, 10, p1 -> 10.0))
+
+    var outputEs = op.run(150.0, 30, 45)(0).es
+    outputEs should equal (EventSet(15.0, 45.0, 41.6666, p1 -> 15.0))
+  }
+
 
   // -----------------------------------------------------------------------------------
 
@@ -162,6 +180,17 @@ class OperatorTest extends FlatSpec
 
     assertInput(op, 5, 5)
     op.outputQueues(n1) should be (10)
+  }
+
+  it should "dequeue partial event sets from both input queues" in new Fixture {
+    val op = Operator("u1", 10)
+    setup(op, 1.0, p1, p2)
+
+    op.enqueueIntoInput(p1, EventSet(10.0, 20.0, 10.0, p1 -> 10.0))
+    op.enqueueIntoInput(p2, EventSet(10.0, 10.0,  5.0, p2 -> 10.0))
+
+    var outputEs = op.run(100.0, 30, 40)(0).es
+    outputEs should equal (EventSet(10.0, 40.0, 32.50, p1 -> 5.0, p2 -> 5.0))
   }
 
 
@@ -298,9 +327,7 @@ class OperatorTest extends FlatSpec
 
   "Any Operator" should "respect the bounds of the successor buffer" in new Fixture {
     val op = Operator("s1", 10)
-
-    op.addInputQueue(p1)
-    op.addOutputQueue(n1)
+    setup(op, 1.0, p1)
 
     op.setLimit(n1, 5)
 
@@ -314,10 +341,9 @@ class OperatorTest extends FlatSpec
 
   it should "respect the bounds of all successors" in new Fixture {
     val op = Operator("s1", 10)
-    val n2 = Operator("n2", 1)
+    setup(op, 1.0, p1)
 
-    op.addInputQueue(p1)
-    op.addOutputQueue(n1)
+    val n2 = Operator("n2", 1)
     op.addOutputQueue(n2)
 
     op.setLimit(n1, 5)
@@ -335,10 +361,9 @@ class OperatorTest extends FlatSpec
 
   it should "respect the bounds of all successors when they have selectivity" in new Fixture {
     val op = Operator("s1", 10)
-    val n2 = Operator("n2", 1)
+    setup(op, 0.5, p1)
 
-    op.addInputQueue(p1)
-    op.addOutputQueue(n1, 0.5)
+    val n2 = Operator("n2", 1)
     op.addOutputQueue(n2, 0.1)
 
     op.setLimit(n1, 5) // op can process 10 events
@@ -351,6 +376,61 @@ class OperatorTest extends FlatSpec
     assertInput(op, 90)
     op.outputQueues(n1) should be (5)
     op.outputQueues(n2) should be (1)
+  }
+
+  it should "respect the bounds of a successor when it is scheduled more than once" in new Fixture {
+    val op = Operator("s1", 10)
+    setup(op, 1.0, p1)
+
+    op.setLimit(n1, 15)
+    enqueue(op, 20)
+    var simEvent = op.run(100, 0, 100)
+    simEvent should be (List(Produced(op, 0, 100, EventSet(10.0, 100, 100, p1 -> 10.0))))
+
+    simEvent = op.run(100, 100, 200)
+    simEvent should be (List(Produced(op, 100, 200, EventSet(5.0, 200, 200, p1 -> 5.0))))
+
+    simEvent = op.run(100, 200, 300)
+    simEvent should be (List.empty)
+  }
+
+
+  it should "respect the bounds of all successors when it is scheduled more than once" in new Fixture {
+    val op = Operator("s1", 10)
+    setup(op, 1.0, p1)
+
+    val n2 = Operator("n2", 1)
+    op.addOutputQueue(n2, 1.0)
+
+    op.setLimit(n1, 15)
+    op.setLimit(n1, 10)
+    enqueue(op, 20)
+    var simEvent = op.run(100, 0, 100)
+    simEvent should be (List(Produced(op, 0, 100, EventSet(10.0, 100, 100, p1 -> 10.0))))
+
+    simEvent = op.run(100, 100, 200)
+    simEvent should be (List.empty)
+  }
+
+
+  it should "respect the bounds of all successors with selectivity when it is scheduled more than once" in new Fixture {
+    val op = Operator("s1", 10)
+    setup(op, 1.0, p1)
+
+    val n2 = Operator("n2", 1)
+    op.addOutputQueue(n2, 0.5)
+
+    op.setLimit(n1, 15)
+    op.setLimit(n2,  6)
+    enqueue(op, 20)
+    var simEvent = op.run(100, 0, 100)
+    simEvent should be (List(Produced(op, 0.0, 100.0, EventSet(10.0, 100.0, 100.0, p1 -> 10.0))))
+
+    simEvent = op.run(100, 100, 200)
+    simEvent should be (List(Produced(op, 100.0, 200.0, EventSet(2.0, 200.0, 200.0, p1 -> 2.0))))
+
+    simEvent = op.run(100, 200, 300)
+    simEvent should be (List.empty)
   }
 
 

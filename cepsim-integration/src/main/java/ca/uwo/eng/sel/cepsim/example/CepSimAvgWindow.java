@@ -30,7 +30,7 @@ import java.util.*;
 
 public class CepSimAvgWindow {
 
-    private static final Double SIM_INTERVAL = 0.1;
+    private static final Double SIM_INTERVAL = 0.01;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
@@ -201,10 +201,10 @@ public class CepSimAvgWindow {
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
                 //DefaultOpScheduleStrategy.weighted(weights), 10);
-				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
                 //DynOpScheduleStrategy.apply(new QuantumAllocationStrategy(10)), 10);
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);

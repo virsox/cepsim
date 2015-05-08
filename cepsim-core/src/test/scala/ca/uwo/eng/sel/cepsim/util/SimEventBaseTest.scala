@@ -29,8 +29,8 @@ trait SimEventBaseTest {
   implicit def producedEquality = new Equality[Produced] {
     override def areEqual(a: Produced, b: Any): Boolean = b match {
       case b: Produced => a.v == b.v    &&
-        a.from == b.from &&
-        a.to   == b.to   &&
+        compare(a.from, b.from) &&
+        compare(a.to,   b.to  ) &&
         compare(a.es, b.es)
       case _ => false
     }

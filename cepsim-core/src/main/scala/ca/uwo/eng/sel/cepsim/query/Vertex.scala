@@ -19,7 +19,7 @@ trait Vertex {
   def instructionsNeeded: Double
 
   /** Indicates if the vertex has pending events and needs to be allocated. */
-  def needsAllocation: Boolean = instructionsNeeded > 0.0
+  def needsAllocation: Boolean = instructionsNeeded > 1.0
 
   // the next two methods are overriden in the InputVertex / OutputVertex traits.
   /**

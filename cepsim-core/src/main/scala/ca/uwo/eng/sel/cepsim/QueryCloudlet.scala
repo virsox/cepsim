@@ -159,7 +159,6 @@ object QueryCloudlet {
         }
         iterationStartTime = iterationEndTime
 
-
         iterationSimEvents.foreach((simEvent) =>
           calculators.foreach(_.update(simEvent))
         )

@@ -312,6 +312,32 @@ class WindowedOperatorTest extends FlatSpec
     op.dequeueFromOutput(f3, 1000.0)
   }
 
+  it should "respect the bounds of the successor buffer when the operator is scheduled more than once" in new Fixture {
+    val op = new WindowedOperator("w1", 10, 1 second, 1 second, WindowedOperator.identity(), false, 1024)
+    setup(op)
+
+    op.init(0.0, 1000)
+
+    // first run - process the events and accumulate
+    op enqueueIntoInput (f1, EventSet(1000, 0.0, 0.0, prod1 -> 1000.0))
+    op enqueueIntoInput (f2, EventSet(1000, 0.0, 0.0, prod1 -> 1000.0))
+    var simEvent = op run (20000, 10.0, 1000.0)
+    op setLimit (f3, 1000)
+
+    // second run - it can generate only 1000 ouputs, because f3 has a full buffer
+    // although, the predecessors still need to be processed and accumulated
+    op enqueueIntoInput (f1, EventSet(1000, 1000.0, 0.0, prod1 -> 1000.0))
+    op enqueueIntoInput (f2, EventSet(1000, 1000.0, 0.0, prod1 -> 1000.0))
+    simEvent = op.run(20000, 1000, 1100)
+    op.outputQueues(f3) should be (1000.0 +- 0.0001)
+
+    // third run - events haven' been dequeued, so the operator cannot generate more
+    simEvent = op.run(20000, 1100, 1200)
+    simEvent should be (List.empty)
+    op.outputQueues(f3) should be (1000.0 +- 0.0001)
+
+  }
+
 
   it should "respect the bounds of the successor buffer when there are remaining events " +
             "and the window is closing" in new Fixture {
@@ -375,25 +401,31 @@ class WindowedOperatorTest extends FlatSpec
     op.outputQueues(f3) should be (300.0 +- 0.0001)
     op.dequeueFromOutput(f3, 300.0)
 
+    // in the toBeSentQueue right now is
+    // EventSet( 80, 500.0, 0.0, prod1 -> 0.0))
+    // EventSet(160, 550.0, 0.0, prod1 -> 0.0))
+    // EventSet(140, 600.0, 0.0, prod1 -> 0.0))
+    // EventSet(120, 650.0, 0.0, prod1 -> 0.0))
+
     // this will produce 100 more events because the (500 -> 1500) window is closing, but they
     // are not sent to the successors because the operator is still catching up with late events
     simEvent = op.run(200, 1550, 1650)
-    simEvent should be (List(Produced(op, 1550, 1650, EventSet( 80, 1650.0, 1150.0, prod1 -> 0.0)),
-                             Produced(op, 1550, 1650, EventSet(160, 1650.0, 1100.0, prod1 -> 0.0)),
-                             Produced(op, 1550, 1650, EventSet( 60, 1650.0, 1050.0, prod1 -> 0.0))))
+    simEvent(0).asInstanceOf[Produced] should equal (Produced(op, 1550.0, 1650.0, EventSet(300.0, 1650.0, 1103.33333, prod1 -> 0.0)))
     op.outputQueues(f3) should be (300.0 +- 0.0001)
     op.dequeueFromOutput(f3, 300.0)
 
-
+    // in the toBeSentQueue right now is
+    // EventSet( 80, 600.0,  0.0, prod1 -> 0.0))
+    // EventSet(120, 650.0,  0.0, prod1 -> 0.0))
+    // EventSet(100, 700.0,  0.0, prod1 -> 0.0))
     // 80 more events because the (600 -> 1600) window is closing
     simEvent = op.run(200, 1650, 1750)
-    simEvent should be (List(Produced(op, 1650, 1750, EventSet( 80, 1750.0, 1150.0, prod1 -> 0.0)),
-                             Produced(op, 1650, 1750, EventSet(120, 1750.0, 1100.0, prod1 -> 0.0)),
-                             Produced(op, 1650, 1750, EventSet(100, 1750.0, 1050.0, prod1 -> 0.0))))
+    simEvent(0).asInstanceOf[Produced] should equal (Produced(op, 1650, 1750, EventSet(300, 1750.0, 1096.6666, prod1 -> 0.0)))
     op.outputQueues(f3) should be (300.0 +- 0.0001)
     op.dequeueFromOutput(f3, 300.0)
 
-
+    // in the toBeSentQueue right now is
+    // EventSet(80, 750.0,  0.0, prod1 -> 0.0))
     // 60 more events because the (700 -> 1700) window is closing
     simEvent = op.run(200, 1750, 1850)
     simEvent should be (List(Produced(op, 1750, 1850, EventSet(80, 1850.0, 1100.0, prod1 -> 0.0)),

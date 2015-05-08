@@ -3,6 +3,7 @@ package ca.uwo.eng.sel.cepsim.query
 import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.history.{Produced, Generated}
+import ca.uwo.eng.sel.cepsim.util.SimEventBaseTest
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -16,7 +17,8 @@ import org.scalatest.{Matchers, FlatSpec}
 @RunWith(classOf[JUnitRunner])
 class EventProducerTest extends FlatSpec
   with Matchers
-  with MockitoSugar {
+  with MockitoSugar
+  with SimEventBaseTest {
 
   trait Fixture {
     val generator = mock[Generator]
@@ -47,17 +49,31 @@ class EventProducerTest extends FlatSpec
   it should "respect buffer limits from successors when generating events" in new Fixture {
 
     val prod = setup(1, true, 100)
-    prod.inputEventSet.add(EventSet(50, 5.0, 0.0, prod -> 50.0))
+    prod.inputEventQueue.enqueue(EventSet(50, 5.0, 0.0, prod -> 50.0))
     prod.setLimit(n1, 100)
 
     prod.generate(1000, 2000)
     verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(50.0))
 
-    prod.inputEventSet.reset()
-    prod.inputEventSet.add(EventSet(120, 5.0, 0.0, prod -> 50.0))
+    prod.inputEventQueue.dequeue(100.0)
+    prod.inputEventQueue.enqueue(EventSet(120, 5.0, 0.0, prod -> 50.0))
     prod.generate(1000, 2000)
     verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(0.0))
   }
+
+  it should "respect buffer limits from successors when generating events multiple times" in new Fixture {
+
+    val prod = setup(1, true, 100)
+    prod.inputEventQueue.enqueue(EventSet(50, 5.0, 0.0, prod -> 50.0))
+    prod.setLimit(n1, 100)
+
+    prod.generate(1000, 2000)
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(50.0))
+
+    prod.generate(2000, 3000)
+    verify(generator).generate(org.mockito.Matchers.eq(1000.0), org.mockito.Matchers.eq(0.0))
+  }
+
 
   it should "accumulate until at least one event is generated" in new Fixture {
     val prod = setup(1, false, 0.25)
@@ -130,7 +146,6 @@ class EventProducerTest extends FlatSpec
 
   it should "partially process input events" in new Fixture {
     val prod = setup(3, false, 100.0)
-    prod.addOutputQueue(n1)
 
     val result = prod.generate(0, 100)
     result.get should be (Generated(prod, 0, 100, EventSet(100, 100, 0, prod -> 100.0)))
@@ -139,16 +154,21 @@ class EventProducerTest extends FlatSpec
     result2    should have size (1)
 
     val simEvent = result2(0).asInstanceOf[Produced]
-    simEvent.es.size    should be (33.333 +- 0.001)
-    simEvent.es.ts      should be (200.0)
-    simEvent.es.latency should be (100.0)
-    //result2(0).es.totals  should be (Map(prod2 -> 33.333))
+    simEvent should equal (Produced(prod, 100.0, 200.0, EventSet(33.3333, 200.0, 100.0, prod -> 33.3333)))
 
     prod.inputQueue should be (66.666 +- 0.001)
     prod.outputQueues(n1) should be (33.333 +- 0.001)
   }
 
+  it should "respect successor limits" in new Fixture {
+    val prod = setup(1, false, 100.0)
 
+    val result1 = prod.generate(0, 100)
+    prod.setLimit(n1, 70.0)
+
+    val result2 = prod.run(100, 100, 200)
+    result2 should be (List(Produced(prod, 100.0, 200.0, EventSet(70.0, 200.0, 100.0, prod -> 70.0))))
+  }
 
 
 

@@ -41,6 +41,11 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
   }
 
   /** The number of instructions needed to process all pending events. */
+
+  /*
+     TODO need to fix this condition - if the successor is in another cloudlet, the limit will not be updated
+     until the other cloudlet is executed.
+  */
   def instructionsNeeded: Double = totalInputEvents.min(maximumNumberOfEvents) * ipe
 
 

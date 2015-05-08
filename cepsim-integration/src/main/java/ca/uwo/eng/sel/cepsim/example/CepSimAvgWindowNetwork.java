@@ -27,7 +27,7 @@ import java.util.*;
 
 public class CepSimAvgWindowNetwork {
 
-    private static final Double SIM_INTERVAL = 0.01;
+    private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */

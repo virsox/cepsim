@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.query
 
-import ca.uwo.eng.sel.cepsim.event.EventSet
+import ca.uwo.eng.sel.cepsim.event.{EventSetQueue, EventSet}
 import ca.uwo.eng.sel.cepsim.history.{Produced, WindowAccumulated, SimEvent}
 
 import scala.collection.immutable.Queue
@@ -71,7 +71,7 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
   var accumulatedSlot = 0
 
   /** Events to be sent to successors. They are enqueued here when the successor buffers are full. */
-  var toBeSent = Queue[EventSet]()
+  var toBeSent = EventSetQueue()
 
   /**
     * Initializes the operator.
@@ -84,7 +84,10 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
   }
 
   /** Indicates if the vertex has pending events and needs to be allocated. */
-  override def needsAllocation: Boolean = !toBeSent.isEmpty || instructionsNeeded > 0.0
+  override def needsAllocation: Boolean = (instructionsNeeded > 1.0)
+
+  /** The number of instructions needed to process all pending events. */
+  override def instructionsNeeded: Double = totalInputEvents * ipe
 
   /**
     * Add a new input queue to the windowed operator. Overrides the InputVertex definition because
@@ -107,22 +110,18 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
 
     // first thing to do is check if there are pending events to be sent to the successors
     var availableSpace = maximumNumberOfEvents
-    while ((!toBeSent.isEmpty) && (availableSpace > 0)) {
-
-      val(dequeuedEs, newQueue) = toBeSent.dequeue
+    if ((toBeSent.size > 0) && (availableSpace > 0)) {
 
       // check the number of events that can be sent
-      var eventsNo = dequeuedEs.size min availableSpace
+      var eventsNo = toBeSent.size min availableSpace
       availableSpace -= eventsNo
 
-      val eventSet = dequeuedEs.extract(eventsNo)
+      val eventSet = toBeSent.dequeue(eventsNo)
       eventSet.updateTimestamp(endTime)
       sendToAllOutputs(eventSet)
       events = events :+ Produced(this, startTime, endTime, eventSet)
-
-      // enqueue the event set again if not all events have been sent
-      toBeSent = if (dequeuedEs.size == 0) newQueue else dequeuedEs +: newQueue
     }
+
 
 
     // this loop advances the processAt attribute to the next timestamp at which the operator
@@ -170,10 +169,10 @@ class WindowedOperator(id: String, ipe: Double, val size: Duration, val advance:
 
           // if the output is not entirely sent, the remaining part is enqueued again
           if (output < functionTotal)
-            toBeSent = toBeSent enqueue remainingEs
+            toBeSent.enqueue(remainingEs)
 
         } else {
-          toBeSent = toBeSent enqueue eventSum
+          toBeSent.enqueue(eventSum)
         }
 
         availableSpace -= output

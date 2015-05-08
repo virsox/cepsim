@@ -1,12 +1,12 @@
 package ca.uwo.eng.sel.cepsim.query
 
-import ca.uwo.eng.sel.cepsim.event.EventSet
+import ca.uwo.eng.sel.cepsim.event.{EventSetQueue, EventSet}
 
 /** Trait that represent vertices that have outgoing edges. */
 trait OutputVertex extends Vertex {
 
   /** Event sets that represent the output queues. */
-  var outputEventSets: Map[Vertex, EventSet] = Map.empty[Vertex, EventSet]
+  var outputEventQueues: Map[Vertex, EventSetQueue] = Map.empty
 
   /** Map with the selectivity associated with each successor vertex. */
   var selectivities: Map[Vertex, Double] = Map.empty
@@ -18,7 +18,7 @@ trait OutputVertex extends Vertex {
     * Set containing all successors of this vertex.
     * @return Set containing all successors of this vertex.
     */
-  override def successors: Set[InputVertex] = outputEventSets.keySet.collect { case iv: InputVertex => iv }
+  override def successors: Set[InputVertex] = outputEventQueues.keySet.collect { case iv: InputVertex => iv }
 
   /**
     * Adds a new output queue for a new successor.
@@ -26,7 +26,7 @@ trait OutputVertex extends Vertex {
     * @param selectivity Edge selectivity.
     */
   def addOutputQueue(v: InputVertex, selectivity: Double = 1.0) = {
-    outputEventSets = outputEventSets + (v -> EventSet.empty())
+    outputEventQueues = outputEventQueues + (v -> EventSetQueue())
     selectivities = selectivities + (v -> selectivity)
     limits = limits + (v -> (if (v.queueMaxSize == 0) Long.MaxValue else v.queueMaxSize))
   }
@@ -36,7 +36,7 @@ trait OutputVertex extends Vertex {
     * @param v Successor vertex to which the output queue is associated.
     * @return Number of events on the informed queueu.
     */
-  def outputQueues(v: Vertex): Double = outputEventSets(v).size
+  def outputQueues(v: Vertex): Double = outputEventQueues(v).size
 
   /**
     * Sets the limit of a specific output queue.
@@ -53,8 +53,9 @@ trait OutputVertex extends Vertex {
     * @return maximum number of events that can be produced by the vertex.
     */
   def maximumNumberOfEvents: Double = {
-    limits.map((elem) => (elem._1, elem._2 / selectivities(elem._1))).
-                      foldLeft(Double.MaxValue)((acc, elem) => acc.min(elem._2))
+    limits.map((elem) => (elem._1,
+                         (elem._2 / selectivities(elem._1)) - (outputEventQueues(elem._1).size / selectivities(elem._1)))
+              ).foldLeft(Double.MaxValue)((acc, elem) => acc.min(elem._2))
   }
 
   /**
@@ -64,13 +65,13 @@ trait OutputVertex extends Vertex {
     * @param quantity Number of events to be dequeued.
     * @return EventSet encapsulating the dequeued events.
     */
-  def dequeueFromOutput(v: Vertex, quantity: Double): EventSet = outputEventSets(v).extract(quantity)
+  def dequeueFromOutput(v: Vertex, quantity: Double): EventSet = outputEventQueues(v).dequeue(quantity)
 
   /**
     * Send an event set to all output queues.
     * @param es Event set to be sent.
     */
   def sendToAllOutputs(es: EventSet): Unit =
-    outputEventSets.foreach((elem) => elem._2.add(es, selectivities(elem._1)))
+    outputEventQueues.foreach((elem) => elem._2.enqueue(es, selectivities(elem._1)))
 
 }

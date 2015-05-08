@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.query
 
-import ca.uwo.eng.sel.cepsim.event.EventSet
+import ca.uwo.eng.sel.cepsim.event.{EventSetQueue, EventSet}
 import ca.uwo.eng.sel.cepsim.gen.Generator
 import ca.uwo.eng.sel.cepsim.history.{Generated, Produced, SimEvent}
 
@@ -21,10 +21,10 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
   extends Vertex with OutputVertex {
 
   /** Event set of events generated but still not processed by the producer. */
-  var inputEventSet = EventSet.empty()
+  var inputEventQueue = EventSetQueue()
 
   /** Number of events on the input event set. */
-  def inputQueue = inputEventSet.size
+  def inputQueue = inputEventQueue.size
 
   /** The number of instructions needed to process all pending events. */
   def instructionsNeeded: Double = inputQueue.min(maximumNumberOfEvents) * ipe
@@ -64,7 +64,7 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
     // there is some output
     if (output > 0) {
       val es = EventSet(output, to, 0, Map(this -> output))
-      inputEventSet.add(es)
+      inputEventQueue.enqueue(es)
       Some(Generated(this, from, to, es))
     } else None
   }
@@ -81,7 +81,7 @@ class EventProducer(val id: String, val ipe: Double, val generator: Generator, l
     val maxOutput = (instructions / ipe)
     val processed = maxOutput.min(inputQueue).min(maximumNumberOfEvents)
 
-    val es = inputEventSet.extract(processed)
+    val es = inputEventQueue.dequeue(processed)
     es.updateTimestamp(endTime)
 
     sendToAllOutputs(es)

@@ -1,7 +1,5 @@
 package ca.uwo.eng.sel.cepsim.event
 
-import ca.uwo.eng.sel.cepsim.event.EventSet
-
 import scala.collection.mutable.Queue
 
 
@@ -29,13 +27,13 @@ class EventSetQueue {
 
   /**
     * Enqueue event sets.
-    * @param eventSets Event sets to be enqueued.
+    * @param es Event set to be enqueued.
     */
-  def enqueue(eventSets: EventSet*) =
-    eventSets.foreach((es) => {
-      q.enqueue(es)
-      totalSize += es.size
-    })
+  def enqueue(es: EventSet, selectivity: Double = 1.0) = {
+    val newSize = es.size * selectivity
+    q.enqueue(es.copy(size = newSize))
+    totalSize += newSize
+  }
 
 
   /**
@@ -68,6 +66,8 @@ class EventSetQueue {
       }
     }
     totalSize -= result.size
+    if (totalSize < 0.001) totalSize = 0
+
     result
   }
 

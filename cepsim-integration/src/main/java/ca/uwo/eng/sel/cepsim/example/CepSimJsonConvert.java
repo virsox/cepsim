@@ -153,7 +153,7 @@ public class CepSimJsonConvert {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 500;
+        final int NUM_SENSORS = 1750;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -164,11 +164,11 @@ public class CepSimJsonConvert {
 
             EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 250000, 1024);
-            Operator validate = new Operator("validate" + i, 250000, 1024);
-            Operator xml = new Operator("xmlOutput" + i, 250000, 1024);
+            Operator jsonParser = new Operator("jsonParser" + i, 125000, 2048);
+            Operator validate = new Operator("validate" + i, 125000, 2048);
+            Operator xml = new Operator("xmlOutput" + i, 125000, 2048);
 
-            EventConsumer c = new EventConsumer("end" + i, 1000, 1024);
+            EventConsumer c = new EventConsumer("end" + i, 1000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -213,7 +213,7 @@ public class CepSimJsonConvert {
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);
