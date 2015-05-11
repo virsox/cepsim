@@ -28,7 +28,7 @@ import java.util.*;
 
 public class CepSimJsonConvert {
 
-    private static final Double SIM_INTERVAL = 0.1;
+    private static final Double SIM_INTERVAL = 0.01;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
@@ -121,23 +121,8 @@ public class CepSimJsonConvert {
                 Query q = cepCl.getQueries().iterator().next();
                 Vertex consumer = q.consumers().head();
 
-                History history = cepCl.getExecutionHistory().from(consumer);
-
-
-
                 System.out.println("Latency: " + cepCl.getLatencyByMinute(consumer));
                 System.out.println("Throughput: " + cepCl.getThroughputByMinute(consumer));
-
-
-
-
-
-
-
-//
-//                if (cepCl.getCloudletId() == 1) {
-//                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
-//                }
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -154,7 +139,7 @@ public class CepSimJsonConvert {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 2000;
+        final int NUM_SENSORS = 2500;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -200,8 +185,6 @@ public class CepSimJsonConvert {
             Query q = Query.apply("testjson" + i, vertices, edges, DURATION);
 
             queries.add(q);
-
-
         }
         Placement placement = Placement.withQueries(queries, 1);
 
@@ -209,8 +192,8 @@ public class CepSimJsonConvert {
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
 				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
-                //DefaultOpScheduleStrategy.weighted(weights), 10);
-                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                DefaultOpScheduleStrategy.weighted(weights), 10);
+                //DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
@@ -219,26 +202,6 @@ public class CepSimJsonConvert {
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);
-
-        //
-        //long length = 400000;
-        //long fileSize = 300;
-        //long outputSize = 300;
-
-        // overhead
-//        UtilizationModel utilizationModel = new UtilizationModelFull();
-//        for (int j = 1; j <= 7; j++) {
-//            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
-//                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
-//
-//            cloudlet.setUserId(brokerId);
-//            cloudlets.add(cloudlet);
-//
-//        }
-
-
-
-
 
         return cloudlets;
 	}
