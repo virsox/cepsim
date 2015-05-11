@@ -10,6 +10,7 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
+import ca.uwo.eng.sel.cepsim.sched.AltDynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
@@ -153,7 +154,7 @@ public class CepSimJsonConvert {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1750;
+        final int NUM_SENSORS = 2000;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -162,13 +163,13 @@ public class CepSimJsonConvert {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
+            EventProducer p = new EventProducer("spout" + i, 10_000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 125000, 2048);
-            Operator validate = new Operator("validate" + i, 125000, 2048);
-            Operator xml = new Operator("xmlOutput" + i, 125000, 2048);
+            Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
+            Operator validate = new Operator("validate" + i, 25_000, 2048);
+            Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
 
-            EventConsumer c = new EventConsumer("end" + i, 1000, 2048);
+            EventConsumer c = new EventConsumer("end" + i, 10_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -207,6 +208,7 @@ public class CepSimJsonConvert {
 
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
+				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights), 10);
                 DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights));
