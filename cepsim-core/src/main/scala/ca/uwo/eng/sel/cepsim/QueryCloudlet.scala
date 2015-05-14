@@ -194,22 +194,22 @@ object QueryCloudlet {
     if (v.isInstanceOf[OutputVertex]) {
 
       val ov = v.asInstanceOf[OutputVertex]
+//
+//      val successors: Set[InputVertex] = ov.successors
+//      val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
+//
+//      val inPlacement = successors.intersect(placementInputVertices)
+//      val notInPlacement = successors -- placementInputVertices
 
-      val successors: Set[InputVertex] = ov.successors
-      val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
 
-      val inPlacement = successors.intersect(placementInputVertices)
-      val notInPlacement = successors -- placementInputVertices
-
-
-      notInPlacement.foreach { (dest) =>
+      placement.successorsNotInPlacement(ov).foreach { (dest) =>
         val events = ov.dequeueFromOutput(dest, ov.outputQueues(dest))
         if (events.size > 0) {
           networkInterface.sendMessage(endTime, ov, dest, events)
         }
       }
 
-      inPlacement.foreach { (dest) =>
+      placement.successorsInPlacement(ov).foreach { (dest) =>
         val events = ov.outputQueues(dest)
         if (events > 0) {
           dest.enqueueIntoInput(ov, ov.dequeueFromOutput(dest, events))

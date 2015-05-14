@@ -2,7 +2,7 @@ package ca.uwo.eng.sel.cepsim.placement
 
 import java.util.{List => JavaList, Set => JavaSet}
 
-import ca.uwo.eng.sel.cepsim.query.{EventConsumer, EventProducer, Query, Vertex}
+import ca.uwo.eng.sel.cepsim.query._
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -47,6 +47,34 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     }
   }
 
+  val inPlacementSuccessors = vertices.map((v) => { (v,
+    v.successors.filter((succ) => vertices.contains(succ)))
+  }).toMap
+
+  val notInPlacementSuccessors = vertices.map((v) => { (v,
+    v.successors.filter((succ) => !vertices.contains(succ)))
+  }).toMap
+
+
+  /**
+   * Get all queries that have at least one vertex in this placement.
+   * @return queries that have at least one vertex in this placement.
+   */
+  val queries: Set[Query] = queryVerticesMap.keySet
+
+  /**
+   * Get all event producers in this placement.
+   * @return all event producers in this placement.
+   */
+  val producers: Set[EventProducer] = vertices collect { case ep: EventProducer => ep }
+
+  /**
+   * Get all event consumers in this placement.
+   * @return all event consumers in this placement.
+   */
+  val consumers: Set[EventConsumer] = vertices collect { case ec: EventConsumer => ec }
+
+
   /**
    * Get the execution duration of this placement (in seconds). It is calculated
    * as the maximum duration of all queries that belong to this placement.
@@ -64,11 +92,9 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     */
   def addVertex(v: Vertex): Placement = new Placement(vertices + v, vmId)
 
-  /**
-    * Get all queries that have at least one vertex in this placement.
-    * @return queries that have at least one vertex in this placement.
-    */
-  def queries: Set[Query] = queryVerticesMap.keySet
+  def successorsInPlacement(v: Vertex): Set[InputVertex] = inPlacementSuccessors(v)
+  def successorsNotInPlacement(v: Vertex): Set[InputVertex] = notInPlacementSuccessors(v)
+
 
   /**
     * Get the query with the informed id.
@@ -83,18 +109,6 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     * @return all vertices in this placement from a specific query.
     */
   def vertices(q: Query): Set[Vertex] = queryVerticesMap(q)
-
-  /**
-    * Get all event producers in this placement.
-    * @return all event producers in this placement.
-    */
-  def producers: Set[EventProducer] = vertices collect { case ep: EventProducer => ep }
-
-  /**
-    * Get all event consumers in this placement.
-    * @return all event consumers in this placement.
-    */
-  def consumers: Set[EventConsumer] = vertices collect { case ec: EventConsumer => ec }
 
   /**
     * Find all vertices from the placement that are producers, or do not have predecessors
