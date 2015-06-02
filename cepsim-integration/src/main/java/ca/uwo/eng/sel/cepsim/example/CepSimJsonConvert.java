@@ -28,7 +28,7 @@ import java.util.*;
 
 public class CepSimJsonConvert {
 
-    private static final Double SIM_INTERVAL = 0.01;
+    private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
@@ -69,7 +69,7 @@ public class CepSimJsonConvert {
 			int vmid = 1;
 			int mips = 2500;
 			long size = 10000; // image size (MB)
-			int ram = 512; // vm memory (MB)
+			int ram = 1024; // vm memory (MB)
 			long bw = 1000;
 			int pesNumber = 1; // number of cpus
 			String vmm = "Xen"; // VMM name
@@ -148,13 +148,14 @@ public class CepSimJsonConvert {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 10_000, gen, true);
+            EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
 
             Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
             Operator validate = new Operator("validate" + i, 25_000, 2048);
             Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
+            Operator measurer = new Operator("measurer" + i, 17_000, 2048);
 
-            EventConsumer c = new EventConsumer("end" + i, 10_000, 2048);
+            EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -162,23 +163,27 @@ public class CepSimJsonConvert {
             vertices.add(jsonParser);
             vertices.add(validate);
             vertices.add(xml);
+            vertices.add(measurer);
             vertices.add(c);
 
             Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
             Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
             Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
-            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, c, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, measurer, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(measurer, c, 1.0);
 
             Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             edges.add(e1);
             edges.add(e2);
             edges.add(e3);
             edges.add(e4);
+            edges.add(e5);
 
             weights.put(p, 1.0);
             weights.put(jsonParser, 1.0);
             weights.put(validate, 1.0);
             weights.put(xml, 1.0);
+            weights.put(measurer, 1.0);
             weights.put(c, 1.0);
 
 
@@ -192,8 +197,8 @@ public class CepSimJsonConvert {
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
 				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
-                DefaultOpScheduleStrategy.weighted(weights), 10);
-                //DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                //DefaultOpScheduleStrategy.weighted(weights), 10);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
@@ -225,7 +230,7 @@ public class CepSimJsonConvert {
 
 		// 3. Create PEs and add these into a list.
         int mips = 2500;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 12; i++) {
             peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
         }
 
@@ -233,7 +238,7 @@ public class CepSimJsonConvert {
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 16384; // host memory (MB)
+		int ram = 98304; // host memory (MB)
 		long storage = 1000000; // host storage
 		int bw = 10000;
 

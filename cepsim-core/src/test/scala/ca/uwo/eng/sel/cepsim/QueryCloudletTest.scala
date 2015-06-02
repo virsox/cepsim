@@ -41,6 +41,11 @@ class QueryCloudletTest extends FlatSpec
     doReturn(1).when(placement).vmId
     doReturn(Set(prod)).when(placement).producers
     doReturn(Set(prod, f1, f2, cons)).when(placement).vertices
+    doReturn(Set.empty).when(placement).successorsNotInPlacement(anyObject[Vertex]())
+    doReturn(Set(f1  )).when(placement).successorsInPlacement(prod)
+    doReturn(Set(f2  )).when(placement).successorsInPlacement(f1  )
+    doReturn(Set(cons)).when(placement).successorsInPlacement(f2  )
+    doReturn(Set.empty).when(placement).successorsInPlacement(cons)
 
     var opSchedule = mock[OpScheduleStrategy]
     doReturn(Iterator(
@@ -127,6 +132,12 @@ class QueryCloudletTest extends FlatSpec
 
     doReturn(Set(f3, cons)).when(f2).successors
     doReturn(Set(cons2)).when(f3).successors
+
+    doReturn(Set(f3)  ).when(placement).successorsNotInPlacement(f2)
+    doReturn(Set.empty).when(placement).successorsNotInPlacement(prod)
+    doReturn(Set.empty).when(placement).successorsNotInPlacement(f1)
+    doReturn(Set.empty).when(placement).successorsNotInPlacement(cons)
+
 
     when(prod.outputQueues(anyObject[Vertex]())).thenReturn(0.0)
     when(f1.outputQueues(anyObject[Vertex]())).thenReturn(0.0)

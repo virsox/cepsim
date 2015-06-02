@@ -19,7 +19,6 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
     val f1, f2 = mock[Operator]
     val cons1, cons2 = mock[EventConsumer]
 
-
     doReturn("prod1").when(prod1).id
     doReturn("prod2").when(prod2).id
     doReturn("f1").when(f1).id
@@ -33,13 +32,13 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
     doReturn(Set(query1)).when(f1).queries
     doReturn(Set(query1)).when(cons1).queries
 
-    doReturn(Set.empty).when(query1).predecessors(prod1)
-    doReturn(Set(prod1)).when(query1).predecessors(f1)
-    doReturn(Set(f1)).when(query1).predecessors(cons1)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(f1)).when(cons1).predecessors
 
-    doReturn(Set(f1)).when(query1).successors(prod1)
-    doReturn(Set(cons1)).when(query1).successors(f1)
-    doReturn(Set.empty).when(query1).successors(cons1)
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(cons1)).when(f1).successors
+    doReturn(Set.empty).when(cons1).successors
 
 
     val query2 = mock[Query]
@@ -48,13 +47,13 @@ class SingleVmOpPlacementStrategyTest extends FlatSpec
     doReturn(Set(query2)).when(f2).queries
     doReturn(Set(query2)).when(cons2).queries
 
-    doReturn(Set.empty).when(query2).predecessors(prod2)
-    doReturn(Set(prod2)).when(query2).predecessors(f2)
-    doReturn(Set(f2)).when(query2).predecessors(cons2)
+    doReturn(Set.empty).when(prod2).predecessors
+    doReturn(Set(prod2)).when(f2).predecessors
+    doReturn(Set(f2)).when(cons2).predecessors
 
-    doReturn(Set(f2)).when(query2).successors(prod2)
-    doReturn(Set(cons2)).when(query2).successors(f2)
-    doReturn(Set.empty).when(query2).successors(cons2)
+    doReturn(Set(f2)).when(prod2).successors
+    doReturn(Set(cons2)).when(f2).successors
+    doReturn(Set.empty).when(cons2).successors
 
 
 

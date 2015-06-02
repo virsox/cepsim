@@ -92,9 +92,20 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     */
   def addVertex(v: Vertex): Placement = new Placement(vertices + v, vmId)
 
+  /**
+    * Return successors of a vertex that are in this placement.
+    * @param v Vertex from which the successors are returned.
+    * @return successors of a vertex in this placement.
+    */
   def successorsInPlacement(v: Vertex): Set[InputVertex] = inPlacementSuccessors(v)
-  def successorsNotInPlacement(v: Vertex): Set[InputVertex] = notInPlacementSuccessors(v)
 
+
+  /**
+   * Return successors of a vertex that are not in this placement.
+   * @param v Vertex from which the successors are returned.
+   * @return successors of a vertex not in this placement.
+   */
+  def successorsNotInPlacement(v: Vertex): Set[InputVertex] = notInPlacementSuccessors(v)
 
   /**
     * Get the query with the informed id.
@@ -117,10 +128,7 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
     */
   def findStartVertices(): Set[Vertex] = {
     vertices.filter{(v) =>
-      var predecessors = Set.empty[Vertex]
-      v.queries foreach{(q) =>
-        predecessors = predecessors ++ q.predecessors(v)
-      }
+      val predecessors = v.predecessors.asInstanceOf[Set[Vertex]]
       predecessors.isEmpty || predecessors.intersect(vertices).isEmpty
     }
   }
@@ -140,16 +148,12 @@ class Placement(val vertices: Set[Vertex], val vmId: Int, itOrder: Iterable[Vert
         val v = toProcess(index)
         iterationOrder = iterationOrder :+ v
 
-        // processing neighbours
-        v.queries.foreach {(q) =>
-          q.successors(v).foreach { (successor) =>
-            if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
-          }
+        // processing neighbours (vertices that are still not in the list, but belong to this placement)
+        v.successors.foreach { (successor) =>
+          if ((!toProcess.contains(successor)) && (vertices.contains(successor))) neighbours.add(successor)
         }
 
-        val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.queries.forall(
-          (q) => q.predecessors(neighbour).forall(toProcess.contains(_)))
-        )
+        val toBeMoved = neighbours.filter((neighbour)  =>  neighbour.predecessors.forall(toProcess.contains(_)))
         neighbours = neighbours -- toBeMoved
         toProcess = toProcess ++ toBeMoved
         index += 1

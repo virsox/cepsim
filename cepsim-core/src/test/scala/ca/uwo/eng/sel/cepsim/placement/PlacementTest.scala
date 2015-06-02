@@ -52,22 +52,22 @@ class PlacementTest extends FlatSpec
     doReturn(Set(q2)).when(cons2).queries
 
     // query 1
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set(prod1)).when(q1).predecessors(f1)
-    doReturn(Set(f1)).when(q1).predecessors(cons1)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(f1)).when(cons1).predecessors
 
-    doReturn(Set(f1)).when(q1).successors(prod1)
-    doReturn(Set(cons1)).when(q1).successors(f1)
-    doReturn(Set.empty).when(q1).successors(cons1)
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(cons1)).when(f1).successors
+    doReturn(Set.empty).when(cons1).successors
 
     // query 2
-    doReturn(Set.empty).when(q2).predecessors(prod2)
-    doReturn(Set(prod2)).when(q2).predecessors(f1)
-    doReturn(Set(f1)).when(q2).predecessors(cons2)
+    doReturn(Set.empty).when(prod2).predecessors
+    doReturn(Set(prod2)).when(f1).predecessors
+    doReturn(Set(f1)).when(cons2).predecessors
 
-    doReturn(Set(f1)).when(q2).successors(prod2)
-    doReturn(Set(cons2)).when(q2).successors(f1)
-    doReturn(Set.empty).when(q2).successors(cons2)
+    doReturn(Set(f1)).when(prod2).successors
+    doReturn(Set(cons2)).when(f1).successors
+    doReturn(Set.empty).when(cons2).successors
 
     p = p addVertex prod1
     p = p addVertex f1
@@ -91,11 +91,10 @@ class PlacementTest extends FlatSpec
     doReturn(Set(q1)).when(prod1).queries
     doReturn(Set(q2)).when(prod2).queries
 
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set.empty).when(q2).predecessors(prod2)
-    doReturn(Set.empty).when(q1).successors(prod1)
-    doReturn(Set.empty).when(q2).successors(prod2)
-
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set.empty).when(prod2).predecessors
+    doReturn(Set.empty).when(prod1).successors
+    doReturn(Set.empty).when(prod2).successors
 
     p = p addVertex prod1
     p = p addVertex prod2
@@ -111,13 +110,13 @@ class PlacementTest extends FlatSpec
 
     doReturn(Set(prod1, f1, cons1)).when(q1).vertices
 
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set(prod1)).when(q1).predecessors(f1)
-    doReturn(Set(f1)).when(q1).predecessors(cons1)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(f1)).when(cons1).predecessors
 
-    doReturn(Set(f1)).when(q1).successors(prod1)
-    doReturn(Set(cons1)).when(q1).successors(f1)
-    doReturn(Set.empty).when(q1).successors(cons1)
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(cons1)).when(f1).successors
+    doReturn(Set.empty).when(cons1).successors
 
     val placement = Placement(q1, 1)
     val it = placement.iterator
@@ -138,17 +137,17 @@ class PlacementTest extends FlatSpec
 
     doReturn(Set(prod1, f1, f2, cons1, cons2)).when(q1).vertices
 
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set(prod1)).when(q1).predecessors(f1)
-    doReturn(Set(f1)).when(q1).predecessors(cons1)
-    doReturn(Set(f1)).when(q1).predecessors(f2)
-    doReturn(Set(f2)).when(q1).predecessors(cons2)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(f1)).when(cons1).predecessors
+    doReturn(Set(f1)).when(f2).predecessors
+    doReturn(Set(f2)).when(cons2).predecessors
 
-    doReturn(Set(f1)).when(q1).successors(prod1)
-    doReturn(Set(f2, cons1)).when(q1).successors(f1)
-    doReturn(Set(cons2)).when(q1).successors(f2)
-    doReturn(Set.empty).when(q1).successors(cons1)
-    doReturn(Set.empty).when(q1).successors(cons2)
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(f2, cons1)).when(f1).successors
+    doReturn(Set(cons2)).when(f2).successors
+    doReturn(Set.empty).when(cons1).successors
+    doReturn(Set.empty).when(cons2).successors
 
 
     val placement = Placement(Set(prod1, f1, cons1), 1)
@@ -175,33 +174,23 @@ class PlacementTest extends FlatSpec
     doReturn(Set(prod1, s1, f1, f2, m1, cons1)).when(q1).vertices
     doReturn(Set(prod2, s1, f1, f2, m1, cons2)).when(q2).vertices
 
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set(prod1)).when(q1).predecessors(s1)
-    doReturn(Set(s1)).when(q1).predecessors(f1)
-    doReturn(Set(s1)).when(q1).predecessors(f2)
-    doReturn(Set(f1, f2)).when(q1).predecessors(m1)
-    doReturn(Set(m1)).when(q1).predecessors(cons1)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set.empty).when(prod2).predecessors
+    doReturn(Set(prod1, prod2)).when(s1).predecessors
+    doReturn(Set(s1)).when(f1).predecessors
+    doReturn(Set(s1)).when(f2).predecessors
+    doReturn(Set(f1, f2)).when(m1).predecessors
+    doReturn(Set(m1)).when(cons1).predecessors
+    doReturn(Set(m1)).when(cons2).predecessors
 
-    doReturn(Set.empty).when(q2).predecessors(prod2)
-    doReturn(Set(prod1)).when(q2).predecessors(s1)
-    doReturn(Set(s1)).when(q2).predecessors(f1)
-    doReturn(Set(s1)).when(q2).predecessors(f2)
-    doReturn(Set(f1, f2)).when(q2).predecessors(m1)
-    doReturn(Set(m1)).when(q2).predecessors(cons2)
-
-    doReturn(Set(s1)).when(q1).successors(prod1)
-    doReturn(Set(f1, f2)).when(q1).successors(s1)
-    doReturn(Set(m1)).when(q1).successors(f1)
-    doReturn(Set(m1)).when(q1).successors(f2)
-    doReturn(Set(cons1)).when(q1).successors(m1)
-    doReturn(Set.empty).when(q1).successors(cons1)
-
-    doReturn(Set(s1)).when(q2).successors(prod2)
-    doReturn(Set(f1, f2)).when(q2).successors(s1)
-    doReturn(Set(m1)).when(q2).successors(f1)
-    doReturn(Set(m1)).when(q2).successors(f2)
-    doReturn(Set(cons2)).when(q2).successors(m1)
-    doReturn(Set.empty).when(q2).successors(cons2)
+    doReturn(Set(s1)).when(prod1).successors
+    doReturn(Set(s1)).when(prod2).successors
+    doReturn(Set(f1, f2)).when(s1).successors
+    doReturn(Set(m1)).when(f1).successors
+    doReturn(Set(m1)).when(f2).successors
+    doReturn(Set(cons1, cons2)).when(m1).successors
+    doReturn(Set.empty).when(cons1).successors
+    doReturn(Set.empty).when(cons2).successors
 
     val placement = Placement(Set(prod1, prod2, s1, f1, f2, m1, cons1, cons2), 1)
     val it = placement.iterator
@@ -230,21 +219,21 @@ class PlacementTest extends FlatSpec
 
     doReturn(Set(prod1, prod2, f1, f2, f3, m1, cons1)).when(q1).vertices
 
-    doReturn(Set.empty).when(q1).predecessors(prod1)
-    doReturn(Set.empty).when(q1).predecessors(prod2)
-    doReturn(Set(prod1)).when(q1).predecessors(f1)
-    doReturn(Set(prod2)).when(q1).predecessors(f2)
-    doReturn(Set(f2)).when(q1).predecessors(f3)
-    doReturn(Set(f1, f3)).when(q1).predecessors(m1)
-    doReturn(Set(m1)).when(q1).predecessors(cons1)
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set.empty).when(prod2).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(prod2)).when(f2).predecessors
+    doReturn(Set(f2)).when(f3).predecessors
+    doReturn(Set(f1, f3)).when(m1).predecessors
+    doReturn(Set(m1)).when(cons1).predecessors
 
-    doReturn(Set(f1)).when(q1).successors(prod1)
-    doReturn(Set(f2)).when(q1).successors(prod2)
-    doReturn(Set(f3)).when(q1).successors(f2)
-    doReturn(Set(m1)).when(q1).successors(f1)
-    doReturn(Set(m1)).when(q1).successors(f3)
-    doReturn(Set(cons1)).when(q1).successors(m1)
-    doReturn(Set.empty).when(q1).successors(cons1)
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(f2)).when(prod2).successors
+    doReturn(Set(f3)).when(f2).successors
+    doReturn(Set(m1)).when(f1).successors
+    doReturn(Set(m1)).when(f3).successors
+    doReturn(Set(cons1)).when(m1).successors
+    doReturn(Set.empty).when(cons1).successors
 
     val placement = Placement(Set(prod1, prod2, f1, f2, f3, m1, cons1), 1)
     val it = placement.iterator
@@ -263,6 +252,17 @@ class PlacementTest extends FlatSpec
     doReturn(Set(q1)).when(f1).queries
     doReturn(Set(q1)).when(f2).queries
     doReturn(Set(q1)).when(cons1).queries
+
+    doReturn(Set.empty).when(prod1).predecessors
+    doReturn(Set(prod1)).when(f1).predecessors
+    doReturn(Set(f1)).when(f2).predecessors
+    doReturn(Set(f2)).when(cons1).predecessors
+
+    doReturn(Set(f1)).when(prod1).successors
+    doReturn(Set(f2)).when(f1).successors
+    doReturn(Set(cons1)).when(f2).successors
+    doReturn(Set.empty).when(cons1).successors
+
     val placement = Placement(Set(prod1, f1, f2, cons1), 1, List(cons1, f1, f2, prod1))
 
     val it = placement.iterator

@@ -147,7 +147,7 @@ public class CepSimAvgWindow {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1750;
+        final int NUM_SENSORS = 2500;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -156,14 +156,14 @@ public class CepSimAvgWindow {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 10_000, gen, true);
+            EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
 
             Operator outlierDetector = new Operator("outlierDetector" + i, 18_000, 2048);
             Operator average = WindowedOperator.apply("average" + i, 18_000, 15000, 15000,
                     WindowedOperator.constant(NUM_SENSORS), 2048);
             Operator db = new Operator("db" + i, 11_000_000, 2048);
 
-            EventConsumer c = new EventConsumer("end" + i, 10_000, 2048);
+            EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();

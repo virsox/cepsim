@@ -135,7 +135,7 @@ public class CepSimAvgWindowNetwork {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 2500;
+        final int NUM_SENSORS = 3250;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -144,12 +144,14 @@ public class CepSimAvgWindowNetwork {
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p = new EventProducer("spout" + i, 1000, gen, true);
-            Operator outlierDetector = new Operator("outlierDetector" + i, 70000, 2048);
-            Operator average = WindowedOperator.apply("average" + i, 70000, 15000, 15000,
-                    WindowedOperator.constant(NUM_SENSORS), 2048);
-            Operator db = new Operator("db" + i, 11000000, 2048);
-            EventConsumer c = new EventConsumer("end" + i, 1000, 2048);
+            EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
+
+            Operator outlierDetector = new Operator("outlierDetector" + i, 18_000, 2048);
+            Operator average = WindowedOperator.apply("average" + i, 18_000, 15000, 15000,
+					WindowedOperator.constant(NUM_SENSORS), 2048);
+            Operator db = new Operator("db" + i, 11_000_000, 2048);
+
+            EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
@@ -191,7 +193,7 @@ public class CepSimAvgWindowNetwork {
             Placement placement1 = Placement.apply(p1Vertices, 1);
 
             QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10, network);
 
             CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, false);
             cloudlet1.setUserId(broker.getId());
@@ -203,7 +205,7 @@ public class CepSimAvgWindowNetwork {
             Placement placement2 = Placement.apply(p2Vertices, 2);
 
             QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10, network);
 
             CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
             cloudlet2.setUserId(broker.getId());
