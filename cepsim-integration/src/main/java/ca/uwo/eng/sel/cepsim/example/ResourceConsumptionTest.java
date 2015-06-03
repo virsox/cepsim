@@ -38,13 +38,14 @@ public class ResourceConsumptionTest {
     //private static List<Vm> vmlist;
 
     public static void main(String[] args) {
-        new ResourceConsumptionTest().simulate(1, 100);
+        new ResourceConsumptionTest().simulate(10, 10);
     }
 
     public void simulate(int numberOfVms, int queriesPerVm) {
         Log.printLine("Starting ResourceConsumptionTest...");
         
         try {
+            //System.in.read();
 
             int num_user = 1; // number of cloud users
             Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.

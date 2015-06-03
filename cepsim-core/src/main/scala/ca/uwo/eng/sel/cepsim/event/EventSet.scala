@@ -75,11 +75,12 @@ case class EventSet(var size: Double, var ts: Double, var latency: Double, var t
     */
   def add(es: EventSet, selectivity: Double = 1.0): Unit = {
     val newQuantity = selectivity * es.size
+    val newSize = size + newQuantity
 
     if (newQuantity > 0) {
-      ts = ((size * ts) + (newQuantity * es.ts)) / (size + newQuantity)
-      latency = ((size * latency) + (newQuantity * es.latency)) / (size + newQuantity)
-      size    = size + newQuantity
+      ts = ((size * ts) + (newQuantity * es.ts)) / newSize
+      latency = ((size * latency) + (newQuantity * es.latency)) / newSize
+      size    = newSize
     }
     totals = totals.map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0))) ++ (es.totals -- totals.keys)
   }

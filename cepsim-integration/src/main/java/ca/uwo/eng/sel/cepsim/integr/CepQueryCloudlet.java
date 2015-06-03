@@ -14,6 +14,7 @@ import ca.uwo.eng.sel.cepsim.history.History;
 import scala.Option;
 import scala.collection.JavaConversions;
 
+import java.io.IOException;
 import java.util.*;
 
 import static scala.collection.JavaConversions.asJavaList;
@@ -32,6 +33,8 @@ public class CepQueryCloudlet extends Cloudlet {
     private double  executionTime;
     private boolean hasFinished;
 
+    private boolean record;
+
     public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
                             MetricCalculator calculator) {
         // we are passing some "default parameters" for the following arguments
@@ -46,6 +49,8 @@ public class CepQueryCloudlet extends Cloudlet {
         super (cloudletId, Long.MAX_VALUE, 1,
                 0, 0, UTIL_MODEL_FULL, UTIL_MODEL_FULL,
                 UTIL_MODEL_FULL, record);
+
+        this.record = record;
 
         this.cloudlet = cloudlet;
         this.history = new History<>();
@@ -110,6 +115,13 @@ public class CepQueryCloudlet extends Cloudlet {
             System.out.println("XX-Memory [" + Runtime.getRuntime().totalMemory() + ", "
                     + Runtime.getRuntime().freeMemory() + ", "
                     + Runtime.getRuntime().maxMemory() + "]-XX");
+
+            try {
+                System.in.read();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
         }
 
@@ -142,7 +154,9 @@ public class CepQueryCloudlet extends Cloudlet {
 
         // need to transform from seconds to milliseconds
         History<SimEvent> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
-        history.append(execHistory);
+        if (record) {
+            history.append(execHistory);
+        }
 	}
 
     public Set<Vertex> getVertices() {
