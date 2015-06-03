@@ -53,8 +53,6 @@ class EventConsumer(val id: String, val ipe: Double, val queueMaxSize: Int) exte
     case _ => false
   }
 
-  override def hashCode(): Int = {
-    val state = Seq(id)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
+  override def hashCode(): Int = id.hashCode()
+
 }

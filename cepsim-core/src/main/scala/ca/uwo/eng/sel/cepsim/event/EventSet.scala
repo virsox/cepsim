@@ -82,8 +82,10 @@ case class EventSet(var size: Double, var ts: Double, var latency: Double, var t
       latency = ((size * latency) + (newQuantity * es.latency)) / newSize
       size    = newSize
     }
-    totals = totals.map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0))) ++ (es.totals -- totals.keys)
+    totals = totals ++ es.totals.map{ case (k, v) => k -> (v + totals.getOrElse(k, 0.0)) }
+    //totals.map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0))) ++ (es.totals -- totals.keys)
   }
+
 
   /**
     * Extracts a number of events from the current set. It returns a new EventSet representing the extracted

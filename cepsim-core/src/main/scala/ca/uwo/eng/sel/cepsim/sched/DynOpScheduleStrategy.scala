@@ -26,6 +26,9 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
   import OpScheduleStrategy._
 
+  // cache results - performance improvement
+  var cachedResults: Map[(Double, Placement), Map[Vertex, Double]] = Map.empty
+
   override def allocate(instructions: Double, startTime: Double, capacity: Double, placement: Placement,
                         pendingActions: SortedSet[Action] = TreeSet.empty): Iterator[Action] =
     new DynOpScheduleIterator(instructions, startTime, capacity, placement, pendingActions)
@@ -39,8 +42,18 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
                               placement: Placement, pendingActions: SortedSet[Action])
     extends Iterator[Action] {
 
+
     /** Maximum number of instructions allocated to each vertex. */
-    private val maxAllocation = allocStrategy.instructionsPerOperator(instructions, placement)
+    private val maxAllocation = cachedResults.get((instructions, placement)) match {
+      case Some(result) => result
+      case None => {
+        val result = allocStrategy.instructionsPerOperator(instructions, placement)
+        cachedResults = cachedResults updated((instructions, placement), result)
+        result
+      }
+    }
+
+      //allocStrategy.instructionsPerOperator(instructions, placement)
 
     /** Number of instructions still available. This number is updated at each iteration. */
     private var remainingInstructions = instructions
@@ -56,6 +69,12 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
     /** List of actions that still need to be scheduled (initialized with all pending actions). */
     private var toBeScheduled: List[Action] = pendingActions.toList
+
+    // these variables are necessary to avoid the re-computation of hasNext result and next vertex index
+    private var hasNextInvoked = false
+    private var hasNextValue = false
+    private var nextVertexIndexValue = -1
+
 
     /**
       * Verify if the vertex can be allocated
@@ -85,7 +104,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
      * @return next vertex to be allocated. null if there is no such vertex.
      */
     private def nextVertex(): Vertex = {
-      val index = nextVertexIndex
+      val index = nextVertexIndexValue
 
       // if it hasn't found, then there are no more vertices to process
       if (index == -1) null
@@ -95,14 +114,22 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       }
     }
 
-    override def hasNext: Boolean = (!toBeScheduled.isEmpty) || (nextVertexIndex != -1)
+    override def hasNext: Boolean =
+      if (hasNextInvoked) hasNextValue
+      else {
+        nextVertexIndexValue = nextVertexIndex
+        hasNextValue = (!toBeScheduled.isEmpty) || (nextVertexIndexValue != -1)
+        hasNextValue
+      }
 
     override def next(): Action = {
+
+      if (!hasNextInvoked) nextVertexIndexValue = nextVertexIndex
 
       // check for pending actions
       if (!toBeScheduled.isEmpty) {
         val (head, tail) = (toBeScheduled.head, toBeScheduled.tail)
-        if ((head.from <= currentTime) || (nextVertexIndex == -1)) {
+        if ((head.from <= currentTime) || (nextVertexIndexValue == -1)) {
           toBeScheduled = tail
           if (currentTime < head.from)
             currentTime = head.to
@@ -118,6 +145,9 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       val end   = endTime(start, allocation, capacity)
       currentTime = end
       val execute = ExecuteAction(v, start, end, allocation)
+
+      // reset the flag
+      hasNextInvoked = false
 
       // if there are pending actions that happens during the scheduled action,
       // then we need to split the action in two
