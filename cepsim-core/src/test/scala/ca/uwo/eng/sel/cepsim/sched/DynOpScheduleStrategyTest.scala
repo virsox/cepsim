@@ -59,7 +59,7 @@ class DynOpScheduleStrategyTest extends FlatSpec
     doReturn(1.0).when(f2).ipe
     doReturn(1.0).when(c1).ipe
 
-    val strategy = DynOpScheduleStrategy(allocationStrategy)
+    var strategy = DynOpScheduleStrategy(allocationStrategy)
   }
 
   trait Fixture2 extends Fixture {
@@ -67,7 +67,7 @@ class DynOpScheduleStrategyTest extends FlatSpec
     doReturn(Map(p1 -> 250.0, f1 -> 250.0, f2 -> 250.0, c1 -> 250.0))
       .when(allocationStrategy).instructionsPerOperator(1000, placement)
 
-    val strategy = DynOpScheduleStrategy(allocationStrategy)
+    var strategy = DynOpScheduleStrategy(allocationStrategy)
 
     doReturn(1.0).when(p1).ipe
     doReturn(1.0).when(f1).ipe
@@ -88,6 +88,22 @@ class DynOpScheduleStrategyTest extends FlatSpec
     ret.next should be (ExecuteAction(f1, 25.0, 50.0, 250))
     ret.next should be (ExecuteAction(f2, 50.0, 60.0, 100))
     ret.next should be (ExecuteAction(c1, 60.0, 80.0, 200))
+  }
+
+  it should "consider a single pending action" in new Fixture1 {
+    val enqueue1 = EnqueueAction(f1, ov, 0.0, EventSet(10.0, 0.0, 0.0, p1 -> 10.0))
+    val pendingActions = TreeSet[Action](enqueue1)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
+
+    when(p1.instructionsNeeded).thenReturn(0.0)
+    when(f1.instructionsNeeded).thenReturn(0.0)
+    when(f2.instructionsNeeded).thenReturn(0.0)
+    when(c1.instructionsNeeded).thenReturn(0.0)
+
+    ret.hasNext should be (true)
+    ret.next    should be (enqueue1)
+    ret.hasNext should be (false)
+
   }
 
   it should "consider a pending action between two actions" in new Fixture1 {

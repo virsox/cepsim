@@ -43,10 +43,10 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class CepSimBenchmark {
 
-    @Param({"1", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"})
+    @Param({"1"})
     public int numberOfVms;
 
-    @Param({"10"})
+    @Param({"1", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"})
     public int queriesPerVm;
 
     @Benchmark

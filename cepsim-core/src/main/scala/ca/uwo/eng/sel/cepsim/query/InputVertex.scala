@@ -8,6 +8,12 @@ trait InputVertex extends Vertex  { this: Vertex =>
   /** Event sets that represent the input queues. */
   var inputEventQueues: Map[Vertex, EventSetQueue] = Map.empty
 
+  /**
+    * Total sizes of all input queues. Used to avoid recalculation of this total in the
+    * totalInputEvents method.
+    */
+  var inputEventQueuesSize: Double = 0.0
+
   /** The maximum queue size. */
   val queueMaxSize: Int
 
@@ -15,7 +21,7 @@ trait InputVertex extends Vertex  { this: Vertex =>
    * Gets the set of vertex predecessors.
    * @return set containing all vertex predecessors.
    */
-  override def predecessors: Set[OutputVertex] = inputEventQueues.keySet.collect { case ov: OutputVertex => ov }
+  override def predecessors: Set[OutputVertex] = inputEventQueues.keySet.asInstanceOf[Set[OutputVertex]]
 
   /**
     * Indicates if this vertex has bounded queues.
@@ -49,7 +55,7 @@ trait InputVertex extends Vertex  { this: Vertex =>
     * Gets the total number of events in all input queues.
     * @return total number of events in all input queues.
     */
-  def totalInputEvents = inputEventQueues.foldLeft(0.0)((acc, elem) => acc + elem._2.size)
+  def totalInputEvents = inputEventQueuesSize//inputEventQueues.foldLeft(0.0)((acc, elem) => acc + elem._2.size)
 
 
   /**
@@ -57,7 +63,10 @@ trait InputVertex extends Vertex  { this: Vertex =>
     * @param pred Vertex used to locate the input queue.
     * @param es Event set to be enqueued.
     */
-  def enqueueIntoInput(pred: Vertex, es: EventSet): Unit = inputEventQueues(pred).enqueue(es)
+  def enqueueIntoInput(pred: Vertex, es: EventSet): Unit = {
+    inputEventQueuesSize += es.size
+    inputEventQueues(pred).enqueue(es)
+  }
 
   /**
     * Dequeue a number of events from an input queue.
@@ -65,7 +74,10 @@ trait InputVertex extends Vertex  { this: Vertex =>
     * @param quantity Number of events to be dequeued.
     * @return EventSet encapsulating the dequeued events.
     */
-  def dequeueFromInput(pred: Vertex, quantity: Double): EventSet = inputEventQueues(pred).dequeue(quantity)
+  def dequeueFromInput(pred: Vertex, quantity: Double): EventSet = {
+    inputEventQueuesSize -= quantity
+    inputEventQueues(pred).dequeue(quantity)
+  }
 
   /**
     * Dequeue events from N input queues.
@@ -92,12 +104,9 @@ trait InputVertex extends Vertex  { this: Vertex =>
 
     // number of events processed from each queue
     // current implementation distribute processing according to the queue size
-    val toProcess = inputEventQueues.map(elem =>
-      (elem._1 -> (if (total == 0) 0.0 else (elem._2.size / total) * events))
+    inputEventQueues.map(elem =>
+      (elem._1 -> dequeueFromInput(elem._1, (if (total == 0) 0.0 else (elem._2.size / total) * events)))
     )
-
-    // update the input queues
-    dequeueFromInput(toProcess.toList:_*)
   }
 
 }

@@ -53,13 +53,11 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       }
     }
 
-      //allocStrategy.instructionsPerOperator(instructions, placement)
-
     /** Number of instructions still available. This number is updated at each iteration. */
     private var remainingInstructions = instructions
 
     /** List with all vertices in the iteration order determined by the placement. */
-    private val vertices: List[Vertex] = placement.iterator.toList
+    private val vertices: Array[Vertex] = placement.iterator.toArray
 
     /** Current index in the vertices list - used in the second round. */
     private var currentIndex = 0
@@ -71,10 +69,13 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
     private var toBeScheduled: List[Action] = pendingActions.toList
 
     // these variables are necessary to avoid the re-computation of hasNext result and next vertex index
-    private var hasNextInvoked = false
-    private var hasNextValue = false
+    private var hasNextInvoked: Boolean = false
+
+    private var hasNextResult: Boolean = false
+
     private var nextVertexIndexValue = -1
 
+    println(hasNextInvoked)
 
     /**
       * Verify if the vertex can be allocated
@@ -115,11 +116,13 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
     }
 
     override def hasNext: Boolean =
-      if (hasNextInvoked) hasNextValue
-      else {
+      if (hasNextInvoked) {
+        hasNextResult
+      } else {
+        hasNextInvoked = true
         nextVertexIndexValue = nextVertexIndex
-        hasNextValue = (!toBeScheduled.isEmpty) || (nextVertexIndexValue != -1)
-        hasNextValue
+        hasNextResult = (!toBeScheduled.isEmpty) || (nextVertexIndexValue != -1)
+        hasNextResult
       }
 
     override def next(): Action = {
@@ -133,6 +136,8 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
           toBeScheduled = tail
           if (currentTime < head.from)
             currentTime = head.to
+
+          hasNextInvoked = false
           return head
         }
       }
