@@ -75,7 +75,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
 
     private var nextVertexIndexValue = -1
 
-    println(hasNextInvoked)
+    //println(hNextInvoked)
 
     /**
       * Verify if the vertex can be allocated
@@ -115,7 +115,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
       }
     }
 
-    override def hasNext: Boolean =
+    override def hasNext: Boolean = {
       if (hasNextInvoked) {
         hasNextResult
       } else {
@@ -124,6 +124,7 @@ class DynOpScheduleStrategy(allocStrategy: AllocationStrategy) extends OpSchedul
         hasNextResult = (!toBeScheduled.isEmpty) || (nextVertexIndexValue != -1)
         hasNextResult
       }
+    }
 
     override def next(): Action = {
 

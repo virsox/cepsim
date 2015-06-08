@@ -38,7 +38,7 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
 
     if (events.size == 0) List.empty
     else List(Produced(this, startTime, endTime, events))
-  }
+  } // 494206
 
   /** The number of instructions needed to process all pending events. */
 

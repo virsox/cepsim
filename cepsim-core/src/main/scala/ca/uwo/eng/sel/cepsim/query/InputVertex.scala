@@ -76,6 +76,7 @@ trait InputVertex extends Vertex  { this: Vertex =>
     */
   def dequeueFromInput(pred: Vertex, quantity: Double): EventSet = {
     inputEventQueuesSize -= quantity
+    if (inputEventQueuesSize < 0.0001) inputEventQueuesSize = 0.0
     inputEventQueues(pred).dequeue(quantity)
   }
 

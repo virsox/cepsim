@@ -18,7 +18,7 @@ trait OutputVertex extends Vertex {
     * Set containing all successors of this vertex.
     * @return Set containing all successors of this vertex.
     */
-  override def successors: Set[InputVertex] = outputEventQueues.keySet.collect { case iv: InputVertex => iv }
+  override def successors: Set[InputVertex] = outputEventQueues.keySet.asInstanceOf[Set[InputVertex]]
 
   /**
     * Adds a new output queue for a new successor.
@@ -47,7 +47,7 @@ trait OutputVertex extends Vertex {
     limits = limits updated (v, limit)
   }
 
-  /**
+  /**0
     * Obtains the maximum number of events that can be produced by the vertex (it is calculated
     * as minimum among all limited output buffers taking the output selectivity into account).
     * @return maximum number of events that can be produced by the vertex.

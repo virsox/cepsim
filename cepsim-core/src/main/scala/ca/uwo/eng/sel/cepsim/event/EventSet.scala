@@ -83,7 +83,6 @@ case class EventSet(var size: Double, var ts: Double, var latency: Double, var t
       size    = newSize
     }
     totals = totals ++ es.totals.map{ case (k, v) => k -> (v + totals.getOrElse(k, 0.0)) }
-    //totals.map((e) => (e._1, e._2 + es.totals.getOrElse(e._1, 0.0))) ++ (es.totals -- totals.keys)
   }
 
 

@@ -43,9 +43,20 @@ class EventSetQueue {
     */
   def dequeue(quantity: Double): EventSet = {
 
-    if (quantity > totalSize) throw new NoSuchElementException()
+    var qty = quantity
+    if (qty > totalSize) {
 
-    var remaining = quantity
+      if (Math.abs(qty - totalSize) < 0.0001) {
+        // assuming it is a rounding error
+        qty = totalSize
+
+      } else {
+        throw new NoSuchElementException("Quantity [" + qty + "] - TotalSize [" + totalSize + "]")
+      }
+
+    }
+
+    var remaining = qty
     val result = EventSet.empty()
 
     while ((remaining > 0) && (!q.isEmpty)) {
@@ -62,11 +73,11 @@ class EventSetQueue {
         result.add(extracted)
 
         // check for rounding errors
-        if (q.head.size < 0.001) q.dequeue
+        if (q.head.size < 0.0001) q.dequeue
       }
     }
     totalSize -= result.size
-    if (totalSize < 0.001) totalSize = 0
+    if (totalSize < 0.0001) totalSize = 0
 
     result
   }

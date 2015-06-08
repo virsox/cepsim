@@ -91,14 +91,19 @@ class DynOpScheduleStrategyTest extends FlatSpec
   }
 
   it should "consider a single pending action" in new Fixture1 {
-    val enqueue1 = EnqueueAction(f1, ov, 0.0, EventSet(10.0, 0.0, 0.0, p1 -> 10.0))
-    val pendingActions = TreeSet[Action](enqueue1)
-    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
-
     when(p1.instructionsNeeded).thenReturn(0.0)
     when(f1.instructionsNeeded).thenReturn(0.0)
     when(f2.instructionsNeeded).thenReturn(0.0)
     when(c1.instructionsNeeded).thenReturn(0.0)
+
+    when(p1.needsAllocation).thenReturn(false)
+    when(f1.needsAllocation).thenReturn(false)
+    when(f2.needsAllocation).thenReturn(false)
+    when(c1.needsAllocation).thenReturn(false)
+
+    val enqueue1 = EnqueueAction(f1, ov, 0.0, EventSet(10.0, 0.0, 0.0, p1 -> 10.0))
+    val pendingActions = TreeSet[Action](enqueue1)
+    val ret = strategy.allocate(1000, 0.0, 0.01, placement, pendingActions) // capacity = 0.01 MIPS = 10 instructions per ms
 
     ret.hasNext should be (true)
     ret.next    should be (enqueue1)

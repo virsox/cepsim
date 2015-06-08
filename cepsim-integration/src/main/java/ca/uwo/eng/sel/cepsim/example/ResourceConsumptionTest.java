@@ -38,7 +38,7 @@ public class ResourceConsumptionTest {
     //private static List<Vm> vmlist;
 
     public static void main(String[] args) {
-        new ResourceConsumptionTest().simulate(100, 10);
+        new ResourceConsumptionTest().simulate(1, 1000);
     }
 
     public void simulate(int numberOfVms, int queriesPerVm) {
