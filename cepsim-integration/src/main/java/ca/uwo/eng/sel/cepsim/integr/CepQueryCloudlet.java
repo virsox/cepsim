@@ -109,21 +109,21 @@ public class CepQueryCloudlet extends Cloudlet {
 	
 	public void updateQuery(long instructions, double currentTime, double previousTime, double capacity) {
 
-        if ((getCloudletId() == 1) && (currentTime >= 150.0) && (currentTime < 150.1)) {
-            System.gc();
-
-            System.out.println("XX-Memory [" + Runtime.getRuntime().totalMemory() + ", "
-                    + Runtime.getRuntime().freeMemory() + ", "
-                    + Runtime.getRuntime().maxMemory() + "]-XX");
-
-//            try {
-//                System.in.read();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-
-            // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
-        }
+//        if ((getCloudletId() == 1) && (currentTime >= 150.0) && (currentTime < 150.1)) {
+//            System.gc();
+//
+//            System.out.println("XX-Memory [" + Runtime.getRuntime().totalMemory() + ", "
+//                    + Runtime.getRuntime().freeMemory() + ", "
+//                    + Runtime.getRuntime().maxMemory() + "]-XX");
+//
+////            try {
+////                System.in.read();
+////            } catch (IOException e) {
+////                e.printStackTrace();
+////            }
+//
+//            // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
+//        }
 
         long instructionsToExecute = instructions;
         double previousTimeInMs = previousTime * 1000;

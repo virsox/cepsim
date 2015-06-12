@@ -31,7 +31,7 @@
 
 package ca.uwo.eng.sel.cepsim.bench;
 
-import ca.uwo.eng.sel.cepsim.example.ResourceConsumptionTest;
+import ca.uwo.eng.sel.cepsim.example.SimParametersTest;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -40,27 +40,30 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+import static ca.uwo.eng.sel.cepsim.example.SimParametersTest.AllocStrategyEnum.*;
+import static ca.uwo.eng.sel.cepsim.example.SimParametersTest.SchedStrategyEnum.*;
+
 @State(Scope.Benchmark)
-public class CepSimBenchmark {
+public class ParametersBenchmark {
 
-    @Param({"10"})
-    public int numberOfVms;
+    @Param({"1.0"})
+    public double simInterval;
 
-    @Param({"10"})
-    public int queriesPerVm;
+    @Param({"1", "10", "100"})
+    public int iterations;
 
     @Benchmark
     @BenchmarkMode(Mode.SingleShotTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @Fork(10)
     public void testMethod() throws InterruptedException {
-        new ResourceConsumptionTest().simulate(numberOfVms, queriesPerVm);
+        new SimParametersTest().simulate(DYNAMIC, UNIFORM, simInterval, iterations);
     }
 
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(CepSimBenchmark.class.getSimpleName())
+                .include(ParametersBenchmark.class.getSimpleName())
                 .forks(1)
                 //.warmupIterations(0)
                 //.measurementIterations(1)

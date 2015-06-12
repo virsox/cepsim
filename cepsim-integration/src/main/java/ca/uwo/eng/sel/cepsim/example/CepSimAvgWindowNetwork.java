@@ -27,7 +27,7 @@ import java.util.*;
 
 public class CepSimAvgWindowNetwork {
 
-    private static final Double SIM_INTERVAL = 0.1;
+    private static final Double SIM_INTERVAL = 1.0;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
@@ -135,7 +135,7 @@ public class CepSimAvgWindowNetwork {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 3250;
+        final int NUM_SENSORS = 1000;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -193,7 +193,7 @@ public class CepSimAvgWindowNetwork {
             Placement placement1 = Placement.apply(p1Vertices, 1);
 
             QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10, network);
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 100, network);
 
             CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, false);
             cloudlet1.setUserId(broker.getId());
@@ -205,7 +205,7 @@ public class CepSimAvgWindowNetwork {
             Placement placement2 = Placement.apply(p2Vertices, 2);
 
             QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10, network);
+                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 100, network);
 
             CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
             cloudlet2.setUserId(broker.getId());
