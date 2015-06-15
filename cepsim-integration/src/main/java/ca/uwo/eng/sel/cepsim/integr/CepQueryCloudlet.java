@@ -35,8 +35,8 @@ public class CepQueryCloudlet extends Cloudlet {
 
     private boolean record;
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record,
-                            MetricCalculator calculator) {
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, int pesNumber,
+                            boolean record, MetricCalculator calculator) {
         // we are passing some "default parameters" for the following arguments
 
         // cloudletLength = Long.MAX_VALUE (this value is not used for CepCloudlets)
@@ -46,7 +46,7 @@ public class CepQueryCloudlet extends Cloudlet {
         // utilizationModelCpu = UtilizationModelFull
         // utilizationModelRam = UtilizationModelFull
         // utilizationModelBw =	UtilizationModelFull
-        super (cloudletId, Long.MAX_VALUE, 1,
+        super (cloudletId, Long.MAX_VALUE, pesNumber,
                 0, 0, UTIL_MODEL_FULL, UTIL_MODEL_FULL,
                 UTIL_MODEL_FULL, record);
 
@@ -67,8 +67,17 @@ public class CepQueryCloudlet extends Cloudlet {
     }
 
 
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record, MetricCalculator calculator) {
+        this(cloudletId, cloudlet, 1, record, calculator);
+    }
+
+    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, int pesNumber, boolean record) {
+        this(cloudletId, cloudlet, pesNumber, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
+    }
+
+
     public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record) {
-		this(cloudletId, cloudlet, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
+		this(cloudletId, cloudlet, 1, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
 	}
 
 	

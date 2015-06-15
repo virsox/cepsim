@@ -74,7 +74,7 @@ public class CepSimAvgWindow {
 			long size = 10000; // image size (MB)
 			int ram = 512; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 1; // number of cpus
+			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -146,8 +146,8 @@ public class CepSimAvgWindow {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1000;
+        final int MAX_QUERIES = 4;
+        final int NUM_SENSORS = 500;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -201,10 +201,10 @@ public class CepSimAvgWindow {
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
                 //DefaultOpScheduleStrategy.weighted(weights), 10);
-				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
                 //DynOpScheduleStrategy.apply(new QuantumAllocationStrategy(10)), 10);
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 1, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);
