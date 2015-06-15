@@ -204,7 +204,7 @@ public class CepSimAvgWindow {
 				DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
                 //DynOpScheduleStrategy.apply(new QuantumAllocationStrategy(10)), 10);
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 1, false);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 4, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);
