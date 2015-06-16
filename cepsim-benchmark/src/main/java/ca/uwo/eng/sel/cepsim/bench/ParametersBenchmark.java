@@ -46,10 +46,10 @@ import static ca.uwo.eng.sel.cepsim.example.SimParametersTest.SchedStrategyEnum.
 @State(Scope.Benchmark)
 public class ParametersBenchmark {
 
-    @Param({"1.0"})
+    @Param({"0.1"})
     public double simInterval;
 
-    @Param({"1", "10", "100"})
+    @Param({"1", "10"})
     public int iterations;
 
     @Benchmark

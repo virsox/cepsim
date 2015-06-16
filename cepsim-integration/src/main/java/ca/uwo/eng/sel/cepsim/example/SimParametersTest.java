@@ -48,7 +48,7 @@ public class SimParametersTest {
 
 
 	public static void main(String[] args) {
-		new SimParametersTest().simulate(SchedStrategyEnum.DYNAMIC, AllocStrategyEnum.UNIFORM, 0.01, 1);
+		new SimParametersTest().simulate(SchedStrategyEnum.DYNAMIC, AllocStrategyEnum.UNIFORM, 0.1, 1);
 	}
 
 
@@ -144,7 +144,7 @@ public class SimParametersTest {
 		// 100 events / interval
 
         final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1000;
+        final int NUM_SENSORS = 10;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
