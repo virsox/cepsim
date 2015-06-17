@@ -28,20 +28,18 @@ import java.util.*;
 
 public class CepSimAvgWindowNetwork {
 
-    private static final Double SIM_INTERVAL = 0.1;
+
     private static final Long DURATION = 301L;
 
-	/** The cloudlet list. */
-	private static List<Cloudlet> cloudletList;
-	/** The vmlist. */
-	private static List<Vm> vmlist;
+
+	public static void main(String[] args) {
+		new CepSimAvgWindowNetwork().simulate(0.1, 10);
+	}
 
 	/**
 	 * Creates main() to run this example.
-	 *
-	 * @param args the args
 	 */
-	public static void main(String[] args) {
+	public void simulate(double simInterval, int iterations) {
 		Log.printLine("Starting CepSimAvgWindow...");
 
 
@@ -52,19 +50,19 @@ public class CepSimAvgWindowNetwork {
  			boolean trace_flag = false; // trace events
 
 
-			CloudSim.init(num_user, calendar, trace_flag, SIM_INTERVAL);
+			CloudSim.init(num_user, calendar, trace_flag, simInterval);
 
 			// Second step: Create Datacenters
 			// Datacenters are the resource providers in CloudSim. We need at
 			// list one of them to run a CloudSim simulation
-			Datacenter datacenter0 = createDatacenter("Datacenter_0");
+			Datacenter datacenter0 = createDatacenter("Datacenter_0", simInterval);
 
 			// Third step: Create Broker
-            CepSimBroker broker = createBroker();
+            CepSimBroker broker = createBroker(simInterval);
 			int brokerId = broker.getId();
 
 			// Fourth step: Create one virtual machine
-			vmlist = new ArrayList<Vm>();
+			List<Vm> vmlist = new ArrayList<>();
 
 			// VM description
 			int mips = 2500;
@@ -86,11 +84,8 @@ public class CepSimAvgWindowNetwork {
 			broker.submitVmList(vmlist);
 
 			// Fifth step: Create one Cloudlet
-			cloudletList = new ArrayList<Cloudlet>();
-
-
-			// add the cloudlet to the list
-			cloudletList.addAll(createCloudlets(broker));
+			List<Cloudlet> cloudletList = new ArrayList<>();
+			cloudletList.addAll(createCloudlets(broker, iterations));
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
@@ -132,17 +127,19 @@ public class CepSimAvgWindowNetwork {
 
 
 
-	private static Set<Cloudlet> createCloudlets(CepSimBroker broker) {
+	private static Set<Cloudlet> createCloudlets(CepSimBroker broker, int iterations) {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 4;
-        final int NUM_SENSORS = 500;
+
+        final int MAX_QUERIES = 10;
+        final int NUM_SENSORS = 10;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
+        //Set<Query> queries = new HashSet<Query>();
         Map<Vertex, Object> weights = new HashMap<>();
 
-		Set<Vertex> p1Vertices = new HashSet<>();
+        Set<Vertex> p1Vertices = new HashSet<>();
         Set<Vertex> p2Vertices = new HashSet<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
@@ -184,7 +181,6 @@ public class CepSimAvgWindowNetwork {
 
             Query q = Query.apply("testavg" + i, vertices, edges, DURATION);
 
-
             // ------------- VM 1
             p1Vertices.add(p);
             p1Vertices.add(outlierDetector);
@@ -197,21 +193,23 @@ public class CepSimAvgWindowNetwork {
         }
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
 
-        // ------------ placement 1
+
         Placement placement1 = Placement.apply(p1Vertices, 1);
         QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
-                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), iterations, network);
 
-        CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, 2, false);
+        CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, false);
         cloudlet1.setUserId(broker.getId());
+        cloudlets.add(cloudlet1);
 
-        // ------------ placement 2
         Placement placement2 = Placement.apply(p2Vertices, 2);
         QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
-                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), iterations, network);
 
-        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, 2, false);
+        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
         cloudlet2.setUserId(broker.getId());
+        cloudlets.add(cloudlet2);
+
 
         cloudlets.add(cloudlet1);
         cloudlets.add(cloudlet2);
@@ -225,7 +223,7 @@ public class CepSimAvgWindowNetwork {
 	 *
 	 * @return the datacenter
 	 */
-	private static Datacenter createDatacenter(String name) {
+	private static Datacenter createDatacenter(String name, double simInterval) {
 
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store
@@ -283,7 +281,7 @@ public class CepSimAvgWindowNetwork {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		Datacenter datacenter = null;
 		try {
-			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, SIM_INTERVAL);
+			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, simInterval);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -300,10 +298,10 @@ public class CepSimAvgWindowNetwork {
 	 *
 	 * @return the datacenter broker
 	 */
-	private static CepSimBroker createBroker() {
+	private static CepSimBroker createBroker(double simInterval) {
         CepSimBroker broker = null;
 		try {
-			broker = new CepSimBroker("CepBroker", 100, SIM_INTERVAL);
+			broker = new CepSimBroker("CepBroker", 100, simInterval);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
