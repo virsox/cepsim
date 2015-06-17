@@ -20,6 +20,7 @@ import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
+import scala.collection.JavaConversions;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -27,7 +28,7 @@ import java.util.*;
 
 public class CepSimAvgWindowNetwork {
 
-    private static final Double SIM_INTERVAL = 1.0;
+    private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
 
 	/** The cloudlet list. */
@@ -70,7 +71,7 @@ public class CepSimAvgWindowNetwork {
 			long size = 10000; // image size (MB)
 			int ram = 2048; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 1; // number of cpus
+			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -112,13 +113,14 @@ public class CepSimAvgWindowNetwork {
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
 
-                Query q = cepCl.getQueries().iterator().next();
-                Vertex consumer = q.consumers().head();
-
-                History history = cepCl.getExecutionHistory().from(consumer);
-
-                System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
-                System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                for (Query q : cepCl.getQueries()) {
+                    System.out.println("Query [" + q.id() + "]");
+                    for (Vertex consumer: JavaConversions.asJavaIterable(q.consumers())) {
+                        System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
+                        System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                    }
+                    System.out.println("------");
+                }
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -134,12 +136,14 @@ public class CepSimAvgWindowNetwork {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 1000;
+        final int MAX_QUERIES = 4;
+        final int NUM_SENSORS = 500;
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
-        Set<Query> queries = new HashSet<Query>();
         Map<Vertex, Object> weights = new HashMap<>();
+
+		Set<Vertex> p1Vertices = new HashSet<>();
+        Set<Vertex> p2Vertices = new HashSet<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
@@ -179,40 +183,38 @@ public class CepSimAvgWindowNetwork {
             weights.put(c, 1.0);
 
             Query q = Query.apply("testavg" + i, vertices, edges, DURATION);
-            queries.add(q);
 
-            NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
 
-            // ------------- cloudlet 1
-
-            Set<Vertex> p1Vertices = new HashSet<>();
+            // ------------- VM 1
             p1Vertices.add(p);
             p1Vertices.add(outlierDetector);
             p1Vertices.add(average);
             p1Vertices.add(c);
-            Placement placement1 = Placement.apply(p1Vertices, 1);
 
-            QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 100, network);
-
-            CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, false);
-            cloudlet1.setUserId(broker.getId());
-            cloudlets.add(cloudlet1);
-
-            // ------------- cloudlet 2
-            Set<Vertex> p2Vertices = new HashSet<>();
+            // ------------- VM2 2
             p2Vertices.add(db);
-            Placement placement2 = Placement.apply(p2Vertices, 2);
-
-            QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
-                    DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 100, network);
-
-            CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
-            cloudlet2.setUserId(broker.getId());
-            cloudlets.add(cloudlet2);
 
         }
+        NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
 
+        // ------------ placement 1
+        Placement placement1 = Placement.apply(p1Vertices, 1);
+        QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+
+        CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, qCloudlet1, 2, false);
+        cloudlet1.setUserId(broker.getId());
+
+        // ------------ placement 2
+        Placement placement2 = Placement.apply(p2Vertices, 2);
+        QueryCloudlet qCloudlet2 = QueryCloudlet.apply("cl2", placement2,
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1, network);
+
+        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, 2, false);
+        cloudlet2.setUserId(broker.getId());
+
+        cloudlets.add(cloudlet1);
+        cloudlets.add(cloudlet2);
         return cloudlets;
 	}
 	
