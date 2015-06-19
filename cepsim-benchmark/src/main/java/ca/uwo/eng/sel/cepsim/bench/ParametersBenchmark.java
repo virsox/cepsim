@@ -31,7 +31,8 @@
 
 package ca.uwo.eng.sel.cepsim.bench;
 
-import ca.uwo.eng.sel.cepsim.example.SimParametersTest;
+import ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow;
+import ca.uwo.eng.sel.cepsim.example.CepSimAvgWindowNetwork;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -40,16 +41,16 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-import static ca.uwo.eng.sel.cepsim.example.SimParametersTest.AllocStrategyEnum.*;
-import static ca.uwo.eng.sel.cepsim.example.SimParametersTest.SchedStrategyEnum.*;
+import static ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow.AllocStrategyEnum.*;
+import static ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow.SchedStrategyEnum.*;
 
 @State(Scope.Benchmark)
 public class ParametersBenchmark {
 
-    @Param({"0.1"})
+    @Param({"1.0"})
     public double simInterval;
 
-    @Param({"1", "10"})
+    @Param({"1", "10", "100"})
     public int iterations;
 
     @Benchmark
@@ -57,7 +58,8 @@ public class ParametersBenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @Fork(10)
     public void testMethod() throws InterruptedException {
-        new SimParametersTest().simulate(DYNAMIC, UNIFORM, simInterval, iterations);
+        new CepSimAvgWindow().simulate(DYNAMIC, UNIFORM, simInterval, iterations);
+        //new CepSimAvgWindowNetwork().simulate(simInterval, iterations);
     }
 
 

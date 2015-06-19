@@ -30,6 +30,8 @@ public class CepSimJsonConvert {
 
     private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
+	private static final int MAX_QUERIES = 1;
+	private static final int NUM_SENSORS = 2500;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -71,7 +73,7 @@ public class CepSimJsonConvert {
 			long size = 10000; // image size (MB)
 			int ram = 1024; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 1; // number of cpus
+			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -85,19 +87,6 @@ public class CepSimJsonConvert {
 
 			// Fifth step: Create one Cloudlet
 			cloudletList = new ArrayList<Cloudlet>();
-
-			// Cloudlet properties
-//			int id = 0;
-//			long length = 400000;
-//			long fileSize = 300;
-//			long outputSize = 300;
-//			UtilizationModel utilizationModel = new UtilizationModelFull();
-
-//			Cloudlet cloudlet = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
-//			cloudlet.setUserId(brokerId);
-//			cloudlet.setVmId(vmid);
-
-			// add the cloudlet to the list
 			cloudletList.addAll(createCloudlets(brokerId));
 
 			// submit cloudlet list to the broker
@@ -138,8 +127,7 @@ public class CepSimJsonConvert {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 1;
-        final int NUM_SENSORS = 2500;
+
 
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
@@ -198,7 +186,7 @@ public class CepSimJsonConvert {
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
 				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
                 //DefaultOpScheduleStrategy.weighted(weights), 10);
-                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 

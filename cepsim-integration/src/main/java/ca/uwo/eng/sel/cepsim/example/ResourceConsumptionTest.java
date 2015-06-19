@@ -38,7 +38,7 @@ public class ResourceConsumptionTest {
     //private static List<Vm> vmlist;
 
     public static void main(String[] args) {
-        new ResourceConsumptionTest().simulate(1, 1000);
+        new ResourceConsumptionTest().simulate(10, 100);
     }
 
     public void simulate(int numberOfVms, int queriesPerVm) {
@@ -127,28 +127,27 @@ public class ResourceConsumptionTest {
         for (int i = 1; i <= numberOfVms; i++) {
 
             for (int j = 1; j <= queriesPerVm; j++) {
+
+                int id = ((i - 1) * queriesPerVm) + j;
+
                 Generator gen = new UniformGenerator(NUM_SENSORS * 10);
-
-                EventProducer p = new EventProducer("spout" + j, 10_000, gen, true);
-
-                Operator jsonParser = new Operator("jsonParser" + j, 41_250, 2048);
-                Operator validate = new Operator("validate" + j, 25_000, 2048);
-                Operator xml = new Operator("xmlOutput" + j, 31_250, 2048);
-
-                EventConsumer c = new EventConsumer("end" + j, 10_000, 2048);
-
+                EventProducer p = new EventProducer("spout" + id, 1_000, gen, true);
+                Operator outlierDetector = new Operator("outlierDetector" + id, 18_000, 2048);
+                Operator average = WindowedOperator.apply("average" + id, 18_000, 15000, 15000, WindowedOperator.constant(NUM_SENSORS), 2048);
+                Operator db = new Operator("db" + id, 11_000_000, 2048);
+                EventConsumer c = new EventConsumer("end" + id, 1_000, 2048);
 
                 Set<Vertex> vertices = new HashSet<>();
                 vertices.add(p);
-                vertices.add(jsonParser);
-                vertices.add(validate);
-                vertices.add(xml);
+                vertices.add(outlierDetector);
+                vertices.add(average);
+                vertices.add(db);
                 vertices.add(c);
 
-                Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
-                Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
-                Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
-                Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, c, 1.0);
+                Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, outlierDetector, 1.0);
+                Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(outlierDetector, average, 0.95);
+                Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(average, db, 1.0);
+                Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(db, c, 1.0);
 
                 Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
                 edges.add(e1);
@@ -156,9 +155,41 @@ public class ResourceConsumptionTest {
                 edges.add(e3);
                 edges.add(e4);
 
-
-                Query q = Query.apply("testjson" + j, vertices, edges, DURATION);
+                Query q = Query.apply("testavg" + id, vertices, edges, DURATION);
                 queries.add(q);
+
+//                Generator gen = new UniformGenerator(NUM_SENSORS * 10);
+//
+//                EventProducer p = new EventProducer("spout" + j, 10_000, gen, true);
+//
+//                Operator jsonParser = new Operator("jsonParser" + j, 41_250, 2048);
+//                Operator validate = new Operator("validate" + j, 25_000, 2048);
+//                Operator xml = new Operator("xmlOutput" + j, 31_250, 2048);
+//
+//                EventConsumer c = new EventConsumer("end" + j, 10_000, 2048);
+//
+//
+//                Set<Vertex> vertices = new HashSet<>();
+//                vertices.add(p);
+//                vertices.add(jsonParser);
+//                vertices.add(validate);
+//                vertices.add(xml);
+//                vertices.add(c);
+//
+//                Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
+//                Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
+//                Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
+//                Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, c, 1.0);
+//
+//                Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+//                edges.add(e1);
+//                edges.add(e2);
+//                edges.add(e3);
+//                edges.add(e4);
+//
+//
+//                Query q = Query.apply("testjson" + j, vertices, edges, DURATION);
+//                queries.add(q);
             }
             Placement placement = Placement.withQueries(queries, i);
 

@@ -30,17 +30,18 @@ public class CepSimAvgWindowNetwork {
 
 
     private static final Long DURATION = 301L;
-
+    private static final int MAX_QUERIES = 1;
+    private static final int NUM_SENSORS = 3250;
 
 	public static void main(String[] args) {
-		new CepSimAvgWindowNetwork().simulate(0.1, 10);
+		new CepSimAvgWindowNetwork().simulate(0.01, 1);
 	}
 
 	/**
 	 * Creates main() to run this example.
 	 */
 	public void simulate(double simInterval, int iterations) {
-		Log.printLine("Starting CepSimAvgWindow...");
+		Log.printLine("Starting CepSimAvgWindowNetwork...");
 
 
 		try {
@@ -115,7 +116,7 @@ public class CepSimAvgWindowNetwork {
                         System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
                     }
                     System.out.println("------");
-                }
+            	}
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -131,12 +132,7 @@ public class CepSimAvgWindowNetwork {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-
-        final int MAX_QUERIES = 10;
-        final int NUM_SENSORS = 10;
-
 		Set<Cloudlet> cloudlets = new HashSet<>();
-        //Set<Query> queries = new HashSet<Query>();
         Map<Vertex, Object> weights = new HashMap<>();
 
         Set<Vertex> p1Vertices = new HashSet<>();
@@ -193,7 +189,6 @@ public class CepSimAvgWindowNetwork {
         }
         NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
 
-
         Placement placement1 = Placement.apply(p1Vertices, 1);
         QueryCloudlet qCloudlet1 = QueryCloudlet.apply("cl1", placement1,
                 DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), iterations, network);
@@ -215,7 +210,7 @@ public class CepSimAvgWindowNetwork {
         cloudlets.add(cloudlet2);
         return cloudlets;
 	}
-	
+
 	/**
 	 * Creates the datacenter.
 	 *
@@ -285,8 +280,8 @@ public class CepSimAvgWindowNetwork {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
+
+
 		return datacenter;
 	}
 
