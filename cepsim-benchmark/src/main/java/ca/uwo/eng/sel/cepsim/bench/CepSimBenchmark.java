@@ -33,6 +33,7 @@ package ca.uwo.eng.sel.cepsim.bench;
 
 import ca.uwo.eng.sel.cepsim.example.ResourceConsumptionTest;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class CepSimBenchmark {
 
-    @Param({"1", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"})
+    @Param({"10", "20", "30", "40", "50", "60", "70", "80", "90", "100"})
     public int numberOfVms;
 
     @Param({"100"})
@@ -62,6 +63,7 @@ public class CepSimBenchmark {
         Options opt = new OptionsBuilder()
                 .include(CepSimBenchmark.class.getSimpleName())
                 .forks(1)
+                .addProfiler(GCProfiler.class)
                 //.warmupIterations(0)
                 //.measurementIterations(1)
                 .build();

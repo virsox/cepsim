@@ -31,8 +31,8 @@ public class CepSimAvgWindow {
 
     private static final Long DURATION = 301L;
     private static final int NUM_SENSORS = 1000;
-	private static final int VM_NUMBER = 1;
-	private static final int QUERIES_PER_VM = 1;
+	private static final int VM_NUMBER = 10;
+	private static final int QUERIES_PER_VM = 100;
 
 	public enum SchedStrategyEnum {
 		DEFAULT, DYNAMIC
@@ -54,6 +54,8 @@ public class CepSimAvgWindow {
 
 
         try {
+			System.in.read();
+
             // First step: Initialize the CloudSim package. It should be called before creating any entities.
             int num_user = 1; // number of cloud users
             Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
@@ -80,7 +82,7 @@ public class CepSimAvgWindow {
                 long size = 10000; // image size (MB)
                 int ram = 1024; // vm memory (MB)
                 long bw = 100;
-                int pesNumber = 2; // number of cpus
+                int pesNumber = 1; // number of cpus
                 String vmm = "Xen"; // VMM name
 
                 // create VM

@@ -151,11 +151,13 @@ object QueryCloudlet {
         pendingActions = p2
 
         val verticesList = opSchedStrategy.allocate(availableInstructions, iterationStartTime, capacity, placement, p1)
+        var count = 0
         verticesList.foreach { (elem) =>
           elem match {
             case executeAction: ExecuteAction => iterationSimEvents ++= execute(executeAction)
             case enqueueAction: EnqueueAction => execute(enqueueAction)
           }
+          count += 1
         }
         iterationStartTime = iterationEndTime
 

@@ -120,12 +120,12 @@ public class ResourceConsumptionTest {
         final int NUM_SENSORS = 10;
 
         Set<Cloudlet> cloudlets = new HashSet<>();
-        Set<Query> queries = new HashSet<Query>();
+
         Map<Vertex, Object> weights = new HashMap<>();
 
 
         for (int i = 1; i <= numberOfVms; i++) {
-
+            Set<Query> queries = new HashSet<Query>();
             for (int j = 1; j <= queriesPerVm; j++) {
 
                 int id = ((i - 1) * queriesPerVm) + j;
@@ -225,7 +225,7 @@ public class ResourceConsumptionTest {
             List<Pe> peList = new ArrayList<>();
             int mips = 2500;
             for (int j = 0; j < 12; j++) {
-                peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
+                peList.add(new Pe(j, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
             }
 
             // 4. Create Host with its id and list of PEs and add them to the list

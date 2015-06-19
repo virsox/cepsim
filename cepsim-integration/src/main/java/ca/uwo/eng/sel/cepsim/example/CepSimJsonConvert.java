@@ -30,7 +30,7 @@ public class CepSimJsonConvert {
 
     private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
-	private static final int MAX_QUERIES = 1;
+	private static final int MAX_QUERIES = 1000;
 	private static final int NUM_SENSORS = 2500;
 
 	/** The cloudlet list. */
@@ -44,9 +44,11 @@ public class CepSimJsonConvert {
 	 * @param args the args
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting CepSimAvgWindow...");
+		Log.printLine("Starting CepSimJsonConvert...");
 
 		try {
+			System.in.read();
+
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
