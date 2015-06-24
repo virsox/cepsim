@@ -44,15 +44,16 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class CepSimBenchmark {
 
-    @Param({"10", "20", "30", "40", "50", "60", "70", "80", "90", "100"})
+    @Param({"10", "100", "200", "300", "400", "500", "600", "700", "800", "900", "1000"})
     public int numberOfVms;
 
-    @Param({"100"})
+    @Param({"10"})
     public int queriesPerVm;
 
     @Benchmark
     @BenchmarkMode(Mode.SingleShotTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Timeout(time = 900)
     @Fork(10)
     public void testMethod() throws InterruptedException {
         new ResourceConsumptionTest().simulate(numberOfVms, queriesPerVm);

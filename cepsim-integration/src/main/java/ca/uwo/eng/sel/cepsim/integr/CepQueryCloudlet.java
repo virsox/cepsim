@@ -124,11 +124,11 @@ public class CepQueryCloudlet extends Cloudlet {
                     + Runtime.getRuntime().freeMemory() + ", "
                     + Runtime.getRuntime().maxMemory() + "]-XX");
 
-            try {
-                System.in.read();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                System.in.read();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 
             // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
         }
