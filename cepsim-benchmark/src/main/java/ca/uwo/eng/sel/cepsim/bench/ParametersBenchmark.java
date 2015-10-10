@@ -31,8 +31,7 @@
 
 package ca.uwo.eng.sel.cepsim.bench;
 
-import ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow;
-import ca.uwo.eng.sel.cepsim.example.CepSimAvgWindowNetwork;
+import ca.uwo.eng.sel.cepsim.example.cepsim.CepSimAvgWindow;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -41,8 +40,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-import static ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow.AllocStrategyEnum.*;
-import static ca.uwo.eng.sel.cepsim.example.CepSimAvgWindow.SchedStrategyEnum.*;
+import static ca.uwo.eng.sel.cepsim.example.cepsim.CepSimAvgWindow.AllocStrategyEnum.*;
+import static ca.uwo.eng.sel.cepsim.example.cepsim.CepSimAvgWindow.SchedStrategyEnum.*;
 
 @State(Scope.Benchmark)
 public class ParametersBenchmark {

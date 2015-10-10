@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.example;
+package ca.uwo.eng.sel.cepsim.example.cloud;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
@@ -7,14 +7,11 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.AltDynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
-import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -28,10 +25,10 @@ import java.util.*;
 
 public class CepSimJsonConvert {
 
-    private static final Double SIM_INTERVAL = 0.1;
+    private static final Double SIM_INTERVAL = 0.01;
     private static final Long DURATION = 301L;
-	private static final int MAX_QUERIES = 1000;
-	private static final int NUM_SENSORS = 2500;
+	private static final int MAX_QUERIES = 1;
+	private static final int NUM_SENSORS = 2000;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -47,7 +44,7 @@ public class CepSimJsonConvert {
 		Log.printLine("Starting CepSimJsonConvert...");
 
 		try {
-			System.in.read();
+			//System.in.read();
 
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
@@ -71,11 +68,11 @@ public class CepSimJsonConvert {
 
 			// VM description
 			int vmid = 1;
-			int mips = 2500;
+			int mips = 2400;
 			long size = 10000; // image size (MB)
-			int ram = 1024; // vm memory (MB)
+			int ram = 65536; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 2; // number of cpus
+			int pesNumber = 16; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -140,10 +137,10 @@ public class CepSimJsonConvert {
 
             EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
-            Operator validate = new Operator("validate" + i, 25_000, 2048);
-            Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
-            Operator measurer = new Operator("measurer" + i, 17_000, 2048);
+            Operator jsonParser = new Operator("jsonParser" + i, 15_800, 2048);
+            Operator validate = new Operator("validate" + i, 7_200, 2048);
+            Operator xml = new Operator("xmlOutput" + i, 10_300, 2048);
+            Operator measurer = new Operator("measurer" + i, 4_500, 2048);
 
             EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
@@ -187,13 +184,13 @@ public class CepSimJsonConvert {
 
         QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
 				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
-                //DefaultOpScheduleStrategy.weighted(weights), 10);
+                //DefaultOpScheduleStrategy.weighted(weights), 1);
                 DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
                 //DefaultOpScheduleStrategy.weighted(weights));
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 16, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);
@@ -219,8 +216,8 @@ public class CepSimJsonConvert {
 		List<Pe> peList = new ArrayList<>();
 
 		// 3. Create PEs and add these into a list.
-        int mips = 2500;
-        for (int i = 0; i < 12; i++) {
+        int mips = 2400;
+        for (int i = 0; i < 16; i++) {
             peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
         }
 
@@ -228,7 +225,7 @@ public class CepSimJsonConvert {
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 98304; // host memory (MB)
+		int ram = 65536; // host memory (MB)
 		long storage = 1000000; // host storage
 		int bw = 10000;
 

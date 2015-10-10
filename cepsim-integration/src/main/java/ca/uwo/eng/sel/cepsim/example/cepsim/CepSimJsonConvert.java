@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.example;
+package ca.uwo.eng.sel.cepsim.example.cepsim;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
@@ -7,28 +7,31 @@ import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
+import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
+import ca.uwo.eng.sel.cepsim.sched.AltDynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
-import scala.collection.JavaConversions;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class ArosaSubStream {
+public class CepSimJsonConvert {
 
     private static final Double SIM_INTERVAL = 0.1;
     private static final Long DURATION = 301L;
-	private static final int MAX_QUERIES = 4;
-	private static final int NUM_SENSORS = 1000;
+	private static final int MAX_QUERIES = 1000;
+	private static final int NUM_SENSORS = 2500;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -41,10 +44,10 @@ public class ArosaSubStream {
 	 * @param args the args
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting ArosaSubStream...");
+		Log.printLine("Starting CepSimJsonConvert...");
 
 		try {
-			//System.in.read();
+			System.in.read();
 
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
@@ -106,18 +109,14 @@ public class ArosaSubStream {
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
 
-                for (Query q : cepCl.getQueries()) {
-                    System.out.println("Query [" + q.id() + "]");
-                    for (Vertex consumer: JavaConversions.asJavaIterable(q.consumers())) {
-                        System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
-                        System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
-                    }
-                    System.out.println("------");
-                }
+                Query q = cepCl.getQueries().iterator().next();
+                Vertex consumer = q.consumers().head();
 
+                System.out.println("Latency: " + cepCl.getLatencyByMinute(consumer));
+                System.out.println("Throughput: " + cepCl.getThroughputByMinute(consumer));
 			}
 
-			Log.printLine("ArosaSubStream finished!");
+			Log.printLine("CloudSimExample1 finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
@@ -137,35 +136,31 @@ public class ArosaSubStream {
         Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
-            Generator gen1 = new UniformGenerator(NUM_SENSORS * 10);
-            Generator gen2 = new UniformGenerator(NUM_SENSORS * 10);
+            Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
-            EventProducer p1 = new EventProducer("spout1_" + i, 1_000, gen1, true);
-            EventProducer p2 = new EventProducer("spout2_" + i, 1_000, gen2, true);
+            EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
 
-            Operator outlier1 = new Operator("outlier1_" + i, 20_000, 2048);
-            Operator outlier2 = new Operator("outlier2_" + i, 20_000, 2048);
-            Operator merge = new Operator("merge_" + i, 15_000, 2048);
-            Operator average = WindowedOperator.apply("average_" + i, 18_000, 10000, 10000, WindowedOperator.constant(NUM_SENSORS), 2048);
+            Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
+            Operator validate = new Operator("validate" + i, 25_000, 2048);
+            Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
+            Operator measurer = new Operator("measurer" + i, 17_000, 2048);
 
-            EventConsumer c = new EventConsumer("end_" + i, 1_000, 2048);
+            EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
-            vertices.add(p1);
-            vertices.add(p2);
-            vertices.add(outlier1);
-            vertices.add(outlier2);
-            vertices.add(merge);
-            vertices.add(average);
+            vertices.add(p);
+            vertices.add(jsonParser);
+            vertices.add(validate);
+            vertices.add(xml);
+            vertices.add(measurer);
             vertices.add(c);
 
-            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, outlier1, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, outlier2, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(outlier1, merge, 0.5);
-            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(outlier2, merge, 0.5);
-            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(merge,  average, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e6 = new Tuple3<OutputVertex, InputVertex, Object>(average, c, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, measurer, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(measurer, c, 1.0);
 
             Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             edges.add(e1);
@@ -173,38 +168,17 @@ public class ArosaSubStream {
             edges.add(e3);
             edges.add(e4);
             edges.add(e5);
-            edges.add(e6);
+
+            weights.put(p, 1.0);
+            weights.put(jsonParser, 1.0);
+            weights.put(validate, 1.0);
+            weights.put(xml, 1.0);
+            weights.put(measurer, 1.0);
+            weights.put(c, 1.0);
 
 
+            Query q = Query.apply("testjson" + i, vertices, edges, DURATION);
 
-//            Operator merge = new Operator("merge_" + i, 15_000, 2048);
-//            Operator outlier = new Operator("outlier_" + i, 20_000, 2048);
-//            Operator average = WindowedOperator.apply("average_" + i, 18_000, 10000, 10000, WindowedOperator.constant(NUM_SENSORS), 2048);
-//            EventConsumer c = new EventConsumer("end_" + i, 1_000, 2048);
-//
-//
-//            Set<Vertex> vertices = new HashSet<>();
-//            vertices.add(p1);
-//            vertices.add(p2);
-//            vertices.add(merge);
-//            vertices.add(outlier);
-//            vertices.add(average);
-//            vertices.add(c);
-//
-//            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, merge, 1.0);
-//            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, merge, 1.0);
-//            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(merge, outlier, 1.0);
-//            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(outlier, average, 0.5);
-//            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(average, c, 1.0);
-//
-//            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
-//            edges.add(e1);
-//            edges.add(e2);
-//            edges.add(e3);
-//            edges.add(e4);
-//            edges.add(e5);
-
-            Query q = Query.apply("testsubstream" + i, vertices, edges, DURATION);
             queries.add(q);
         }
         Placement placement = Placement.withQueries(queries, 1);
@@ -219,7 +193,7 @@ public class ArosaSubStream {
                // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 2, false);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
         cloudlet.setUserId(brokerId);
 
         cloudlets.add(cloudlet);

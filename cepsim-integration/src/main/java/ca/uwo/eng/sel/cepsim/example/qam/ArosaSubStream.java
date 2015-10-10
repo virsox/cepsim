@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.example;
+package ca.uwo.eng.sel.cepsim.example.qam;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
@@ -9,22 +9,26 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
+import scala.collection.JavaConversions;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class CepSimWordCount2 {
+public class ArosaSubStream {
 
-    private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 30L;
+    private static final Double SIM_INTERVAL = 0.1;
+    private static final Long DURATION = 301L;
+	private static final int MAX_QUERIES = 4;
+	private static final int NUM_SENSORS = 1000;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -37,9 +41,11 @@ public class CepSimWordCount2 {
 	 * @param args the args
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting CepSimWordCount2...");
+		Log.printLine("Starting ArosaSubStream...");
 
 		try {
+			//System.in.read();
+
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
@@ -64,9 +70,9 @@ public class CepSimWordCount2 {
 			int vmid = 1;
 			int mips = 2500;
 			long size = 10000; // image size (MB)
-			int ram = 512; // vm memory (MB)
+			int ram = 1024; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 1; // number of cpus
+			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -80,19 +86,6 @@ public class CepSimWordCount2 {
 
 			// Fifth step: Create one Cloudlet
 			cloudletList = new ArrayList<Cloudlet>();
-
-			// Cloudlet properties
-//			int id = 0;
-//			long length = 400000;
-//			long fileSize = 300;
-//			long outputSize = 300;
-//			UtilizationModel utilizationModel = new UtilizationModelFull();
-
-//			Cloudlet cloudlet = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
-//			cloudlet.setUserId(brokerId);
-//			cloudlet.setVmId(vmid);
-
-			// add the cloudlet to the list
 			cloudletList.addAll(createCloudlets(brokerId));
 
 			// submit cloudlet list to the broker
@@ -112,18 +105,19 @@ public class CepSimWordCount2 {
                 if (!(cl instanceof CepQueryCloudlet)) continue;
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
-                Query q = cepCl.getQueries().iterator().next();
-                Vertex consumer = q.consumers().head();
-                System.out.println("Latency: " + cepCl.getLatency(consumer));
 
-//                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-//
-//                if (cepCl.getCloudletId() == 1) {
-//                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
-//                }
+                for (Query q : cepCl.getQueries()) {
+                    System.out.println("Query [" + q.id() + "]");
+                    for (Vertex consumer: JavaConversions.asJavaIterable(q.consumers())) {
+                        System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
+                        System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                    }
+                    System.out.println("------");
+                }
+
 			}
 
-			Log.printLine("CloudSimExample1 finished!");
+			Log.printLine("ArosaSubStream finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
@@ -136,115 +130,99 @@ public class CepSimWordCount2 {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 1;
+
+
 		Set<Cloudlet> cloudlets = new HashSet<>();
+        Set<Query> queries = new HashSet<Query>();
+        Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
+            Generator gen1 = new UniformGenerator(NUM_SENSORS * 10);
+            Generator gen2 = new UniformGenerator(NUM_SENSORS * 10);
 
-            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+            EventProducer p1 = new EventProducer("spout1_" + i, 1_000, gen1, true);
+            EventProducer p2 = new EventProducer("spout2_" + i, 1_000, gen2, true);
+
+            Operator outlier1 = new Operator("outlier1_" + i, 20_000, 2048);
+            Operator outlier2 = new Operator("outlier2_" + i, 20_000, 2048);
+            Operator merge = new Operator("merge_" + i, 15_000, 2048);
+            Operator average = WindowedOperator.apply("average_" + i, 18_000, 10000, 10000, WindowedOperator.constant(NUM_SENSORS), 2048);
+
+            EventConsumer c = new EventConsumer("end_" + i, 1_000, 2048);
+
+
             Set<Vertex> vertices = new HashSet<>();
-            Map<Vertex, Object> weights = new HashMap<>();
-
-            // producers
-            EventProducer[] producers = new EventProducer[3];
-            for (int j = 0; j < producers.length; j++) {
-                Generator gen = new UniformGenerator(1000);//, (long) Math.floor(SIM_INTERVAL * 1000));
-                EventProducer producer = new EventProducer("spout" + j + "_" + i, 1000, gen, false);
-                producers[j] = producer;
-
-                weights.put(producer, 1.0);
-                vertices.add(producer);
-            }
-
-            // splits
-            Operator[] splits = new Operator[3];
-            for (int j = 0; j < splits.length; j++) {
-                Operator split = new Operator("split" + j + "_" + i, 25000, 1000000);
-                splits[j] = split;
-
-                weights.put(split, 1.0);
-                vertices.add(split);
-            }
-
-            // counts
-            Operator[] counts = new Operator[9];
-            for (int j = 0; j < counts.length; j++) {
-                Operator count = new Operator("count" + j + "_" + i, 12500, 1000000);
-                counts[j] = count;
-
-                weights.put(count, 1.667);
-                //weights.put(count, 1.0);
-                vertices.add(count);
-            }
-
-            EventConsumer c = new EventConsumer("end_" + i, 5000, 1000000);
-            weights.put(c, 15.0);
+            vertices.add(p1);
+            vertices.add(p2);
+            vertices.add(outlier1);
+            vertices.add(outlier2);
+            vertices.add(merge);
+            vertices.add(average);
             vertices.add(c);
 
-            // connecting producers and splits
-            double edgeWeight = 1.0 / splits.length;
-            for (int j = 0; j < producers.length; j++) {
-                for (int k = 0; k < splits.length; k++) {
-                    Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                            producers[j], splits[k], edgeWeight);
-                    edges.add(edge);
-                }
-            }
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, outlier1, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, outlier2, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(outlier1, merge, 0.5);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(outlier2, merge, 0.5);
+            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(merge,  average, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e6 = new Tuple3<OutputVertex, InputVertex, Object>(average, c, 1.0);
 
-            // connecting splits and counts
-            edgeWeight = 5.0 / counts.length;
-            for (int j = 0; j < splits.length; j++) {
-                for (int k = 0; k < counts.length; k++) {
-                    Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                            splits[j], counts[k], edgeWeight);
-                    edges.add(edge);
-                }
-            }
-            
-            // connecting counts and consumer
-            edgeWeight = 1.0;
-            for (int j = 0; j < counts.length; j++) {
-                Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                        counts[j], c, edgeWeight);
-                edges.add(edge);
-            }
+            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+            edges.add(e1);
+            edges.add(e2);
+            edges.add(e3);
+            edges.add(e4);
+            edges.add(e5);
+            edges.add(e6);
 
-            Query q = Query.apply("wordcount" + i, vertices, edges, DURATION);
-            Set<Query> queries = new HashSet<Query>();
+
+
+//            Operator merge = new Operator("merge_" + i, 15_000, 2048);
+//            Operator outlier = new Operator("outlier_" + i, 20_000, 2048);
+//            Operator average = WindowedOperator.apply("average_" + i, 18_000, 10000, 10000, WindowedOperator.constant(NUM_SENSORS), 2048);
+//            EventConsumer c = new EventConsumer("end_" + i, 1_000, 2048);
+//
+//
+//            Set<Vertex> vertices = new HashSet<>();
+//            vertices.add(p1);
+//            vertices.add(p2);
+//            vertices.add(merge);
+//            vertices.add(outlier);
+//            vertices.add(average);
+//            vertices.add(c);
+//
+//            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p1, merge, 1.0);
+//            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(p2, merge, 1.0);
+//            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(merge, outlier, 1.0);
+//            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(outlier, average, 0.5);
+//            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(average, c, 1.0);
+//
+//            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+//            edges.add(e1);
+//            edges.add(e2);
+//            edges.add(e3);
+//            edges.add(e4);
+//            edges.add(e5);
+
+            Query q = Query.apply("testsubstream" + i, vertices, edges, DURATION);
             queries.add(q);
-
-            Placement placement = Placement.withQueries(queries, 1);
-
-            QueryCloudlet qCloudlet = QueryCloudlet.apply("cl" + i, placement,
-					DefaultOpScheduleStrategy.weighted(weights), 1);
-                    //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(), 100));
-                    //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 50), 1);
-
-            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false, null);
-            cloudlet.setUserId(brokerId);
-
-            cloudlets.add(cloudlet);
-
         }
-        //
-        //long length = 400000;
-        //long fileSize = 300;
-        //long outputSize = 300;
-
-        // overhead
-//        UtilizationModel utilizationModel = new UtilizationModelFull();
-//        for (int j = 1; j <= 7; j++) {
-//            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
-//                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
-//
-//            cloudlet.setUserId(brokerId);
-//            cloudlets.add(cloudlet);
-//
-//        }
+        Placement placement = Placement.withQueries(queries, 1);
 
 
 
+        QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
+				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                //DefaultOpScheduleStrategy.weighted(weights), 10);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
+                //DefaultOpScheduleStrategy.weighted(weights));
+               // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
+
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, 2, false);
+        cloudlet.setUserId(brokerId);
+
+        cloudlets.add(cloudlet);
 
         return cloudlets;
 	}
@@ -268,7 +246,7 @@ public class CepSimWordCount2 {
 
 		// 3. Create PEs and add these into a list.
         int mips = 2500;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 12; i++) {
             peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
         }
 
@@ -276,7 +254,7 @@ public class CepSimWordCount2 {
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 16384; // host memory (MB)
+		int ram = 98304; // host memory (MB)
 		long storage = 1000000; // host storage
 		int bw = 10000;
 

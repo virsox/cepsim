@@ -31,7 +31,7 @@
 
 package ca.uwo.eng.sel.cepsim.bench;
 
-import ca.uwo.eng.sel.cepsim.example.ResourceConsumptionTest;
+import ca.uwo.eng.sel.cepsim.example.cepsim.ResourceConsumptionTest;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;

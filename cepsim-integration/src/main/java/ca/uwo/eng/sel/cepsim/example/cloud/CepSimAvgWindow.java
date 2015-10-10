@@ -1,4 +1,4 @@
-package ca.uwo.eng.sel.cepsim.example;
+package ca.uwo.eng.sel.cepsim.example.cloud;
 
 import ca.uwo.eng.sel.cepsim.QueryCloudlet;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
@@ -30,7 +30,7 @@ import java.util.*;
 public class CepSimAvgWindow {
 
     private static final Long DURATION = 301L;
-    private static final int NUM_SENSORS = 1000;
+    private static final int NUM_SENSORS = 2000;
 	private static final int VM_NUMBER = 1;
 	private static final int QUERIES_PER_VM = 1;
 
@@ -78,12 +78,12 @@ public class CepSimAvgWindow {
             for (int i = 1; i <= VM_NUMBER; i++) {
                 // VM description
                 int vmid = i;
-                int mips = 2500;
+                int mips = 2400;
                 long size = 10000; // image size (MB)
                 //int ram = 1024; // vm memory (MB)
-                int ram = 16384; // vm memory (MB)
+                int ram = 65536; // vm memory (MB)
                 long bw = 100;
-                int pesNumber = 1; // number of cpus
+                int pesNumber = 16; // number of cpus
                 String vmm = "Xen"; // VMM name
 
                 // create VM
@@ -153,10 +153,10 @@ public class CepSimAvgWindow {
 
                 Generator gen = new UniformGenerator(NUM_SENSORS * 10);
                 EventProducer p = new EventProducer("spout" + id, 1_000, gen, true);
-                Operator outlierDetector = new Operator("outlierDetector" + id, 18_000, 2048);
-                Operator average = WindowedOperator.apply("average" + id, 18_000, 15000, 15000, WindowedOperator.constant(NUM_SENSORS), 2048);
-                Operator db = new Operator("db" + id, 11_000_000, 2048);
-                EventConsumer c = new EventConsumer("end" + id, 1_000, 2048);
+                Operator outlierDetector = new Operator("outlierDetector" + id, 5_500, 2048);
+                Operator average = WindowedOperator.apply("average" + id, 5_000, 15000, 15000, WindowedOperator.constant(NUM_SENSORS), 2048);
+                Operator db = new Operator("db" + id, 10_800_000, 2048);
+                EventConsumer c = new EventConsumer("end" + id, 1000, 2048);
 
                 Set<Vertex> vertices = new HashSet<>();
                 vertices.add(p);
@@ -216,19 +216,19 @@ public class CepSimAvgWindow {
         List<Host> hostList = new ArrayList<>();
 
 
-        int numberOfHosts = (VM_NUMBER == 1) ? 1 : (VM_NUMBER / 10);
+        int numberOfHosts = VM_NUMBER;//(VM_NUMBER == 1) ? 1 : (VM_NUMBER / 10);
         for (int i = 1; i <= numberOfHosts; i++) {
 
             List<Pe> peList = new ArrayList<>();
-            int mips = 2500;
-            for (int j = 0; j < 12; j++) {
+            int mips = 2400;
+            for (int j = 0; j < 16; j++) {
                 peList.add(new Pe(i, new PeProvisionerSimple(mips)));
             }
 
             // 4. Create Host with its id and list of PEs and add them to the list
             // of machines
             int hostId = i;
-            int ram = 98304; // host memory (MB)
+            int ram = 65536; // host memory (MB)
             long storage = 100_000_000; // host storage
             int bw = 10000;
 
