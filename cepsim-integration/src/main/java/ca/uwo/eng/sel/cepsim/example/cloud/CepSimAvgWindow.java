@@ -22,6 +22,7 @@ import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
+import scala.collection.JavaConversions;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -30,9 +31,9 @@ import java.util.*;
 public class CepSimAvgWindow {
 
     private static final Long DURATION = 301L;
-    private static final int NUM_SENSORS = 2000;
+    private static final int NUM_SENSORS = 1000;
 	private static final int VM_NUMBER = 1;
-	private static final int QUERIES_PER_VM = 1;
+	private static final int QUERIES_PER_VM = 4;
 
 	public enum SchedStrategyEnum {
 		DEFAULT, DYNAMIC
@@ -81,9 +82,9 @@ public class CepSimAvgWindow {
                 int mips = 2400;
                 long size = 10000; // image size (MB)
                 //int ram = 1024; // vm memory (MB)
-                int ram = 65536; // vm memory (MB)
+                int ram = 8096; // vm memory (MB)
                 long bw = 100;
-                int pesNumber = 16; // number of cpus
+                int pesNumber = 2; // number of cpus
                 String vmm = "Xen"; // VMM name
 
                 // create VM
@@ -119,13 +120,14 @@ public class CepSimAvgWindow {
 
                 CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
 
-                Query q = cepCl.getQueries().iterator().next();
-                Vertex consumer = q.consumers().head();
-
-                History history = cepCl.getExecutionHistory().from(consumer);
-
-                System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
-                System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                for (Query q : cepCl.getQueries()) {
+                    System.out.println("Query [" + q.id() + "]");
+                    for (Vertex consumer: JavaConversions.asJavaIterable(q.consumers())) {
+                        System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
+                        System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                    }
+                    System.out.println("------");
+                }
             }
 
             Log.printLine("CloudSimExample1 finished!");
@@ -143,7 +145,7 @@ public class CepSimAvgWindow {
 
         Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
-        Map<Vertex, Object> weights = new HashMap<>();
+        //Map<Vertex, Object> weights = new HashMap<>();
 
 
         for (int i = 1; i <= VM_NUMBER; i++) {
@@ -153,8 +155,8 @@ public class CepSimAvgWindow {
 
                 Generator gen = new UniformGenerator(NUM_SENSORS * 10);
                 EventProducer p = new EventProducer("spout" + id, 1_000, gen, true);
-                Operator outlierDetector = new Operator("outlierDetector" + id, 5_500, 2048);
-                Operator average = WindowedOperator.apply("average" + id, 5_000, 15000, 15000, WindowedOperator.constant(NUM_SENSORS), 2048);
+                Operator outlierDetector = new Operator("outlierDetector" + id, 12_500, 2048);
+                Operator average = WindowedOperator.apply("average" + id, 10_500, 15000, 15000, WindowedOperator.constant(NUM_SENSORS), 2048);
                 Operator db = new Operator("db" + id, 10_800_000, 2048);
                 EventConsumer c = new EventConsumer("end" + id, 1000, 2048);
 
@@ -178,9 +180,11 @@ public class CepSimAvgWindow {
 
                 Query q = Query.apply("testavg" + id, vertices, edges, DURATION);
                 queries.add(q);
+
+
             }
 
-            Placement placement = Placement.withQueries(queries, i);
+            Placement placement = Placement.withQueries(queries, i);//apply(q, i);
 
             // ----------------------- parameters --------------------------------------
             AllocationStrategy aStrategy = (allocStrategy == AllocStrategyEnum.UNIFORM)
@@ -193,9 +197,10 @@ public class CepSimAvgWindow {
             // -------------------------------------------------------------------------
 
 
-            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false);
+            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, 2, false);
             cloudlet.setUserId(brokerId);
             cloudlets.add(cloudlet);
+
         }
 
         return cloudlets;
@@ -221,7 +226,7 @@ public class CepSimAvgWindow {
 
             List<Pe> peList = new ArrayList<>();
             int mips = 2400;
-            for (int j = 0; j < 16; j++) {
+            for (int j = 0; j < 8; j++) {
                 peList.add(new Pe(i, new PeProvisionerSimple(mips)));
             }
 
