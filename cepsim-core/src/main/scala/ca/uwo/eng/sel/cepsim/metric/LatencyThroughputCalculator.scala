@@ -33,14 +33,6 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
   /** Initial timestamp. */
   var startTime = 0.0
 
-//  /**
-//   * For each consumer, it keeps track of the total number of events from each producer
-//   * that had to be generated in order to originate the events consumed.
-//   */
-//  var totalEvents: Map[EventConsumer, Map[EventProducer, Double]] = placement.consumers.map((e) =>
-//    (e, placement.producers.map((_, 0.0)).toMap)).toMap
-
-
   // initialize the pathsNo map
   placement.consumers.foreach((consumer) => {
     consumer.queries.foreach((query) => {
@@ -97,6 +89,12 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
   }
 
   def consolidateByMinute(id: String, v: Vertex): SortedMap[Int, Double] = {
+
+    // TODO
+    // There's only one ThroughputMetric object for each minute of the simulation, but there is
+    // LatencyMetric object for each "Consumed" object processed at the update method
+    // this need to be made consistent
+
     if (id == ThroughputMetric.ID) {
       SortedMap[Int, Double]() ++
         throughputs(v).groupBy((metric) => Math.floor(metric.time / 60.0).toInt).
@@ -150,7 +148,7 @@ class LatencyThroughputCalculator(val placement: Placement) extends MetricCalcul
     // at which simulation second this total should be added
     val second = Math.floor((consumed.at - startTime) / 1000.0).toInt
 
-
+    // add the consumed events to an already existing ThroughputMetric object, or create a new one
     val consumerThroughput = throughputs(consumer)
     if ((!consumerThroughput.isEmpty) && (consumerThroughput.last.time == second)) {
       val last = consumerThroughput.last

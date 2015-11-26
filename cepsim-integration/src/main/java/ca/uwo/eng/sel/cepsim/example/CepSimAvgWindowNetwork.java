@@ -1,103 +1,102 @@
-package ca.uwo.eng.sel.cepsim.example.cepsim;
+package ca.uwo.eng.sel.cepsim.example;
 
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
+import ca.uwo.eng.sel.cepsim.PlacementExecutor;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudletScheduler;
 import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
-import ca.uwo.eng.sel.cepsim.history.History;
+import ca.uwo.eng.sel.cepsim.network.FixedDelayNetworkInterface;
+import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.AltDynOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
 import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
-import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import scala.Tuple3;
+import scala.collection.JavaConversions;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class CepSimJsonConvert {
+public class CepSimAvgWindowNetwork {
 
-    private static final Double SIM_INTERVAL = 0.1;
+
     private static final Long DURATION = 301L;
-	private static final int MAX_QUERIES = 1000;
-	private static final int NUM_SENSORS = 2500;
+    private static final int MAX_QUERIES = 1;
+    private static final int NUM_SENSORS = 3250;
 
-	/** The cloudlet list. */
-	private static List<Cloudlet> cloudletList;
-	/** The vmlist. */
-	private static List<Vm> vmlist;
+	public static void main(String[] args) {
+		new CepSimAvgWindowNetwork().simulate(0.01, 1);
+	}
 
 	/**
 	 * Creates main() to run this example.
-	 *
-	 * @param args the args
 	 */
-	public static void main(String[] args) {
-		Log.printLine("Starting CepSimJsonConvert...");
+	public void simulate(double simInterval, int iterations) {
+		Log.printLine("Starting CepSimAvgWindowNetwork...");
+
 
 		try {
-			System.in.read();
-
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
  			boolean trace_flag = false; // trace events
 
 
-			CloudSim.init(num_user, calendar, trace_flag, SIM_INTERVAL);
+			CloudSim.init(num_user, calendar, trace_flag, simInterval);
 
 			// Second step: Create Datacenters
 			// Datacenters are the resource providers in CloudSim. We need at
 			// list one of them to run a CloudSim simulation
-			Datacenter datacenter0 = createDatacenter("Datacenter_0");
+			Datacenter datacenter0 = createDatacenter("Datacenter_0", simInterval);
 
 			// Third step: Create Broker
-			DatacenterBroker broker = createBroker();
+            CepSimBroker broker = createBroker(simInterval);
 			int brokerId = broker.getId();
 
 			// Fourth step: Create one virtual machine
-			vmlist = new ArrayList<Vm>();
+			List<Vm> vmlist = new ArrayList<>();
 
 			// VM description
-			int vmid = 1;
 			int mips = 2500;
 			long size = 10000; // image size (MB)
-			int ram = 1024; // vm memory (MB)
+			int ram = 2048; // vm memory (MB)
 			long bw = 1000;
 			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
-			Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			Vm vm1 = new Vm(1, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
+			Vm vm2 = new Vm(2, brokerId, mips, pesNumber, ram, bw, size, vmm, new CepQueryCloudletScheduler());
 
 			// add the VM to the vmList
-			vmlist.add(vm);
+			vmlist.add(vm1);
+			vmlist.add(vm2);
 
 			// submit vm list to the broker
 			broker.submitVmList(vmlist);
 
 			// Fifth step: Create one Cloudlet
-			cloudletList = new ArrayList<Cloudlet>();
-			cloudletList.addAll(createCloudlets(brokerId));
+			List<Cloudlet> cloudletList = new ArrayList<>();
+			cloudletList.addAll(createCloudlets(broker, iterations));
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
 
 			// Sixth step: Starts the simulation
+			long start = System.nanoTime();
 			CloudSim.startSimulation();
-
 			CloudSim.stopSimulation();
+			double time = (System.nanoTime() - start) / (1E6);
+
+			System.out.println("Time [" + time + "]");
 
 			//Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
@@ -109,11 +108,14 @@ public class CepSimJsonConvert {
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
 
-                Query q = cepCl.getQueries().iterator().next();
-                Vertex consumer = q.consumers().head();
-
-                System.out.println("Latency: " + cepCl.getLatencyByMinute(consumer));
-                System.out.println("Throughput: " + cepCl.getThroughputByMinute(consumer));
+                for (Query q : cepCl.getQueries()) {
+                    System.out.println("Query [" + q.id() + "]");
+                    for (Vertex consumer: JavaConversions.asJavaIterable(q.consumers())) {
+                        System.out.println("Latencies: " + cepCl.getLatencyByMinute(consumer));
+                        System.out.println("Throughputs: " + cepCl.getThroughputByMinute(consumer));
+                    }
+                    System.out.println("------");
+            	}
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -125,82 +127,89 @@ public class CepSimJsonConvert {
 
 
 
-	private static Set<Cloudlet> createCloudlets(int brokerId) {
+	private static Set<Cloudlet> createCloudlets(CepSimBroker broker, int iterations) {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-
-
 		Set<Cloudlet> cloudlets = new HashSet<>();
-        Set<Query> queries = new HashSet<Query>();
         Map<Vertex, Object> weights = new HashMap<>();
+
+        Set<Vertex> p1Vertices = new HashSet<>();
+        Set<Vertex> p2Vertices = new HashSet<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
             Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
 
             EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
 
-            Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
-            Operator validate = new Operator("validate" + i, 25_000, 2048);
-            Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
-            Operator measurer = new Operator("measurer" + i, 17_000, 2048);
+            Operator outlierDetector = new Operator("outlierDetector" + i, 18_000, 2048);
+            Operator average = WindowedOperator.apply("average" + i, 18_000, 15000, 15000,
+					WindowedOperator.constant(NUM_SENSORS), 2048);
+            Operator db = new Operator("db" + i, 11_000_000, 2048);
 
             EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
             Set<Vertex> vertices = new HashSet<>();
             vertices.add(p);
-            vertices.add(jsonParser);
-            vertices.add(validate);
-            vertices.add(xml);
-            vertices.add(measurer);
+            vertices.add(outlierDetector);
+            vertices.add(average);
+            vertices.add(db);
             vertices.add(c);
 
-            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
-            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, measurer, 1.0);
-            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(measurer, c, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, outlierDetector, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(outlierDetector, average, 0.95);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(average, db, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(db, c, 1.0);
 
             Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             edges.add(e1);
             edges.add(e2);
             edges.add(e3);
             edges.add(e4);
-            edges.add(e5);
 
-            weights.put(p, 1.0);
-            weights.put(jsonParser, 1.0);
-            weights.put(validate, 1.0);
-            weights.put(xml, 1.0);
-            weights.put(measurer, 1.0);
+            weights.put(p, 100.0);
+            weights.put(outlierDetector, 50.0);
+            weights.put(average, 50.0);
+            weights.put(db, 1.0);
             weights.put(c, 1.0);
 
+            Query q = Query.apply("testavg" + i, vertices, edges, DURATION);
 
-            Query q = Query.apply("testjson" + i, vertices, edges, DURATION);
+            // ------------- VM 1
+            p1Vertices.add(p);
+            p1Vertices.add(outlierDetector);
+            p1Vertices.add(average);
+            p1Vertices.add(c);
 
-            queries.add(q);
+            // ------------- VM2 2
+            p2Vertices.add(db);
+
         }
-        Placement placement = Placement.withQueries(queries, 1);
+        NetworkInterface network = new FixedDelayNetworkInterface(broker, 0.001);
+
+        Placement placement1 = Placement.apply(p1Vertices, 1);
+        PlacementExecutor executor1 = PlacementExecutor.apply("cl1", placement1,
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), iterations, network);
+
+        CepQueryCloudlet cloudlet1 = new CepQueryCloudlet(1, executor1, false);
+        cloudlet1.setUserId(broker.getId());
+        cloudlets.add(cloudlet1);
+
+        Placement executor2 = Placement.apply(p2Vertices, 2);
+        PlacementExecutor qCloudlet2 = PlacementExecutor.apply("cl2", executor2,
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), iterations, network);
+
+        CepQueryCloudlet cloudlet2 = new CepQueryCloudlet(2, qCloudlet2, false);
+        cloudlet2.setUserId(broker.getId());
+        cloudlets.add(cloudlet2);
 
 
-
-        QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
-                //DefaultOpScheduleStrategy.weighted(weights), 10);
-                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
-                //DefaultOpScheduleStrategy.weighted(weights));
-               // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
-
-
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false);
-        cloudlet.setUserId(brokerId);
-
-        cloudlets.add(cloudlet);
-
+        cloudlets.add(cloudlet1);
+        cloudlets.add(cloudlet2);
         return cloudlets;
 	}
-	
+
 	/**
 	 * Creates the datacenter.
 	 *
@@ -208,7 +217,7 @@ public class CepSimJsonConvert {
 	 *
 	 * @return the datacenter
 	 */
-	private static Datacenter createDatacenter(String name) {
+	private static Datacenter createDatacenter(String name, double simInterval) {
 
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store
@@ -266,12 +275,12 @@ public class CepSimJsonConvert {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		Datacenter datacenter = null;
 		try {
-			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, SIM_INTERVAL);
+			datacenter = new CepSimDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, simInterval);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
+
+
 		return datacenter;
 	}
 
@@ -283,10 +292,10 @@ public class CepSimJsonConvert {
 	 *
 	 * @return the datacenter broker
 	 */
-	private static DatacenterBroker createBroker() {
-		DatacenterBroker broker = null;
+	private static CepSimBroker createBroker(double simInterval) {
+        CepSimBroker broker = null;
 		try {
-			broker = new CepSimBroker("CepBroker", 100, SIM_INTERVAL);
+			broker = new CepSimBroker("CepBroker", 100, simInterval);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

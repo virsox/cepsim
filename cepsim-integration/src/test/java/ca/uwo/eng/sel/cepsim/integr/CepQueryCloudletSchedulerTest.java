@@ -25,13 +25,14 @@ public class CepQueryCloudletSchedulerTest {
 		
 		double timeToFinish = scheduler.cloudletSubmit(cloudlet);		
 		assertEquals(100.0, timeToFinish, 0.0);
-		
+
+		// can't access the method getCloudletExecList because it is protected
 		List<? extends ResCloudlet> execList = scheduler.getCloudletExecList();
 		assertEquals(1, execList.size());
-		
-		ResCloudlet resCloudlet = execList.get(0); 
+
+		ResCloudlet resCloudlet = execList.get(0);
 		assertTrue(resCloudlet instanceof CepQueryResCloudlet);
-		verify(cloudlet).setCloudletStatus(Cloudlet.INEXEC);		
+		verify(cloudlet).setCloudletStatus(Cloudlet.INEXEC);
 	}
 	
 	

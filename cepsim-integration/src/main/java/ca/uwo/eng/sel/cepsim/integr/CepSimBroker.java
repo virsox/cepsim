@@ -16,11 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CepSimBroker extends DatacenterBroker {
-    
-	protected static final int TIMER_TAG = 99900 + 20;
 	
-	
-	private boolean isTimerRunning = false;
     private Map<Vertex, Vm> verticesToVm = new HashMap<>();
     
 	/** Length of the simulation (in ms)*/
@@ -40,11 +36,6 @@ public class CepSimBroker extends DatacenterBroker {
 	
 	@Override
 	public void processEvent(SimEvent ev) {
-		// this method to include isTimerRunning verification
-		if (!isTimerRunning) {
-			isTimerRunning = true;
-			//sendNow(getId(), TIMER_TAG);
-		}
 
         switch (ev.getTag()) {
             case CepSimTags.CEP_EVENT_SENT:
@@ -55,7 +46,6 @@ public class CepSimBroker extends DatacenterBroker {
                 break;
         }
 
-		//super.processEvent(ev);
 	}
 	
 	public Vm getVmAllocation(Vertex v) {
@@ -80,16 +70,16 @@ public class CepSimBroker extends DatacenterBroker {
                 vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
                 if (vm == null) { // vm was not created
                     if(!Log.isDisabled()) {
-                        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Postponing execution of cloudlet ",
-                                cloudlet.getCloudletId(), ": bount VM not available");
+                        Log.print(CloudSim.clock() + ": " + getName() + ": Postponing execution of cloudlet " +
+                                cloudlet.getCloudletId() + ": bount VM not available");
                     }
                     continue;
                 }
             }
 
             if (!Log.isDisabled()) {
-                Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Sending cloudlet ",
-                        cloudlet.getCloudletId(), " to VM #", vm.getId());
+                Log.print(CloudSim.clock() + ": " + getName() + ": Sending cloudlet " +
+                        cloudlet.getCloudletId() + " to VM #" + vm.getId());
             }
 
             cloudlet.setVmId(vm.getId());
@@ -124,11 +114,6 @@ public class CepSimBroker extends DatacenterBroker {
     @Override
     protected void processOtherEvent(final SimEvent ev) {
         switch (ev.getTag()) {
-//            case TIMER_TAG:
-//                if (CloudSim.clock() < this.simulationLength) {
-//                    send(getId(), this.simulationInterval, TIMER_TAG);
-//                }
-//                break;
             default:
                 super.processOtherEvent(ev);
         }

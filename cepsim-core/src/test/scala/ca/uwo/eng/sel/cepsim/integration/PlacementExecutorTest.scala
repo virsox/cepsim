@@ -18,7 +18,7 @@ import org.scalatest.{FlatSpec, Matchers}
  * Created by virso on 2014-07-23.
  */
 @RunWith(classOf[JUnitRunner])
-class QueryCloudletTest extends FlatSpec
+class PlacementExecutorTest extends FlatSpec
   with Matchers
   with MockitoSugar {
 
@@ -32,17 +32,15 @@ class QueryCloudletTest extends FlatSpec
 
     val query1 = Query("q1", Set(prod1, f1, f2, cons1), Set((prod1, f1, 1.0), (f1, f2, 1.0), (f2, cons1, 0.1)))
 
-    val vm = Vm("vm1", 1000) // 1 billion instructions per second
-
   }
 
-  "A QueryCloudlet" should "send events through the operator graph" in new Fixture {
+  "A PlacementExecutor" should "send events through the operator graph" in new Fixture {
 
-    // cloudlet going to use 10 millions instructions (10 ms)
-    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted()) //, 0.0)
-    cloudlet.init(0.0)
+    // executor going to use 10 millions instructions (10 ms)
+    val executor = PlacementExecutor("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted()) //, 0.0)
+    executor.init(0.0)
 
-    val h = cloudlet run (10000000, 10.0, 1000)
+    val h = executor run (10000000, 10.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
@@ -61,11 +59,11 @@ class QueryCloudletTest extends FlatSpec
   }
 
   it should "accumulate the number of produced events" in new Fixture {
-    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted())//, 0.0)
+    executor.init(0.0)
 
-    cloudlet run (10000000, 10.0, 1000)
-    cloudlet run (10000000, 20.0, 1000)
+    executor run (10000000, 10.0, 1000)
+    executor run (10000000, 20.0, 1000)
 
     prod1.outputQueues(f1) should be (0)
     f1.outputQueues(f2) should be (0)
@@ -78,10 +76,10 @@ class QueryCloudletTest extends FlatSpec
     val calculator = mock[metric.MetricCalculator]
     doReturn(Set("latency")).when(calculator).ids
 
-    val cloudlet = QueryCloudlet("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted(), 1, calculator)
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", Placement(query1, 1), DefaultOpScheduleStrategy.weighted(), 1, calculator)
+    executor.init(0.0)
 
-    cloudlet run(10000000, 10.0, 1000)
+    executor run(10000000, 10.0, 1000)
 
     verify(calculator).update(Generated(prod1,  0.0, 10.0, EventSet(1000.0, 10.0,  0.0, prod1 -> 1000.0)))
     verify(calculator).update(Produced (prod1, 10.0, 11.0, EventSet(1000.0, 11.0,  1.0, prod1 -> 1000.0)))
@@ -99,10 +97,10 @@ class QueryCloudletTest extends FlatSpec
     val query2 = Query("q2", Set(prod2, f3, f4, cons2), Set((prod2, f3, 1.0), (f3, f4, 1.0), (f4, cons2, 0.1)))
 
     val placement = Placement(query1.vertices ++ query2.vertices, 1)
-    val cloudlet = QueryCloudlet("c1", placement, DefaultOpScheduleStrategy.weighted())
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", placement, DefaultOpScheduleStrategy.weighted())
+    executor.init(0.0)
 
-    val h = cloudlet run (10000000, 10.0, 1000)
+    val h = executor run (10000000, 10.0, 1000)
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
     f2.outputQueues(cons1) should be(0)

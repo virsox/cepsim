@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
+import ca.uwo.eng.sel.cepsim.PlacementExecutor;
 import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.history.SimEvent;
 import ca.uwo.eng.sel.cepsim.event.EventSet;
@@ -33,20 +33,20 @@ import static org.mockito.Mockito.when;
 
 public class CepQueryCloudletTest {
 
-	@Mock private QueryCloudlet    queryCloudlet;
-    @Mock private MetricCalculator calculator;
-    @Mock private Placement        placement;
-    @Mock private EventProducer    p1;
-    @Mock private Operator         f1;
-    @Mock private EventConsumer c1;
-    @Mock private NetworkInterface network;
+	@Mock private PlacementExecutor placementExecutor;
+    @Mock private MetricCalculator  calculator;
+    @Mock private Placement         placement;
+    @Mock private EventProducer     p1;
+    @Mock private Operator          f1;
+    @Mock private EventConsumer     c1;
+    @Mock private NetworkInterface  network;
 
 	
 	@Before
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
-        when(queryCloudlet.id()).thenReturn("cl1");
-        when(queryCloudlet.placement()).thenReturn(placement);
+        when(placementExecutor.id()).thenReturn("cl1");
+        when(placementExecutor.placement()).thenReturn(placement);
 
 
         Set<Vertex> vertices = new HashSet<>();
@@ -58,45 +58,45 @@ public class CepQueryCloudletTest {
 	
 	@Test
 	public void testUpdateCloudlet() {
-        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
+        when(placementExecutor.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
 		// 1st invocation
         // long instructions, double currentTime, double previousTime, double capacity
-		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
+		CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, placementExecutor, false, calculator);
         cloudlet.updateQuery(30_000_000L, 30, 0, 1); // 10s
 
-        verify(queryCloudlet).init(0);
-		verify(queryCloudlet).run(30_000_000L, 0, 1);
+        verify(placementExecutor).init(0);
+		verify(placementExecutor).run(30_000_000L, 0, 1);
 		assertEquals(70.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		// 2nd invocation		
         cloudlet.updateQuery(30_000_000L, 60, 30, 1);
-		verify(queryCloudlet).run(30_000_000L, 30_000, 1);
+		verify(placementExecutor).run(30_000_000L, 30_000, 1);
 		assertEquals(40.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		// 3rd invocation
         cloudlet.updateQuery(40_000_000L, 100, 60, 1);
-		verify(queryCloudlet).run(40_000_000L, 60_000, 1);
+		verify(placementExecutor).run(40_000_000L, 60_000, 1);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
 	
 	@Test
 	public void testUpdateCloudletWithExtraTime() {
-        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
+        when(placementExecutor.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
 		// 1st invocation
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, placementExecutor, false, calculator);
         cloudlet.updateQuery(80_000_000L, 80, 0, 1);
 
-        verify(queryCloudlet).init(0);
-		verify(queryCloudlet).run(80_000_000L, 0, 1);
+        verify(placementExecutor).init(0);
+		verify(placementExecutor).run(80_000_000L, 0, 1);
 		assertEquals(20.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		
 		
 		// 2nd invocation		
         cloudlet.updateQuery(100_000_000L, 180, 80, 1);
-		verify(queryCloudlet).run(20_000_000L, 80000, 1);
+		verify(placementExecutor).run(20_000_000L, 80000, 1);
 		assertEquals(0.0, cloudlet.getEstimatedTimeToFinish(), 0.0001);
 		assertEquals(0, cloudlet.getRemainingCloudletLength());
 	}
@@ -104,9 +104,9 @@ public class CepQueryCloudletTest {
 
     @Test
     public void testUpdateCloudletWithEventsReceived() {
-        when(queryCloudlet.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
+        when(placementExecutor.run(anyDouble(), anyDouble(), anyDouble())).thenReturn(new History<SimEvent>());
 
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, placementExecutor, false, calculator);
 
         // enqueue network events
         EventSet es1 = new EventSet(1000, 1.0, 0.0, Collections.<EventProducer, Object>singletonMap(p1, 1000.0));
@@ -123,16 +123,16 @@ public class CepQueryCloudletTest {
         // process them and check if they are correctly processed
         cloudlet.updateQuery(100, 20, 10, 1000);
 
-        verify(queryCloudlet).init(10000);
-        verify(queryCloudlet).enqueue(6000.0, p1, f1, es1);
-        verify(queryCloudlet).enqueue(8000.0, p1, f1, es2);
-        verify(queryCloudlet).run(100, 10000, 1000);
+        verify(placementExecutor).init(10000);
+        verify(placementExecutor).enqueue(6000.0, p1, f1, es1);
+        verify(placementExecutor).enqueue(8000.0, p1, f1, es2);
+        verify(placementExecutor).run(100, 10000, 1000);
     }
 
 
     @Test
     public void testGetVertices() {
-        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, queryCloudlet, false, calculator);
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, placementExecutor, false, calculator);
 
         Set<Vertex> expected = new HashSet<>();
         expected.add(p1);

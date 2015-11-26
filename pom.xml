@@ -6,12 +6,13 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<artifactId>cepsim-app</artifactId>
 	<packaging>pom</packaging>
+    <name>CEPSim Application</name>
 
 	<modules>
 		<module>cepsim-core</module>
 		<module>cepsim-integration</module>
-    <module>cepsim-benchmark</module>
-  </modules>
+        <module>cepsim-benchmark</module>
+    </modules>
 
 	<dependencyManagement>
 		<dependencies>
@@ -64,6 +65,32 @@
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<inherited>false</inherited>
+				<executions>
+					<execution>
+						<id>install-cloudsim</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<executable>mvn</executable>
+					<arguments>
+						<argument>install:install-file</argument>
+						<argument>-Dfile=cepsim-integration/lib/cloudsim-3.0.3.jar</argument>
+						<argument>-DgroupId=org.cloudbus.cloudsim</argument>
+						<argument>-DartifactId=cloudsim</argument>
+						<argument>-Dversion=3.0.3</argument>
+						<argument>-Dpackaging=jar</argument>
+					</arguments>
 				</configuration>
 			</plugin>
 		</plugins>

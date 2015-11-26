@@ -116,6 +116,13 @@ public class CepQueryCloudletScheduler extends CloudletSchedulerTimeShared {
 		setPreviousTime(currentTime);
 		return nextEvent;
 	}
-	
-	
+
+
+    // workaround - overriding to increase the visibility from protected to public
+    // in the SNAPSHOT version of CloudSim this is not needed, because the method is
+    // already public
+    public <T extends ResCloudlet> List<T> getCloudletExecList() {
+    	return (List<T>) super.getCloudletExecList();
+    }
+
 }

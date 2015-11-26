@@ -6,9 +6,7 @@ import ca.uwo.eng.sel.cepsim.query.{EventConsumer, InputVertex, EventProducer, V
 
 /*
   TODO probably a good idea to rename this metric to TotalEventMetric or something and create a new
-  ThroughputMetric that depends on this one. Then, we need a way to measure the start time of each
-  query (to calculate the throughput since the query execution started) and / or a way to calculate
-  the throughput for regular periods of time
+  ThroughputMetric that depends on this one.
 */
 
 /**

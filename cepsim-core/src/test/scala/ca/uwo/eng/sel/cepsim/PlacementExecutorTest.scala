@@ -18,7 +18,7 @@ import scala.collection.immutable.TreeSet
 
 
 @RunWith(classOf[JUnitRunner])
-class QueryCloudletTest extends FlatSpec
+class PlacementExecutorTest extends FlatSpec
 	with Matchers
 	with MockitoSugar {
 
@@ -66,9 +66,9 @@ class QueryCloudletTest extends FlatSpec
     doReturn(List(Consumed(cons, 1900.0, 2000.0, EventSet(100.0, 2000.0, 1000.0, prod -> 100.0)))).when(cons).run(100000, 1900.0, 2000.0)
   }
 
-  "A QueryCloudlet" should "correctly initialize all operators" in new Fixture {
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
-    cloudlet.init(0.0)
+  "A PlacementExecutor" should "correctly initialize all operators" in new Fixture {
+    val executor = PlacementExecutor("c1", placement, opSchedule)
+    executor.init(0.0)
 
     verify(prod).init(0.0)
     verify(f1).init(0.0)
@@ -78,27 +78,27 @@ class QueryCloudletTest extends FlatSpec
 
   it should "correctly enqueue events received from the network" in new Fixture {
 
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
+    val executor = PlacementExecutor("c1", placement, opSchedule)
     val enqueuedEs = EventSet(1000, 50.0, 10.0, prod -> 100.0)
 
-    cloudlet.enqueue(100.0, prod, f1, enqueuedEs)
+    executor.enqueue(100.0, prod, f1, enqueuedEs)
 
-    cloudlet.pendingActions should have size (1)
-    cloudlet.pendingActions should contain (EnqueueAction(f1, prod, 100.0, enqueuedEs))
+    executor.pendingActions should have size (1)
+    executor.pendingActions should contain (EnqueueAction(f1, prod, 100.0, enqueuedEs))
   }
 
   // --------------------------------------------------
 
   it should "correctly run all operators" in new Fixture1 {
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule) //, 0.0)
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", placement, opSchedule) //, 0.0)
+    executor.init(0.0)
 
     doReturn(100.0).when(prod).outputQueues(f1)
     doReturn(100.0).when(f1).outputQueues(f2)
     doReturn(100.0).when(f2).outputQueues(cons)
 
     // the cloudlet should run all operators
-    val history = cloudlet run(1000000, 1000.0, 1)
+    val history = executor run(1000000, 1000.0, 1)
 
     verify(prod).generate(0.0, 1000.0)
     verify(prod).run(100000, 1000.0, 1100.0)
@@ -119,8 +119,8 @@ class QueryCloudletTest extends FlatSpec
 
   it should "send events to operators that are in a different Placement" in new Fixture1 {
     val network = mock[NetworkInterface]
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule, 1, network)
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", placement, opSchedule, 1, network)
+    executor.init(0.0)
 
     // create new operators
     val f3 = mock[Operator]
@@ -148,7 +148,7 @@ class QueryCloudletTest extends FlatSpec
     when(f2.dequeueFromOutput(f3, 100.0)).thenReturn(es)
 
     // the cloudlet should run all operators
-    val history = cloudlet run(1000000, 1000.0, 1)
+    val history = executor run(1000000, 1000.0, 1)
 
     verify(prod).generate(0.0, 1000.0)
     verify(prod).run(100000, 1000.0, 1100.0)
@@ -205,15 +205,15 @@ class QueryCloudletTest extends FlatSpec
     doReturn(List(Consumed (cons, 1450.0, 1500.0, EventSet(50.0, 1500.0, 500.0, prod -> 50.0)))).when(cons).run(50000,  1450.0, 1500.0)
 
     // 2 iterations
-    val cloudlet = QueryCloudlet.apply("c1", placement, opSchedule, 2)
-    cloudlet.init(0.0)
+    val executor = PlacementExecutor("c1", placement, opSchedule, 2)
+    executor.init(0.0)
 
     when(prod.outputQueues(anyObject[Vertex]())).thenReturn(50.0)
     when(  f1.outputQueues(anyObject[Vertex]())).thenReturn(50.0)
     when(  f2.outputQueues(anyObject[Vertex]())).thenReturn(50.0)
 
     // the cloudlet should run all operators
-    cloudlet run(1000000, 500.0, 1)  // 1 million instructions @ 1 MIPS = 1 second
+    executor run(1000000, 500.0, 1)  // 1 million instructions @ 1 MIPS = 1 second
 
     // two iterations of 500,000 instructions each
     verify(prod).generate(  0.0,  500.0)
@@ -259,17 +259,17 @@ class QueryCloudletTest extends FlatSpec
     doReturn(List(Produced(f2,   1500.0, 1900.0, EventSet(100.0, 1900.0,  900.0, prod -> 100.0)))).when(f2  ).run(400000, 1500.0, 1900.0)
     doReturn(List(Consumed(cons, 1900.0, 2000.0, EventSet(100.0, 2000.0, 1000.0, prod -> 100.0)))).when(cons).run(100000, 1900.0, 2000.0)
 
-    val cloudlet = QueryCloudlet("c1", placement, opSchedule)
-    cloudlet.init(0.0)
-    cloudlet.enqueue(1200.0, f3, f1, enqueueEs1)
-    cloudlet.enqueue(2200.0, f3, f1, enqueueEs2)
+    val executor = PlacementExecutor("c1", placement, opSchedule)
+    executor.init(0.0)
+    executor.enqueue(1200.0, f3, f1, enqueueEs1)
+    executor.enqueue(2200.0, f3, f1, enqueueEs2)
 
     doReturn(100.0).when(prod).outputQueues(f1)
     doReturn(100.0).when(f1).outputQueues(f2)
     doReturn(100.0).when(f2).outputQueues(cons)
 
     // the cloudlet should run all operators
-    val history = cloudlet run(1000000, 1000.0, 1)
+    val history = executor run(1000000, 1000.0, 1)
 
     val inOrder = Mockito.inOrder(prod, f1, f2, cons)
     inOrder.verify(prod).generate(0.0, 1000.0)
@@ -291,8 +291,8 @@ class QueryCloudletTest extends FlatSpec
     ))
 
     // enqueue action 2 is not scheduled
-    cloudlet.pendingActions should have size (1)
-    cloudlet.pendingActions should contain theSameElementsAs(Set(enqueueAction2))
+    executor.pendingActions should have size (1)
+    executor.pendingActions should contain theSameElementsAs(Set(enqueueAction2))
   }
 
 

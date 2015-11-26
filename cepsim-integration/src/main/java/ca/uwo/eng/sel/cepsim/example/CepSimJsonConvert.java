@@ -1,6 +1,6 @@
-package ca.uwo.eng.sel.cepsim.example.misc;
+package ca.uwo.eng.sel.cepsim.example;
 
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
+import ca.uwo.eng.sel.cepsim.PlacementExecutor;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
 import ca.uwo.eng.sel.cepsim.integr.CepQueryCloudlet;
@@ -9,8 +9,8 @@ import ca.uwo.eng.sel.cepsim.integr.CepSimBroker;
 import ca.uwo.eng.sel.cepsim.integr.CepSimDatacenter;
 import ca.uwo.eng.sel.cepsim.placement.Placement;
 import ca.uwo.eng.sel.cepsim.query.*;
-import ca.uwo.eng.sel.cepsim.sched.DefaultOpScheduleStrategy;
-import ca.uwo.eng.sel.cepsim.sched.alloc.WeightedAllocationStrategy;
+import ca.uwo.eng.sel.cepsim.sched.DynOpScheduleStrategy;
+import ca.uwo.eng.sel.cepsim.sched.alloc.UniformAllocationStrategy;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -22,10 +22,12 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 
-public class CepSimTopWords2 {
+public class CepSimJsonConvert {
 
-    private static final Double SIM_INTERVAL = 0.01;
-    private static final Long DURATION = 30L;
+    private static final Double SIM_INTERVAL = 0.1;
+    private static final Long DURATION = 301L;
+	private static final int MAX_QUERIES = 1000;
+	private static final int NUM_SENSORS = 2500;
 
 	/** The cloudlet list. */
 	private static List<Cloudlet> cloudletList;
@@ -38,9 +40,11 @@ public class CepSimTopWords2 {
 	 * @param args the args
 	 */
 	public static void main(String[] args) {
-		Log.printLine("Starting CepSimWordCount...");
+		Log.printLine("Starting CepSimJsonConvert...");
 
 		try {
+			System.in.read();
+
 			// First step: Initialize the CloudSim package. It should be called before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
@@ -65,9 +69,9 @@ public class CepSimTopWords2 {
 			int vmid = 1;
 			int mips = 2500;
 			long size = 10000; // image size (MB)
-			int ram = 512; // vm memory (MB)
+			int ram = 1024; // vm memory (MB)
 			long bw = 1000;
-			int pesNumber = 1; // number of cpus
+			int pesNumber = 2; // number of cpus
 			String vmm = "Xen"; // VMM name
 
 			// create VM
@@ -81,19 +85,6 @@ public class CepSimTopWords2 {
 
 			// Fifth step: Create one Cloudlet
 			cloudletList = new ArrayList<Cloudlet>();
-
-			// Cloudlet properties
-//			int id = 0;
-//			long length = 400000;
-//			long fileSize = 300;
-//			long outputSize = 300;
-//			UtilizationModel utilizationModel = new UtilizationModelFull();
-
-//			Cloudlet cloudlet = new Cloudlet(id, length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
-//			cloudlet.setUserId(brokerId);
-//			cloudlet.setVmId(vmid);
-
-			// add the cloudlet to the list
 			cloudletList.addAll(createCloudlets(brokerId));
 
 			// submit cloudlet list to the broker
@@ -113,19 +104,12 @@ public class CepSimTopWords2 {
                 if (!(cl instanceof CepQueryCloudlet)) continue;
 
 				CepQueryCloudlet cepCl = (CepQueryCloudlet) cl;
+
                 Query q = cepCl.getQueries().iterator().next();
                 Vertex consumer = q.consumers().head();
-                System.out.println("Latency: " + cepCl.getLatency(consumer));
 
-                //Query q = cepCl.getQueries().iterator().next();
-
-
-
-//                System.out.println("Throughput: " + ThroughputMetric.calculate(q, q.duration()));
-//
-//                if (cepCl.getCloudletId() == 1) {
-//                    System.out.println("Latency   : " + LatencyMetric.calculate(q, cepCl.getExecutionHistory()));
-//                }
+                System.out.println("Latency: " + cepCl.getLatencyByMinute(consumer));
+                System.out.println("Throughput: " + cepCl.getThroughputByMinute(consumer));
 			}
 
 			Log.printLine("CloudSimExample1 finished!");
@@ -141,137 +125,74 @@ public class CepSimTopWords2 {
 		// 100_000_000 I / interval
 		// 100 events / interval
 
-        final int MAX_QUERIES = 1;
+
+
 		Set<Cloudlet> cloudlets = new HashSet<>();
         Set<Query> queries = new HashSet<Query>();
-
-//
-//        builder.setSpout(spoutId, new TestWordSpout(), 3);
-//        builder.setBolt(counterId, new RollingCountBolt(9, 3), 2).fieldsGrouping(spoutId, new Fields("word"));
-//        builder.setBolt(intermediateRankerId, new IntermediateRankingsBolt(TOP_N), 2).fieldsGrouping(counterId, new Fields(
-//                "obj"));
-//        builder.setBolt(totalRankerId, new TotalRankingsBolt(TOP_N)).globalGrouping(intermediateRankerId);
+        Map<Vertex, Object> weights = new HashMap<>();
 
         for (int i = 1; i <= MAX_QUERIES; i++) {
+            Generator gen = new UniformGenerator(NUM_SENSORS * 10); //, (long) Math.floor(SIM_INTERVAL * 1000));
+
+            EventProducer p = new EventProducer("spout" + i, 1_000, gen, true);
+
+            Operator jsonParser = new Operator("jsonParser" + i, 41_250, 2048);
+            Operator validate = new Operator("validate" + i, 25_000, 2048);
+            Operator xml = new Operator("xmlOutput" + i, 31_250, 2048);
+            Operator measurer = new Operator("measurer" + i, 17_000, 2048);
+
+            EventConsumer c = new EventConsumer("end" + i, 1_000, 2048);
 
 
-            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
             Set<Vertex> vertices = new HashSet<>();
-            Map<Vertex, Object> weights = new HashMap<>();
-
-
-            // producers
-            EventProducer[] producers = new EventProducer[3];
-            for (int j = 0; j  < producers.length; j++) {
-                Generator gen = new UniformGenerator(100); //, (long) Math.floor(SIM_INTERVAL * 1000));
-                EventProducer producer = new EventProducer("spout" + j + "_" + i, 1000, gen, false);
-
-                producers[j] = producer;
-                weights.put(producer, 1.0);
-                vertices.add(producer);
-            }
-
-            // counters
-            Operator[] counters = new Operator[2];
-            for (int j = 0; j < counters.length; j++) {
-                Operator wordCount = WindowedOperator.apply("wordCount" + j + "_" + i, 5000,
-                        3000, 3000, WindowedOperator.constant(30));//new Operator("split" + i, 25000, 1000000);
-
-                counters[j] = wordCount;
-                weights.put(wordCount, 1.0);
-                vertices.add(wordCount);
-            }
-
-            // intermediate rankings
-            Operator[] intRankings = new Operator[2];
-            for (int j = 0; j < counters.length; j++) {
-                Operator intRanking = WindowedOperator.apply("intRank" + j + "_" + i, 10000, 2000, 2000,
-                        WindowedOperator.constant(1));//new Operator("split" + i, 25000, 1000000);
-
-                intRankings[j] = intRanking;
-                weights.put(intRanking, 1.0);
-                vertices.add(intRanking);
-            }
-
-            Operator finalRanking = WindowedOperator.apply("ranking_" + i, 10000, 2000, 2000,
-                    WindowedOperator.constant(1));//new Operator("split" + i, 25000, 1000000);
-            weights.put(finalRanking, 1.0);
-            vertices.add(finalRanking);
-
-
-            EventConsumer c = new EventConsumer("end_" + i, 5000, 1000000);
-            weights.put(c, 1.0);
+            vertices.add(p);
+            vertices.add(jsonParser);
+            vertices.add(validate);
+            vertices.add(xml);
+            vertices.add(measurer);
             vertices.add(c);
 
-            // connecting producers and counters
-            double edgeWeight = 1.0 / counters.length;
-            for (int j = 0; j < producers.length; j++) {
-                for (int k = 0; k < counters.length; k++) {
-                    Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                            producers[j], counters[k], edgeWeight);
-                    edges.add(edge);
-                }
-            }
+            Tuple3<OutputVertex, InputVertex, Object> e1 = new Tuple3<OutputVertex, InputVertex, Object>(p, jsonParser, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e2 = new Tuple3<OutputVertex, InputVertex, Object>(jsonParser, validate, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e3 = new Tuple3<OutputVertex, InputVertex, Object>(validate, xml, 0.95);
+            Tuple3<OutputVertex, InputVertex, Object> e4 = new Tuple3<OutputVertex, InputVertex, Object>(xml, measurer, 1.0);
+            Tuple3<OutputVertex, InputVertex, Object> e5 = new Tuple3<OutputVertex, InputVertex, Object>(measurer, c, 1.0);
 
-            // connecting counters and intermediate rankings
-            edgeWeight = 1.0 / intRankings.length;
-            for (int j = 0; j < counters.length; j++) {
-                for (int k = 0; k < intRankings.length; k++) {
-                    Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                            counters[j], intRankings[k], edgeWeight);
-                    edges.add(edge);
-                }
-            }
+            Set<Tuple3<OutputVertex, InputVertex, Object>> edges = new HashSet<>();
+            edges.add(e1);
+            edges.add(e2);
+            edges.add(e3);
+            edges.add(e4);
+            edges.add(e5);
 
-            // connecting intermediate rankings with final ranker
-            edgeWeight = 1.0;
-            for (int j = 0; j < intRankings.length; j++) {
-                Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                        intRankings[j], finalRanking, edgeWeight);
-                edges.add(edge);
-            }
-
-            // connecting final ranker and consumer
-            Tuple3<OutputVertex, InputVertex, Object> edge = new Tuple3<OutputVertex, InputVertex, Object>(
-                    finalRanking, c, edgeWeight);
-            edges.add(edge);
+            weights.put(p, 1.0);
+            weights.put(jsonParser, 1.0);
+            weights.put(validate, 1.0);
+            weights.put(xml, 1.0);
+            weights.put(measurer, 1.0);
+            weights.put(c, 1.0);
 
 
-            // create cloudlet
-            Query q = Query.apply("testlatency" + i, vertices, edges, DURATION);
+            Query q = Query.apply("testjson" + i, vertices, edges, DURATION);
+
             queries.add(q);
-
-            Placement placement = Placement.withQueries(queries, 1);
-            QueryCloudlet qCloudlet = QueryCloudlet.apply("cl", placement,
-                    DefaultOpScheduleStrategy.weighted(weights), 1);
-                    //RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 0.1, 2500));
-
-            CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, qCloudlet, false, null);
-            cloudlet.setUserId(brokerId);
-
-            cloudlets.add(cloudlet);
         }
-
-
-        //
-        //long length = 400000;
-        //long fileSize = 300;
-        //long outputSize = 300;
-
-        // overhead
-//        UtilizationModel utilizationModel = new UtilizationModelFull();
-//        for (int j = 1; j <= 7; j++) {
-//            Cloudlet cloudlet = new Cloudlet(MAX_QUERIES + j,
-//                    210 * DURATION, 1, 0, 0, utilizationModel, utilizationModel, utilizationModel);
-//
-//            cloudlet.setUserId(brokerId);
-//            cloudlets.add(cloudlet);
-//
-//        }
+        Placement placement = Placement.withQueries(queries, 1);
 
 
 
+        PlacementExecutor executor = PlacementExecutor.apply("cl", placement,
+				//AltDynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 10);
+                //DefaultOpScheduleStrategy.weighted(weights), 10);
+                DynOpScheduleStrategy.apply(UniformAllocationStrategy.apply()), 1);
+                //DefaultOpScheduleStrategy.weighted(weights));
+               // RRDynOpScheduleStrategy.apply(WeightedAllocationStrategy.apply(weights), 1));
 
+
+        CepQueryCloudlet cloudlet = new CepQueryCloudlet(1, executor, false);
+        cloudlet.setUserId(brokerId);
+
+        cloudlets.add(cloudlet);
 
         return cloudlets;
 	}
@@ -295,7 +216,7 @@ public class CepSimTopWords2 {
 
 		// 3. Create PEs and add these into a list.
         int mips = 2500;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 12; i++) {
             peList.add(new Pe(i, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
         }
 
@@ -303,7 +224,7 @@ public class CepSimTopWords2 {
 		// 4. Create Host with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;
-		int ram = 16384; // host memory (MB)
+		int ram = 98304; // host memory (MB)
 		long storage = 1000000; // host storage
 		int bw = 10000;
 

@@ -1,6 +1,6 @@
 package ca.uwo.eng.sel.cepsim.integration
 
-import ca.uwo.eng.sel.cepsim.QueryCloudlet
+import ca.uwo.eng.sel.cepsim.PlacementExecutor
 import ca.uwo.eng.sel.cepsim.event.EventSet
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator
 import ca.uwo.eng.sel.cepsim.history.{Consumed, Generated, Produced}
@@ -19,7 +19,7 @@ import org.scalatest.{FlatSpec, Matchers}
  * Created by virso on 2014-07-23.
  */
 @RunWith(classOf[JUnitRunner])
-class RemoteQueryCloudletTest extends FlatSpec
+class RemotePlacementExecutorTest extends FlatSpec
   with Matchers
   with MockitoSugar {
 
@@ -42,12 +42,12 @@ class RemoteQueryCloudletTest extends FlatSpec
 
   }
 
-  "A QueryCloudlet" should "run operators in the placement only" in new Fixture {
+  "A PlacementExecutor" should "run operators in the placement only" in new Fixture {
     val network = mock[NetworkInterface]
-    val cloudlet1 = QueryCloudlet("c1", placement1, DefaultOpScheduleStrategy.weighted(), 1, network)
-    cloudlet1.init(0.0)
+    val executor1 = PlacementExecutor("c1", placement1, DefaultOpScheduleStrategy.weighted(), 1, network)
+    executor1.init(0.0)
 
-    val h = cloudlet1 run (10000000, 10.0, 1000)
+    val h = executor1 run (10000000, 10.0, 1000)
 
     prod1.outputQueues(f1) should be(0)
     f1.outputQueues(f2) should be(0)
@@ -69,27 +69,27 @@ class RemoteQueryCloudletTest extends FlatSpec
     verify(network).sendMessage(19.0, f2, f3, EventSet(100, 19.0,  9.0, prod1 -> 1000.0))
   }
 
-  it should "correctly exchange events with others cloudlets" in new Fixture {
-    val cloudlet1 = QueryCloudlet("c1", placement1, DefaultOpScheduleStrategy.weighted(), 1)
-    val cloudlet2 = QueryCloudlet("c2", placement2, DefaultOpScheduleStrategy.weighted(), 1)
+  it should "correctly exchange events with others executors" in new Fixture {
+    val executor1 = PlacementExecutor("c1", placement1, DefaultOpScheduleStrategy.weighted(), 1)
+    val executor2 = PlacementExecutor("c2", placement2, DefaultOpScheduleStrategy.weighted(), 1)
 
     val network = new NetworkInterface {
       override def sendMessage(timestamp: Double, orig: OutputVertex, dest: InputVertex, es: EventSet): Unit = {
-        cloudlet2.enqueue(timestamp + 1.0, orig, dest, es)
+        executor2.enqueue(timestamp + 1.0, orig, dest, es)
       }
     }
 
-    cloudlet1.networkInterface = network
-    cloudlet2.networkInterface = network
-    cloudlet1.init(0.0)
-    cloudlet2.init(0.0)
+    executor1.networkInterface = network
+    executor2.networkInterface = network
+    executor1.init(0.0)
+    executor2.init(0.0)
 
-    val h1 = cloudlet1 run (10000000, 10.0, 1000)
-    var h2 = cloudlet2 run (10000000, 10.0, 1000)
+    val h1 = executor1 run (10000000, 10.0, 1000)
+    var h2 = executor2 run (10000000, 10.0, 1000)
     h2 should have size (0)
 
-    // in the second run, events from the cloudlet1 should have been enqueued
-    h2 = cloudlet2 run (10000000, 20.0, 1000)
+    // in the second run, events from the executor1 should have been enqueued
+    h2 = executor2 run (10000000, 20.0, 1000)
     h2 should have size (2)
     h2.toList should be (List(
       Produced (f3,    20.0, 28.0, EventSet(100, 28.0, 18.0, prod1 -> 1000.0)),

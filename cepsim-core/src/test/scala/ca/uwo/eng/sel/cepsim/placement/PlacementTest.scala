@@ -1,6 +1,5 @@
 package ca.uwo.eng.sel.cepsim.placement
 
-import ca.uwo.eng.sel.cepsim.Vm
 import ca.uwo.eng.sel.cepsim.query._
 import org.junit.runner.RunWith
 import org.mockito.Mockito._

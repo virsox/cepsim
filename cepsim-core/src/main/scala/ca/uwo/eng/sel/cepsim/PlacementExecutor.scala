@@ -14,39 +14,30 @@ import scala.collection.immutable.TreeSet
 import scala.collection.mutable.ListBuffer
 
 
-/** QueryCloudlet companion object */
-object QueryCloudlet {
+/** PlacementExecutor companion object */
+object PlacementExecutor {
 
   def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int = 1) =
-    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null)
+    new PlacementExecutor(id, placement, opSchedStrategy, iterations, null)
 
   def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
             networkInterface: NetworkInterface) =
-    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface)
+    new PlacementExecutor(id, placement, opSchedStrategy, iterations, networkInterface)
 
 
   @varargs def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
              calculator: MetricCalculator*) =
-    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null, calculator:_*)
+    new PlacementExecutor(id, placement, opSchedStrategy, iterations, null, calculator:_*)
 
   @varargs def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy, iterations: Int,
             networkInterface: NetworkInterface, calculator: MetricCalculator*) =
-    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface, calculator:_*)
+    new PlacementExecutor(id, placement, opSchedStrategy, iterations, networkInterface, calculator:_*)
 
-
-//  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy,
-//            iterations: Int = 1, networkInterface: NetworkInterface = null,
-//            metricCalculators: Set[MetricCalculator] = Set.empty) =
-//    new QueryCloudlet(id, placement, opSchedStrategy, iterations, networkInterface, metricCalculators.toSeq:_*)
-//
-//  def apply(id: String, placement: Placement, opSchedStrategy: OpScheduleStrategy,
-//            iterations: Int, networkInterface: NetworkInterface = null) =
-//    new QueryCloudlet(id, placement, opSchedStrategy, iterations, null)
 }
 
-@varargs class QueryCloudlet(val id: String, val placement: Placement, opSchedStrategy: OpScheduleStrategy,
-                    val iterations: Int, var networkInterface: NetworkInterface,
-                    metricCalculators: MetricCalculator*) {
+@varargs class PlacementExecutor(val id: String, val placement: Placement, opSchedStrategy: OpScheduleStrategy,
+                                 val iterations: Int, var networkInterface: NetworkInterface,
+                                 metricCalculators: MetricCalculator*) {
 
   // --------------- Metric manipulation
 
@@ -82,7 +73,7 @@ object QueryCloudlet {
 
 
   /**
-    * Initialize all vertices from the cloudlet's placement.
+    * Initialize all vertices from the executor's placement.
     * @param startTime Execution start time (in milliseconds).
     */
   def init(startTime: Double): Unit = {
@@ -109,7 +100,7 @@ object QueryCloudlet {
 
 
   /**
-   * Run the cloudlet for the specified number of instructions.
+   * Run the placement for the specified number of instructions.
    * @param instructions Number of instructions that can be used in this simulation tick.
    * @param startTime The current simulation time (in milliseconds)..
    * @param capacity The total processor capacity (in MIPS) that is allocated to this cloudlet.
@@ -196,13 +187,6 @@ object QueryCloudlet {
     if (v.isInstanceOf[OutputVertex]) {
 
       val ov = v.asInstanceOf[OutputVertex]
-//
-//      val successors: Set[InputVertex] = ov.successors
-//      val placementInputVertices = placement.vertices.collect{ case e: InputVertex => e}
-//
-//      val inPlacement = successors.intersect(placementInputVertices)
-//      val notInPlacement = successors -- placementInputVertices
-
 
       placement.successorsNotInPlacement(ov).foreach { (dest) =>
         val events = ov.dequeueFromOutput(dest, ov.outputQueues(dest))

@@ -38,15 +38,19 @@ class Operator(val id: String, val ipe: Double, val queueMaxSize: Int) extends V
 
     if (events.size == 0) List.empty
     else List(Produced(this, startTime, endTime, events))
-  } // 494206
-
-  /** The number of instructions needed to process all pending events. */
+  }
 
   /*
-     TODO need to fix this condition - if the successor is in another cloudlet, the limit will not be updated
-     until the other cloudlet is executed.
-  */
+   TODO need to rethink and override the method needsAllocation from the Vertex trait
+   Right now, this is is true if the number of instructionsNeeded is larger than 1. In case the successor
+   is in another cloudlet, the limits map is not be updated until the other cloudlet is executed, but the
+   events have already been sent via the network. This can make the operator not be allocated, even though
+   it could.
+*/
+
+  /** The number of instructions needed to process all pending events. */
   def instructionsNeeded: Double = totalInputEvents.min(maximumNumberOfEvents) * ipe
+
 
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[Operator]

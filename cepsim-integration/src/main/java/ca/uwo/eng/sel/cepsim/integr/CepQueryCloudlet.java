@@ -1,23 +1,21 @@
 package ca.uwo.eng.sel.cepsim.integr;
 
+import ca.uwo.eng.sel.cepsim.PlacementExecutor;
+import ca.uwo.eng.sel.cepsim.history.History;
 import ca.uwo.eng.sel.cepsim.history.SimEvent;
-import ca.uwo.eng.sel.cepsim.metric.*;
+import ca.uwo.eng.sel.cepsim.metric.LatencyMetric;
+import ca.uwo.eng.sel.cepsim.metric.LatencyThroughputCalculator;
+import ca.uwo.eng.sel.cepsim.metric.MetricCalculator;
+import ca.uwo.eng.sel.cepsim.metric.ThroughputMetric;
 import ca.uwo.eng.sel.cepsim.network.CepNetworkEvent;
-import ca.uwo.eng.sel.cepsim.network.NetworkInterface;
 import ca.uwo.eng.sel.cepsim.query.Query;
 import ca.uwo.eng.sel.cepsim.query.Vertex;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.UtilizationModelFull;
-
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
-import ca.uwo.eng.sel.cepsim.history.History;
 import scala.Option;
 import scala.collection.JavaConversions;
 
-import java.io.IOException;
 import java.util.*;
-
-import static scala.collection.JavaConversions.asJavaList;
 
 
 
@@ -26,7 +24,7 @@ public class CepQueryCloudlet extends Cloudlet {
     private static final UtilizationModelFull UTIL_MODEL_FULL = new UtilizationModelFull();
 
 
-    private QueryCloudlet cloudlet;
+    private PlacementExecutor executor;
     private History<SimEvent> history;
     private Queue<CepNetworkEvent> networkEvents;
 
@@ -35,7 +33,7 @@ public class CepQueryCloudlet extends Cloudlet {
 
     private boolean record;
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, int pesNumber,
+    public CepQueryCloudlet(int cloudletId, PlacementExecutor executor, int pesNumber,
                             boolean record, MetricCalculator calculator) {
         // we are passing some "default parameters" for the following arguments
 
@@ -52,32 +50,32 @@ public class CepQueryCloudlet extends Cloudlet {
 
         this.record = record;
 
-        this.cloudlet = cloudlet;
+        this.executor = executor;
         this.history = new History<>();
         this.executionTime = 0;
         this.hasFinished = false;
 
         // the vmId can be obtained from the placement
-        setVmId(this.cloudlet.placement().vmId());
+        setVmId(this.executor.placement().vmId());
 
         // list of network interfaces
         this.networkEvents = new PriorityQueue<>();
 
-        this.cloudlet.registerCalculator(calculator);
+        this.executor.registerCalculator(calculator);
     }
 
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record, MetricCalculator calculator) {
-        this(cloudletId, cloudlet, 1, record, calculator);
+    public CepQueryCloudlet(int cloudletId, PlacementExecutor executor, boolean record, MetricCalculator calculator) {
+        this(cloudletId, executor, 1, record, calculator);
     }
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, int pesNumber, boolean record) {
-        this(cloudletId, cloudlet, pesNumber, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
+    public CepQueryCloudlet(int cloudletId, PlacementExecutor executor, int pesNumber, boolean record) {
+        this(cloudletId, executor, pesNumber, record, LatencyThroughputCalculator.apply(executor.placement()));
     }
 
 
-    public CepQueryCloudlet(int cloudletId, QueryCloudlet cloudlet, boolean record) {
-		this(cloudletId, cloudlet, 1, record, LatencyThroughputCalculator.apply(cloudlet.placement()));
+    public CepQueryCloudlet(int cloudletId, PlacementExecutor executor, boolean record) {
+		this(cloudletId, executor, 1, record, LatencyThroughputCalculator.apply(executor.placement()));
 	}
 
 	
@@ -87,7 +85,7 @@ public class CepQueryCloudlet extends Cloudlet {
 	 * @return duration (in seconds) of this cloudlet. 
 	 */
 	public long getDuration() {
-		return cloudlet.placement().duration();
+		return executor.placement().duration();
 	}
 	
 	/**
@@ -107,38 +105,26 @@ public class CepQueryCloudlet extends Cloudlet {
     }
 
 
-//    public Double getThroughput(String queryId) {
-//        return ThroughputMetric.calculate(this.getQuery(queryId), this.executionTime);
-//    }
-//
-//    public Double getLatency(String queryId) {
-//        return LatencyMetric.calculate(this.getQuery(queryId), this.history);
-//    }
-
-	
 	public void updateQuery(long instructions, double currentTime, double previousTime, double capacity) {
-        if ((getCloudletId() == 1) && (currentTime >= 150.0) && (currentTime < 150.1)) {
-            System.gc();
+//        if ((getCloudletId() == 1) && (currentTime >= 150.0) && (currentTime < 150.1)) {
+//            System.gc();
+//            System.out.println("XX-Memory [" + Runtime.getRuntime().totalMemory() + ", "
+//                    + Runtime.getRuntime().freeMemory() + ", "
+//                    + Runtime.getRuntime().maxMemory() + "]-XX");
+////            try {
+////                System.in.read();
+////            } catch (IOException e) {
+////                e.printStackTrace();
+////            }
+//        }
 
-            System.out.println("XX-Memory [" + Runtime.getRuntime().totalMemory() + ", "
-                    + Runtime.getRuntime().freeMemory() + ", "
-                    + Runtime.getRuntime().maxMemory() + "]-XX");
-
-//            try {
-//                System.in.read();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-
-            // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
-        }
-
+        // CloudSim uses seconds, and the CepSim core is using milliseconds as time unit
         long instructionsToExecute = instructions;
         double previousTimeInMs = previousTime * 1000;
 
         // it is the first time this method has been invoked
         if (this.executionTime == 0) {
-            this.cloudlet.init(previousTimeInMs);
+            this.executor.init(previousTimeInMs);
         }
         this.executionTime += (currentTime - previousTime);
 
@@ -148,7 +134,7 @@ public class CepQueryCloudlet extends Cloudlet {
             this.networkEvents.remove();
 
             // need to transform back into ms
-            this.cloudlet.enqueue(netEvent.getDestTimestamp() * 1000, netEvent.getOrig(),
+            this.executor.enqueue(netEvent.getDestTimestamp() * 1000, netEvent.getOrig(),
                   netEvent.getDest(), netEvent.getEventSet());
         }
 
@@ -161,22 +147,22 @@ public class CepQueryCloudlet extends Cloudlet {
         }
 
         // need to transform from seconds to milliseconds
-        History<SimEvent> execHistory = this.cloudlet.run(instructionsToExecute, previousTimeInMs, capacity);
+        History<SimEvent> execHistory = this.executor.run(instructionsToExecute, previousTimeInMs, capacity);
         if (record) {
             history.append(execHistory);
         }
 	}
 
     public Set<Vertex> getVertices() {
-        return JavaConversions.asJavaSet(this.cloudlet.placement().vertices());
+        return JavaConversions.asJavaSet(this.executor.placement().vertices());
     }
 
     public Set<Query> getQueries() {
-        return JavaConversions.asJavaSet(this.cloudlet.placement().queries());
+        return JavaConversions.asJavaSet(this.executor.placement().queries());
     }
 
 	private Query getQuery(String queryId) {
-        Option<Query> option = this.cloudlet.placement().query(queryId);
+        Option<Query> option = this.executor.placement().query(queryId);
         if (option.isDefined()) return option.get();
         else throw new IllegalArgumentException("Non-existent queryId");
     }
@@ -186,11 +172,11 @@ public class CepQueryCloudlet extends Cloudlet {
     }
 
     public double getLatency(Vertex consumer) {
-        return this.cloudlet.metric(LatencyMetric.ID(), consumer);
+        return this.executor.metric(LatencyMetric.ID(), consumer);
     }
 
     public SortedMap<Integer, Double> getLatencyByMinute(Vertex consumer) {
-        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.cloudlet.metrics(LatencyMetric.ID(), consumer));
+        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.executor.metrics(LatencyMetric.ID(), consumer));
         SortedMap<Integer, Double> sorted = new TreeMap<>();
         for (Map.Entry<Object, Object> entry : tmpMap.entrySet()) {
             sorted.put((Integer) entry.getKey(), (Double) entry.getValue());
@@ -199,33 +185,17 @@ public class CepQueryCloudlet extends Cloudlet {
     }
 
     public double getThroughput(Vertex consumer) {
-        return this.cloudlet.metric(ThroughputMetric.ID(), consumer);
+        return this.executor.metric(ThroughputMetric.ID(), consumer);
     }
 
     public SortedMap<Integer, Double> getThroughputByMinute(Vertex consumer) {
-        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.cloudlet.metrics(ThroughputMetric.ID(), consumer));
+        Map<Object, Object> tmpMap = JavaConversions.asJavaMap(this.executor.metrics(ThroughputMetric.ID(), consumer));
         SortedMap<Integer, Double> sorted = new TreeMap<>();
         for (Map.Entry<Object, Object> entry : tmpMap.entrySet()) {
             sorted.put((Integer) entry.getKey(), (Double) entry.getValue());
         }
         return sorted;
     }
-
-
-    // ------------ for testing only - mock injection
-//    private MetricCalculator calculator;
-//
-//    private MetricCalculator getMetricCalculator(Placement placement) {
-//        if (calculator == null) {
-//            this.calculator = LatencyThroughputCalculator.apply(placement);
-//        }
-//        return calculator;
-//    }
-//
-//    void setMetricCalculator(MetricCalculator calculator) {
-//        this.calculator = calculator;
-//    }
-
 
 
 }

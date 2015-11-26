@@ -1,6 +1,6 @@
-package ca.uwo.eng.sel.cepsim.example.cepsim;
+package ca.uwo.eng.sel.cepsim.example;
 
-import ca.uwo.eng.sel.cepsim.QueryCloudlet;
+import ca.uwo.eng.sel.cepsim.PlacementExecutor;
 import ca.uwo.eng.sel.cepsim.gen.Generator;
 import ca.uwo.eng.sel.cepsim.gen.UniformGenerator;
 import ca.uwo.eng.sel.cepsim.history.History;
@@ -94,7 +94,7 @@ public class CepSimAvgWindow {
             // submit vm list to the broker
             broker.submitVmList(vmlist);
 
-            // Fifth step: Create one Cloudlet
+            // Fifth step: Create cloudlets
             List<Cloudlet> cloudletList = new ArrayList<Cloudlet>();
             cloudletList.addAll(createCloudlets(brokerId, schedStrategy, allocStrategy, iterations));
 
@@ -189,11 +189,11 @@ public class CepSimAvgWindow {
             OpScheduleStrategy sStrategy = (schedStrategy == SchedStrategyEnum.DEFAULT)
                     ? DefaultOpScheduleStrategy.apply(aStrategy) : DynOpScheduleStrategy.apply(aStrategy);
 
-            QueryCloudlet qCloudlet = QueryCloudlet.apply("cl" + i, placement, sStrategy, iterations);
+            PlacementExecutor executor = PlacementExecutor.apply("cl" + i, placement, sStrategy, iterations);
             // -------------------------------------------------------------------------
 
 
-            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, qCloudlet, false);
+            CepQueryCloudlet cloudlet = new CepQueryCloudlet(i, executor, false);
             cloudlet.setUserId(brokerId);
             cloudlets.add(cloudlet);
         }
